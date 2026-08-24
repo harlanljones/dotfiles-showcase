@@ -123,3 +123,60 @@ describe("parseLazyvimExtras / parseLazyLock", () => {
     expect(parseLazyLock("{oops")).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Manifest-driven builders (D4 wiring)
+// ---------------------------------------------------------------------------
+
+import { buildCard, cardKeys } from "./cardsData";
+import { MANIFEST } from "../../src/manifest";
+
+/** Every *source / *Source field in a card payload must be live|fallback. */
+function sourceFields(data: Record<string, unknown>): Array<[string, unknown]> {
+  return Object.entries(data).filter(
+    ([key, value]) =>
+      (key === "source" || key.endsWith("Source")) && typeof value !== "object",
+  );
+}
+
+describe("cards: manifest-driven builders", () => {
+  it("serves exactly the manifest's live cards", () => {
+    const expected = MANIFEST.filter((e) => e.kind === "live").map((e) => e.id).sort();
+    expect([...cardKeys()].sort()).toEqual(expected);
+  });
+
+  it("builds every card with valid provenance fields", () => {
+    for (const key of cardKeys()) {
+      const data = buildCard(key) as Record<string, unknown> | undefined;
+      expect(data, `${key} builds`).toBeDefined();
+      for (const [field, value] of sourceFields(data ?? {})) {
+        expect(
+          value === "live" || value === "fallback",
+          `${key}.${field} = ${String(value)}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("keeps each card's payload shape stable", () => {
+    const shapes: Record<string, string[]> = {
+      ghostty: ["mainSource", "themeSource", "fontFamily", "fontSize", "keybinds", "theme"],
+      mise: ["source", "tools"],
+      packages: ["brewSource", "formulae", "casks", "pacmanSource", "pacman"],
+      hyprland: ["source", "gdkScale", "monitors"],
+      neovim: ["extrasSource", "lockSource", "extras", "plugins"],
+      ripgrep: ["source", "flags"],
+      lazygit: ["source", "content"],
+    };
+    for (const [key, fields] of Object.entries(shapes)) {
+      const data = buildCard(key) as Record<string, unknown>;
+      for (const field of fields) {
+        expect(field in data, `${key}.${field} present`).toBe(true);
+      }
+    }
+  });
+
+  it("returns undefined for unknown keys", () => {
+    expect(buildCard("nonexistent")).toBeUndefined();
+  });
+});

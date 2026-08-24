@@ -1,34 +1,35 @@
-# Fallback snapshot: starship prompt config (trimmed, sanitized).
+# Fallback snapshot: starship prompt config (sanitized mirror of the live file).
 # Live source: ~/.config/starship.toml
+# Sanitization: hostname/username literals are replaced with generic styling —
+# never bundle host-identifying values. Structure mirrors the live config so
+# the Starship Playground renders a faithful prompt when the live file is absent.
 
 add_newline = true
+command_timeout = 200
+format = "$username$hostname[$directory$git_branch$git_status$git_state${custom.git_dirty}]($style)$git_commit$character"
 
-format = "$username$hostname$directory$git_branch$git_status$custom.git_dirty$cmd_duration$line_break$character"
-
-truncation_length = 2
-
-[username]
-format = "[$user](bold blue) "
-
-[hostname]
-ssh_only = true
-format = "at [$hostname](bold yellow) "
+[character]
+error_symbol = "[❯](bold red)"
+success_symbol = "[❯](bold cyan)"
 
 [directory]
+truncation_length = 2
+truncation_symbol = "…/"
 style = "bold cyan"
-read_only = " "
-read_only_style = "red"
+repo_root_style = "bold cyan"
+repo_root_format = "[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) "
 
 [git_branch]
-format = "[$branch]($style) "
-style = "bold purple"
+format = "[$symbol$branch]($style) "
+style = "italic cyan"
 
 [git_status]
 style = "cyan"
 ahead = "⇡${count} "
 diverged = "⇕⇡${ahead_count}⇣${behind_count} "
 behind = "⇣${count} "
-up_to_date = ""
+conflicted = " "
+up_to_date = " "
 untracked = ""
 modified = ""
 stashed = ""
@@ -42,11 +43,21 @@ when = '''git status --porcelain --ignore-submodules=dirty | grep -Eq '^(\?\?|.[
 format = "[$output]($style) "
 style = "cyan"
 
-[cmd_duration]
-min_time = 2000
-format = "took [$duration]($style) "
-style = "yellow"
+[git_commit]
+only_detached = true
+commit_hash_length = 7
+format = "[($hash)]($style) "
+style = "italic dimmed cyan"
 
-[character]
-success_symbol = "[❯](bold green)"
-error_symbol = "[❯](bold red)"
+[git_state]
+format = "[($state( $progress_current/$progress_total))]($style) "
+style = "bold cyan"
+
+[username]
+format = "[$user]($style)"
+style_user = "bold cyan"
+style_root = "bold cyan"
+
+[hostname]
+ssh_only = true
+format = "at [$hostname](bold dimmed cyan) "

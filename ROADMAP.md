@@ -42,8 +42,9 @@ recolor) for a chosen shell state.
 
 **Resolved decisions (updated after execution):**
 - D1: `dev.ts` Bun orchestrator spawns Vite + Hono via `Bun.spawn`; either exiting kills both.
-- D2: bundled fallbacks are verbatim non-secret copies/snapshots (tool lists, colors, flags)
-  under `fallback/`; no host secrets are ever committed.
+- D2: bundled fallbacks follow a per-file strategy recorded in `fallback/README.md`
+  (FULL-COPY / TRIMMED-SAMPLE / SYNTHETIC), each with its live source path and
+  sanitization notes; no host secrets or host-identifying literals are ever committed.
 - D3: git-safety diagram is static (agent cards + flow strip) — sufficient for v1.
 - D4: manifest schema = typed registry (`src/manifest.ts`: id/title/blurb/kind) mapping to
   one component per card; server exposes `/api/cards/:key` with per-key builders.
@@ -97,8 +98,9 @@ by the early tasks noted. Do not treat TBD as zero.
   build and proposes a threshold.
 - **Test/build baselines (TBD):** a fresh repo has no historical pass rate; baselines are
   established the first time M1/M2/M3 green. Record them in this table after first green run.
-- **Live-config fallback coverage baseline (TBD):** depends on the final manifest schema
-  (D4); measured once M4 lands.
+- **Live-config fallback coverage baseline:** 7/7 live cards (19 assertions) render from
+  bundled fallbacks with all home configs hidden and the derived pacman command unavailable —
+  `server/lib/cardsFallback.test.ts` (executable gate, runs with `bun test`).
 
 ---
 
@@ -297,7 +299,15 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
 - **IC-3 (after M3):** `/api/starship` returns real rendered prompt end-to-end; Playground
   UI live. Re-run `bun test` + `typecheck`.
 - **IC-4 (after M4):** every Explorer card renders with live-or-fallback config.
+  ✅ Verified live in-browser + automated (`render.test.tsx`, `cardsFallback.test.ts`):
+  all 11 cards walked; badges observed — recolor/lazygit/ghostty/mise/hyprland/neovim/
+  ripgrep LIVE (ghostty & neovim dual-source), packages FALLBACK(brew)+LIVE(pacman),
+  fuzzy SIMULATED, git-safety static.
 - **IC-5 (after M5):** full app walkthrough; revalidate all prior gates.
+  ✅ Walked via `bun dev` in-browser: Playground drives the real starship binary
+  ("Git main ❯" with dirty state toggled), then all 11 Explorer cards — zero
+  console/page errors. Gates revalidated: 106/106 tests, typecheck 0 errors,
+  production build clean.
 
 After each IC, re-run `bun test` and `bun run typecheck` (once available) before proceeding.
 
@@ -332,6 +342,5 @@ After each IC, re-run `bun test` and `bun run typecheck` (once available) before
 - **DG-4 (M3):** accept the measured Starship render latency baseline and set the TBD
   threshold in §2; also accept the recolor-correctness and git-state-parity golden baselines.
 
-Open decisions not resolvable here (flagged to user): D1–D4 above; D5 (submodule hosting);
-and the exact set of bundled fallback files for each live config (requires reading each host
-config to sanitize).
+Open decisions not resolvable here (flagged to user): D1, D3–D4 above; D5 (submodule hosting).
+(D2 is resolved: see `fallback/README.md` for the per-file fallback strategy and sanitization.)

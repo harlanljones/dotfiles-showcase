@@ -1,5 +1,7 @@
-# Fallback snapshot: ghostty main config (trimmed).
+# Fallback snapshot: ghostty main config (trimmed to load-bearing settings).
 # Live source: ~/.config/ghostty/config
+# Trimming: comments dropped; every effective setting is preserved so the
+# Explorer card renders the same terminal behavior as the live config.
 
 config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"
 
@@ -10,9 +12,22 @@ font-size = 9
 window-theme = ghostty
 window-padding-x = 14
 window-padding-y = 14
+confirm-close-surface=false
+resize-overlay = never
+gtk-toolbar-style = flat
 
 cursor-style = "block"
 cursor-style-blink = false
 
+shell-integration-features = no-cursor,ssh-env
+
 keybind = shift+insert=paste_from_clipboard
 keybind = control+insert=copy_to_clipboard
+keybind = super+control+shift+alt+arrow_down=resize_split:down,100
+keybind = super+control+shift+alt+arrow_up=resize_split:up,100
+keybind = super+control+shift+alt+arrow_left=resize_split:left,100
+keybind = super+control+shift+alt+arrow_right=resize_split:right,100
+
+mouse-scroll-multiplier = 0.95
+
+async-backend = epoll

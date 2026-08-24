@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:3000",
+      // Matches the API server's PORT env (server/index.ts); default 3000.
+      "/api": `http://localhost:${process.env.PORT ?? 3000}`,
     },
   },
 });

@@ -10,9 +10,17 @@ export interface ConfigResult {
 
 const FALLBACK_DIR = join(import.meta.dir, "..", "..", "fallback");
 
+/**
+ * The user's home directory. Honors DOTFILES_SHOWCASE_HOME so tests can point
+ * live-config resolution at an empty sandbox; defaults to the OS home.
+ */
+export function userHome(): string {
+  return process.env.DOTFILES_SHOWCASE_HOME || homedir();
+}
+
 /** Join path segments under the user's home directory. */
 export function homePath(...segments: string[]): string {
-  return join(homedir(), ...segments);
+  return join(userHome(), ...segments);
 }
 
 /**

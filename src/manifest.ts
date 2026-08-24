@@ -1,3 +1,10 @@
+/**
+ * Explorer manifest (D4 schema): every card declares its content strategy and,
+ * where a config file backs the card, its CFG-01 data provenance — the live
+ * host path consulted first plus the bundled fallback file served when the
+ * live read fails. See `fallback/README.md` for per-file content strategy.
+ */
+
 export type CardId =
   | "starship"
   | "recolor"
@@ -13,25 +20,53 @@ export type CardId =
 
 export type CardKind = "live" | "static" | "interactive" | "simulated";
 
+/** Every bundled fallback file that exists under `/fallback`. */
+export const FALLBACK_FILES = [
+  "Brewfile",
+  "ghostty-config",
+  "ghostty-theme.conf",
+  "hypr-monitors.lua",
+  "lazygit.yml",
+  "lazy-lock.json",
+  "lazyvim.json",
+  "mise.toml",
+  "pacman.txt",
+  "ripgrep-rc",
+  "starship.toml",
+] as const;
+
+export type FallbackFile = (typeof FALLBACK_FILES)[number];
+
+export interface ConfigSource {
+  /**
+   * Host path consulted first ("~/" resolves to the user's home). Derived
+   * sources use a "derived:<command>" prefix instead of a filesystem path.
+   */
+  livePath: string;
+  /** Bundled stand-in served when the live read fails (CFG-01 fallback). */
+  fallbackFile: FallbackFile;
+}
+
 export interface ManifestEntry {
   id: CardId;
   title: string;
   blurb: string;
   kind: CardKind;
+  /**
+   * Data provenance for cards backed by config files. Required for
+   * kind "live"; optional for interactive/static/simulated cards that also
+   * render config content.
+   */
+  sources?: readonly ConfigSource[];
 }
 
-/**
- * Explorer manifest (D4 schema): every entry declares its data strategy.
- * "live" cards fetch /api/cards/<id> (server reads ~/.config with bundled
- * fallback); "interactive" cards call the live API; "simulated" cards run
- * client-side mock demos for TUI-only tools; "static" cards are pure content.
- */
 export const MANIFEST: ManifestEntry[] = [
   {
     id: "starship",
     title: "Starship Prompt",
     blurb: "Module layout of the real prompt; drive it in the Playground.",
     kind: "interactive",
+    sources: [{ livePath: "~/.config/starship.toml", fallbackFile: "starship.toml" }],
   },
   {
     id: "recolor",
@@ -50,6 +85,7 @@ export const MANIFEST: ManifestEntry[] = [
     title: "lazygit + Ollama Commits",
     blurb: "Ctrl+G generates the commit message with a local LLM.",
     kind: "live",
+    sources: [{ livePath: "~/.config/lazygit/config.yml", fallbackFile: "lazygit.yml" }],
   },
   {
     id: "fuzzy",
@@ -62,35 +98,57 @@ export const MANIFEST: ManifestEntry[] = [
     title: "Ghostty Theme",
     blurb: "Font, keybinds, and the omarchy dynamic palette.",
     kind: "live",
+    sources: [
+      { livePath: "~/.config/ghostty/config", fallbackFile: "ghostty-config" },
+      {
+        livePath: "~/.local/state/omarchy/current/theme/ghostty.conf",
+        fallbackFile: "ghostty-theme.conf",
+      },
+    ],
   },
   {
     id: "mise",
     title: "mise Toolchains",
     blurb: "Declarative runtime versions managed by mise.",
     kind: "live",
+    sources: [{ livePath: "~/.config/mise/config.toml", fallbackFile: "mise.toml" }],
   },
   {
     id: "packages",
     title: "Packages",
     blurb: "Homebrew Bundle manifest and explicit pacman packages.",
     kind: "live",
+    sources: [
+      { livePath: "~/Brewfile", fallbackFile: "Brewfile" },
+      { livePath: "derived:pacman -Qe", fallbackFile: "pacman.txt" },
+    ],
   },
   {
     id: "hyprland",
     title: "Hyprland Monitors",
     blurb: "The dual-monitor layout from monitors.lua, drawn to scale.",
     kind: "live",
+    sources: [{ livePath: "~/.config/hypr/monitors.lua", fallbackFile: "hypr-monitors.lua" }],
   },
   {
     id: "neovim",
     title: "Neovim / LazyVim",
     blurb: "Enabled LazyVim extras and pinned plugin revisions.",
     kind: "live",
+    sources: [
+      { livePath: "~/.config/nvim/lazyvim.json", fallbackFile: "lazyvim.json" },
+      { livePath: "~/.config/nvim/lazy-lock.json", fallbackFile: "lazy-lock.json" },
+    ],
   },
   {
     id: "ripgrep",
     title: "ripgrep Defaults",
     blurb: "Flags loaded via RIPGREP_CONFIG_PATH on every search.",
     kind: "live",
+    sources: [{ livePath: "~/.config/ripgrep/rc", fallbackFile: "ripgrep-rc" }],
   },
 ];
+
+export function getManifestEntry(id: CardId): ManifestEntry | undefined {
+  return MANIFEST.find((entry) => entry.id === id);
+}

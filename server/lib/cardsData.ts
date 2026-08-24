@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
-import { homedir } from "node:os";
 import { join } from "node:path";
-import { homePath, readConfig, type ConfigResult } from "./configs";
+import { readConfig, userHome, type ConfigResult } from "./configs";
+import { getManifestEntry, type CardId, type ConfigSource, type FallbackFile } from "../../src/manifest";
 
 // ---------------------------------------------------------------------------
 // Pure parsers (unit-tested without filesystem access)
@@ -77,7 +77,7 @@ export function parseGhosttyConfig(content: string): GhosttyMain {
 
 /** Expand a leading "~/" reference to an absolute path. */
 export function resolveHomeRef(ref: string): string {
-  return ref.startsWith("~/") ? join(homedir(), ref.slice(2)) : ref;
+  return ref.startsWith("~/") ? join(userHome(), ref.slice(2)) : ref;
 }
 
 export interface HyprMonitor {
@@ -156,15 +156,39 @@ export function parseLazyLock(json: string): Array<[string, string]> {
 
 // ---------------------------------------------------------------------------
 // Card builders (live reads with bundled fallbacks)
+//
+// Provenance comes from the manifest (D4): every builder resolves its
+// {livePath, fallbackFile} pair via manifestSource() so the registry in
+// src/manifest.ts is the single place where card data sources are declared.
 // ---------------------------------------------------------------------------
 
+/** Look up a card's manifest source by its bundled fallback file. */
+function manifestSource(cardId: CardId, fallbackFile: FallbackFile): ConfigSource {
+  const entry = getManifestEntry(cardId);
+  const source = entry?.sources?.find((s) => s.fallbackFile === fallbackFile);
+  if (!source) {
+    throw new Error(`manifest entry "${cardId}" declares no source for ${fallbackFile}`);
+  }
+  return source;
+}
+
+/** Expand a manifest livePath into an absolute host path. */
+function resolveLivePath(livePath: string): string {
+  return livePath.startsWith("~/") ? join(userHome(), livePath.slice(2)) : livePath;
+}
+
 function ghosttyCard() {
-  const main = readConfig(homePath(".config", "ghostty", "config"), "ghostty-config");
+  const mainSrc = manifestSource("ghostty", "ghostty-config");
+  const themeSrc = manifestSource("ghostty", "ghostty-theme.conf");
+  const main = readConfig(resolveLivePath(mainSrc.livePath), mainSrc.fallbackFile);
   const parsedMain = parseGhosttyConfig(main.content);
   const themePath = parsedMain.themeRef ? resolveHomeRef(parsedMain.themeRef) : null;
-  const theme: ConfigResult = themePath
-    ? readConfig(themePath, "ghostty-theme.conf")
-    : readConfig([], "ghostty-theme.conf");
+  // Prefer the theme path referenced by the live config; fall back to the
+  // documented generated-state path from the manifest; then the bundled copy.
+  const theme: ConfigResult = readConfig(
+    [themePath, resolveLivePath(themeSrc.livePath)].filter((p): p is string => !!p),
+    themeSrc.fallbackFile,
+  );
   return {
     mainSource: main.source,
     themeSource: theme.source,
@@ -174,35 +198,41 @@ function ghosttyCard() {
 }
 
 function miseCard() {
-  const cfg = readConfig(homePath(".config", "mise", "config.toml"), "mise.toml");
+  const src = manifestSource("mise", "mise.toml");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
   return { source: cfg.source, tools: parseMiseTools(cfg.content) };
 }
 
 function packagesCard() {
-  const brew = readConfig(homePath(".Brewfile"), "Brewfile");
+  const brewSrc = manifestSource("packages", "Brewfile");
+  const pacmanSrc = manifestSource("packages", "pacman.txt");
+  const brew = readConfig(resolveLivePath(brewSrc.livePath), brewSrc.fallbackFile);
+  if (!pacmanSrc.livePath.startsWith("derived:")) {
+    throw new Error("pacman source must be declared as derived:<command> in the manifest");
+  }
   let pacmanSource: "live" | "fallback" = "fallback";
   let pacman: string[] = [];
   try {
-    const out = execSync("pacman -Qe", { encoding: "utf8" });
+    const out = execSync(pacmanSrc.livePath.slice("derived:".length), { encoding: "utf8" });
     pacmanSource = "live";
     pacman = out.split("\n").map((l) => l.split(" ")[0]).filter(Boolean);
   } catch {
-    pacman = parseListFile(readConfig([], "pacman.txt").content);
+    pacman = parseListFile(readConfig([], pacmanSrc.fallbackFile).content);
   }
   return { brewSource: brew.source, ...parseBrewfile(brew.content), pacmanSource, pacman };
 }
 
 function hyprlandCard() {
-  const cfg = readConfig(homePath(".config", "hypr", "monitors.lua"), "hypr-monitors.lua");
+  const src = manifestSource("hyprland", "hypr-monitors.lua");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
   return { source: cfg.source, ...parseHyprMonitors(cfg.content) };
 }
 
 function neovimCard() {
-  const extrasCfg = readConfig(
-    homePath(".config", "nvim", "lazyvim.json"),
-    "lazyvim.json",
-  );
-  const lockCfg = readConfig(homePath(".config", "nvim", "lazy-lock.json"), "lazy-lock.json");
+  const extrasSrc = manifestSource("neovim", "lazyvim.json");
+  const lockSrc = manifestSource("neovim", "lazy-lock.json");
+  const extrasCfg = readConfig(resolveLivePath(extrasSrc.livePath), extrasSrc.fallbackFile);
+  const lockCfg = readConfig(resolveLivePath(lockSrc.livePath), lockSrc.fallbackFile);
   return {
     extrasSource: extrasCfg.source,
     lockSource: lockCfg.source,
@@ -212,12 +242,14 @@ function neovimCard() {
 }
 
 function ripgrepCard() {
-  const cfg = readConfig(homePath(".config", "ripgrep", "rc"), "ripgrep-rc");
+  const src = manifestSource("ripgrep", "ripgrep-rc");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
   return { source: cfg.source, flags: parseListFile(cfg.content) };
 }
 
 function lazygitCard() {
-  const cfg = readConfig(homePath(".config", "lazygit", "config.yml"), "lazygit.yml");
+  const src = manifestSource("lazygit", "lazygit.yml");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
   return { source: cfg.source, content: cfg.content };
 }
 
