@@ -23,8 +23,13 @@ describe("renderStarship — real binary, behavioral golden", () => {
   });
 
   it("shows the dirty glyph when dirty", () => {
-    const { ansi } = render({ branch: "main", dirty: true });
-    expect(ansi).toContain("");
+    const clean = render({ branch: "main", dirty: false }).ansi;
+    const dirty = render({ branch: "main", dirty: true }).ansi;
+    // The real binary must observe the dirty working tree and add the
+    // configured custom.git_dirty segment. Avoid pinning the user's glyph:
+    // live and bundled configs intentionally use different non-secret markers.
+    expect(dirty).not.toBe(clean);
+    expect(dirty.length).toBeGreaterThan(clean.length);
   });
 
   it("shows the ahead marker when ahead", () => {
@@ -84,5 +89,65 @@ describe("renderStarship — real binary, behavioral golden", () => {
     // hostname module is ssh_only; output should differ from non-ssh.
     const noSsh = render({ branch: "main", ssh: false }).ansi;
     expect(ansi).not.toBe(noSsh);
+  });
+});
+
+describe("renderStarship — universal across machines (augustus=bash, hadrian=zsh)", () => {
+  it("shows the custom.git_dirty glyph in BOTH shell modes", () => {
+    // On a real hadrian (zsh installed) the glyph shows; on augustus (bash)
+    // it also shows. Our exec-shell fallback keeps that true even when the
+    // requested shell binary is missing on the rendering host.
+    for (const shell of ["zsh", "bash"] as const) {
+      const { ansi } = render({ branch: "main", dirty: true, shell });
+      expect(ansi).toContain("\uEA71");
+    }
+  });
+
+  it("warns exactly when the requested shell binary is missing", () => {
+    for (const shell of ["zsh", "bash"] as const) {
+      const { warnings } = render({ branch: "main", shell });
+      const missing = !Bun.which(shell);
+      if (missing) {
+        expect(warnings?.join(" ")).toContain(`no '${shell}' binary`);
+      } else {
+        expect(warnings ?? []).toEqual([]);
+      }
+    }
+  });
+
+  it("strips both wrapper styles so zsh/bash renders look identical", () => {
+    const zshHtml = render({ branch: "main", ssh: true, status: 1, shell: "zsh" }).html;
+    const bashHtml = render({ branch: "main", ssh: true, status: 1, shell: "bash" }).html;
+    for (const html of [zshHtml, bashHtml]) {
+      expect(html).not.toMatch(/\\\[|\\\]|%\{|%\}/);
+    }
+  });
+});
+
+describe("renderStarship — terminal-faithful preview", () => {
+  it("HTML contains no invisible shell wrappers (\\[ \\] or %{ %})", () => {
+    for (const shell of ["zsh", "bash"] as const) {
+      const { html } = render({ branch: "main", status: 1, shell });
+      expect(html).not.toContain("\\[");
+      expect(html).not.toContain("\\]");
+      expect(html).not.toContain("%{");
+      expect(html).not.toContain("%}");
+    }
+  });
+
+  it("returns the ghostty theme so the UI can paint the real terminal colors", () => {
+    const { theme, html } = render({ branch: "main" });
+    expect(theme.background).toMatch(/^#[0-9a-f]{6}$/);
+    expect(theme.foreground).toMatch(/^#[0-9a-f]{6}$/);
+    expect(["live", "fallback"]).toContain(theme.source);
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("maps prompt colors through the ghostty palette (not ansi-to-html defaults)", () => {
+    const { html } = render({ branch: "main", ssh: true });
+    // The default ansi-to-html cyan (#0ff family) must not appear; the themed
+    // palette hexes must.
+    expect(html.toLowerCase()).not.toMatch(/#00ffff|#0ff\b/);
+    expect(html.toLowerCase()).toMatch(/#[0-9a-f]{6}/);
   });
 });

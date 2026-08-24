@@ -38,11 +38,11 @@ export function CardShell({
   children: ReactNode;
 }) {
   return (
-    <section className="max-w-3xl">
+    <section className="content-panel max-w-4xl">
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold">{title}</h3>
-          {blurb && <p className="mt-0.5 text-sm text-white/50">{blurb}</p>}
+          {blurb && <p className="mt-1 max-w-2xl text-sm leading-6 text-white/50">{blurb}</p>}
         </div>
         <div className="flex shrink-0 gap-1.5">{badges}</div>
       </div>
@@ -55,13 +55,13 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
   if (html !== undefined) {
     return (
       <pre
-        className="overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
+        className="code-surface overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
   return (
-    <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono text-xs leading-relaxed">
+    <pre className="code-surface overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono text-xs leading-relaxed">
       {children}
     </pre>
   );

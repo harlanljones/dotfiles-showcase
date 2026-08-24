@@ -17,14 +17,49 @@
 
 :root {
   color-scheme: dark;
+  --canvas: #080b10;
+  --surface: #10151d;
+  --line: rgba(255,255,255,.1);
+  --ink: #f3f6f8;
+  --muted: rgba(229,235,240,.58);
+  --cyan: #69e7d1;
+  --violet: #aa9cff;
 }
 
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, sans-serif;
-  background: #0b0e14;
-  color: #e6e6e6;
+  background: var(--canvas);
+  color: var(--ink);
+  background-image: radial-gradient(circle at 78% -10%, rgba(95, 224, 201, .09), transparent 32rem), radial-gradient(circle at 10% 75%, rgba(129, 105, 255, .055), transparent 28rem);
 }
+
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+::selection { background: rgba(105,231,209,.28); color: white; }
+code { color: var(--cyan); font-family: "JetBrainsMono Nerd Font", ui-monospace, monospace; }
+.site-header { border-bottom: 1px solid var(--line); background: rgba(8,11,16,.72); backdrop-filter: blur(18px); position: sticky; top: 0; z-index: 10; }
+.brand-lockup { display: flex; align-items: center; gap: .8rem; }
+.brand-mark { width: 2.35rem; height: 2.35rem; display: grid; place-items: center; border: 1px solid rgba(105,231,209,.5); border-radius: .75rem; background: rgba(105,231,209,.08); box-shadow: 0 0 28px rgba(105,231,209,.12); }
+.brand-mark span { width: .65rem; height: .65rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 .3rem rgba(105,231,209,.12), 0 0 1.1rem var(--cyan); }
+.brand-kicker, .section-eyebrow { color: var(--cyan); font: 700 .65rem/1.2 "JetBrainsMono Nerd Font", monospace; letter-spacing: .14em; text-transform: uppercase; }
+.top-nav button { min-height: 2.25rem; border-radius: .65rem; }
+.top-nav button.active { box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 4px 18px rgba(0,0,0,.2); }
+.intro { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.intro-signal { color: var(--muted); font: .7rem "JetBrainsMono Nerd Font", monospace; white-space: nowrap; }
+.intro-signal span { display: inline-block; width: .45rem; height: .45rem; margin-right: .45rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.explorer-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.2) transparent; }
+.explorer-nav button { border: 1px solid transparent; }
+.explorer-nav button.active { border-color: rgba(105,231,209,.18); background: linear-gradient(100deg, rgba(105,231,209,.12), rgba(255,255,255,.04)); }
+.content-panel { animation: reveal .45s cubic-bezier(.22,1,.36,1) both; }
+.code-surface { box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 16px 45px rgba(0,0,0,.16); }
+.terminal-window { box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 24px 60px rgba(0,0,0,.25); }
+.terminal-dot { width: .45rem; height: .45rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.control-panel { box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 20px 50px rgba(0,0,0,.14); }
+@keyframes reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 640px) { .intro { align-items: start; flex-direction: column; gap: .85rem; } .site-header { position: relative; } .top-nav { width: 100%; } .top-nav button { flex: 1; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 
 .font-mono-nerd {
   font-family: "JetBrainsMono Nerd Font", ui-monospace, "JetBrains Mono",

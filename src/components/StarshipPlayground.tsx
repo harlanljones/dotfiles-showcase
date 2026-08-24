@@ -32,28 +32,44 @@ const DEFAULT: State = {
 export default function StarshipPlayground() {
   const [s, setS] = useState<State>(DEFAULT);
   const [html, setHtml] = useState("");
+  const [theme, setTheme] = useState({ background: "#060912", foreground: "#959aa4" });
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
-    fetch("/api/starship", {
+    const timer = window.setTimeout(() => fetch("/api/starship", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(s),
+      signal: controller.signal,
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? `Render failed (${r.status})`);
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
         if (data.error) setError(data.error);
-        else setHtml(data.html ?? "");
+        else {
+          setHtml(data.html ?? "");
+          if (data.theme?.background) {
+            setTheme({ background: data.theme.background, foreground: data.theme.foreground });
+          }
+          setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
+        }
       })
-      .catch((e) => !cancelled && setError(String(e)))
-      .finally(() => !cancelled && setLoading(false));
+      .catch((e) => !cancelled && e.name !== "AbortError" && setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => !cancelled && setLoading(false)), 180);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
     };
   }, [s]);
 
@@ -61,24 +77,26 @@ export default function StarshipPlayground() {
     setS((prev) => ({ ...prev, [k]: v }));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-      <div className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-4">
-        <h2 className="font-semibold">Controls</h2>
+    <div className="grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr]">
+      <div className="control-panel space-y-5 rounded-2xl border border-white/10 bg-white/[.045] p-5">
+        <div className="flex items-start justify-between gap-4"><div><p className="section-eyebrow">shell state</p><h2 className="mt-1 font-semibold">Tune the scene</h2></div><span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 font-mono text-[10px] text-cyan-200">8-COLOR</span></div>
+        <p className="text-xs leading-5 text-white/45">Every change renders against an isolated temporary Git repo.</p>
 
         <label className="block text-sm">
           <span className="text-white/60">Branch</span>
           <input
-            className="mt-1 w-full rounded bg-black/40 px-2 py-1 text-white outline-none ring-cyan-500/50 focus:ring"
+            aria-label="Git branch"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
             value={s.branch}
             onChange={(e) => set("branch", e.target.value)}
           />
         </label>
 
-        <div className="flex flex-wrap gap-4 text-sm">
+        <fieldset className="flex flex-wrap gap-2 text-sm"><legend className="sr-only">Session flags</legend>
           <Toggle label="Dirty" on={s.dirty} onClick={() => set("dirty", !s.dirty)} />
           <Toggle label="Detached HEAD" on={s.detached} onClick={() => set("detached", !s.detached)} />
           <Toggle label="SSH session" on={s.ssh} onClick={() => set("ssh", !s.ssh)} />
-        </div>
+        </fieldset>
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <NumberField label="Ahead" value={s.ahead} onChange={(v) => set("ahead", v)} />
@@ -88,7 +106,7 @@ export default function StarshipPlayground() {
         <label className="block text-sm">
           <span className="text-white/60">Git state</span>
           <select
-            className="mt-1 w-full rounded bg-black/40 px-2 py-1 text-white outline-none"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
             value={s.state}
             onChange={(e) => set("state", e.target.value as GitState)}
           >
@@ -105,37 +123,36 @@ export default function StarshipPlayground() {
             value={s.shell}
             onChange={(e) => set("shell", e.target.value as ShellMode)}
           >
-            <option value="zsh">zsh (cyan→red only)</option>
-            <option value="bash">bash (all foreground→red)</option>
+            <option value="zsh">zsh — hadrian (cyan→red only)</option>
+            <option value="bash">bash — augustus (all fg→red)</option>
           </select>
         </label>
 
-        <div className="text-sm">
-          <span className="text-white/60">Last command</span>
+        <fieldset className="text-sm"><legend className="mb-2 text-white/60">Last command result</legend>
           <div className="mt-1 flex gap-2">
             <button
               className={`flex-1 rounded px-2 py-1 ${s.status === 0 ? "bg-cyan-600" : "bg-white/10"}`}
-              onClick={() => set("status", 0)}
+              type="button" aria-pressed={s.status === 0} onClick={() => set("status", 0)}
             >
               Success
             </button>
             <button
               className={`flex-1 rounded px-2 py-1 ${s.status === 1 ? "bg-red-600" : "bg-white/10"}`}
-              onClick={() => set("status", 1)}
+              type="button" aria-pressed={s.status === 1} onClick={() => set("status", 1)}
             >
               Error
             </button>
           </div>
-        </div>
+        </fieldset>
 
         <label className="block text-sm">
           <span className="text-white/60">
-            Duration (ms) — note: this starship.toml has no $cmd_duration module
+            Duration (ms) <span className="text-white/35">· reserved for future module</span>
           </span>
           <input
             type="number"
             min={0}
-            className="mt-1 w-full rounded bg-black/40 px-2 py-1 text-white outline-none"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
             value={s.durationMs}
             onChange={(e) => set("durationMs", Number(e.target.value))}
           />
@@ -143,22 +160,30 @@ export default function StarshipPlayground() {
       </div>
 
       <div className="space-y-3">
-        <div className="rounded-lg border border-white/10 bg-black p-4">
-          <div className="mb-2 flex items-center justify-between text-xs text-white/40">
-            <span>live terminal preview</span>
-            {loading && <span>rendering…</span>}
+        <div
+          className="terminal-window rounded-2xl border border-white/10 p-4 sm:p-5"
+          style={{ background: theme.background, color: theme.foreground }}
+        >
+          <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-3 text-xs text-white/40">
+            <span className="flex items-center gap-2"><span className="terminal-dot" /> live terminal preview — your ghostty theme</span>
+            <span aria-live="polite" className={loading ? "text-cyan-200" : ""}>{loading ? "rendering…" : "ready"}</span>
           </div>
           <pre
-            className="font-mono-nerd whitespace-pre-wrap break-words text-sm leading-relaxed"
+            aria-label="Rendered Starship prompt" aria-busy={loading}
+            className="font-mono-nerd min-h-8 whitespace-pre-wrap break-words text-sm leading-relaxed"
+            style={{ color: theme.foreground }}
             dangerouslySetInnerHTML={{ __html: html || "" }}
           />
         </div>
         {error && (
-          <p className="rounded bg-red-900/40 p-2 text-xs text-red-300">
-            {error}
-          </p>
+          <div role="alert" className="rounded-xl border border-red-300/20 bg-red-900/30 p-3 text-sm text-red-200"><p>{error}</p><button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>Retry render</button></div>
         )}
-        <p className="text-xs text-white/40">
+        {warnings.map((w) => (
+          <p key={w} role="status" className="rounded-xl border border-amber-300/20 bg-amber-900/25 p-3 text-xs text-amber-200">
+            {w}
+          </p>
+        ))}
+        <p className="border-l border-cyan-300/30 pl-3 text-xs leading-5 text-white/45">
           Rendered by the real <code>starship</code> binary (forced to 8-color so
           the dotfiles&apos; recolor code applies). Truecolor TTYs are a known
           limitation.
@@ -179,8 +204,10 @@ function Toggle({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`rounded px-2 py-1 text-xs ${on ? "bg-cyan-600" : "bg-white/10"}`}
+      aria-pressed={on}
+      className={`rounded-lg border px-3 py-2 text-xs transition-colors ${on ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
     >
       {label}
     </button>
@@ -202,9 +229,10 @@ function NumberField({
       <input
         type="number"
         min={0}
-        className="mt-1 w-full rounded bg-black/40 px-2 py-1 text-white outline-none"
+        aria-label={`${label} commits`}
+        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
       />
     </label>
   );
