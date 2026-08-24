@@ -1,8 +1,6 @@
 # Dotfiles Showcase
 
-A local-first, interactive web app that visualizes chezmoi-managed dotfiles with live configurations and runnable mini-demos. See what each tool does directly in your browser without leaving your development environment.
-
-**Headline feature:** The **Starship Playground** — a real-time UI that drives the actual `starship` binary through a Hono/Bun API, reproducing the exact shell prompt for any given state, including the precise red-recolor applied by your failure handlers.
+A local-first, interactive web app that visualizes and explores chezmoi-managed dotfiles. Browse live configurations, explore tool settings, and run mini-demos—all from a single browser interface. Built with React, Vite, TypeScript, and Tailwind.
 
 [AGENTS.md](./AGENTS.md) · [ROADMAP.md](./ROADMAP.md)
 
@@ -13,8 +11,8 @@ A local-first, interactive web app that visualizes chezmoi-managed dotfiles with
 ### Prerequisites
 
 - [Bun](https://bun.sh) (package manager & runtime)
-- `starship` binary on the host (for the playground to work)
-- `~/.config/starship.toml` (or use bundled fallback)
+- `starship` binary on the host (optional; for MVP demo only)
+- `~/.config/starship.toml` (optional; or use bundled fallback)
 
 ### Installation & Running
 
@@ -46,28 +44,27 @@ The development server brings up:
 ### Client (React 19 + Vite + TypeScript + Tailwind)
 
 Owned **entirely** by the browser. Responsible for:
-- **UI:** toggle/slider panel for shell state and live terminal preview
-- **Explorer:** feature-card browser for all dotfile tools
-- **Styling:** responsive Tailwind design with bundled JetBrainsMono Nerd Font
+- **Explorer UI:** Browse and explore feature cards for all dotfile tools
+- **Live Previews:** Real-time visualization of configurations
+- **Styling:** Responsive Tailwind design with bundled JetBrainsMono Nerd Font
 - **Communication:** HTTP-only (`/api/...`) — no direct shell or filesystem access
 
 ### Server (Hono API + Bun Runtime)
 
 Owned **entirely** by the server. Handles all host-only work:
 
-1. **Starship Invocation:** Runs the real `starship` binary with:
-   - Isolated temporary git repository reflecting the requested state (branch, dirty files, ahead/behind, rebase/merge/detached)
-   - Live `~/.config/starship.toml` with `true_color = false` (8-color mode for recolor fidelity)
-   - `SSH_CONNECTION` environment variable set when toggled
-   - Configurable terminal width for prompt truncation
+1. **Live Config Reads:** Fetches `~/.config/*` at runtime with graceful fallback to bundled non-secret snapshots
 
-2. **Recolor Logic:** Applies exact shell-specific transformations on non-zero exit status:
-   - **zsh:** Replaces `36m` (cyan) → `31m` (red) across all 8 SGR prefix variants
-   - **bash:** Recolors all foreground colors → red via `([0-9;]*)(30|32|33|34|35|36|37|90|92|93|94|95|96|97)m → 31m`
+2. **Tool Execution:** Runs host binaries safely in isolated contexts where applicable
 
-3. **Live Config Reads:** Fetches `~/.config/*` at runtime with graceful fallback to bundled copies (non-secret snapshots)
+3. **MVP Demo (Starship Playground):** Early feature to demonstrate real binary integration:
+   - Runs actual `starship` binary with isolated temporary git repository
+   - Reflects shell state (branch, dirty files, ahead/behind, rebase/merge/detached)
+   - Live `~/.config/starship.toml` with `true_color = false` for recolor demonstration
+   - Applies exact shell-specific recolor on non-zero exit status
+   - Converts ANSI to HTML for browser preview
 
-4. **ANSI→HTML Conversion:** Safely renders terminal escapes for browser preview
+4. **ANSI→HTML Conversion:** Safely renders terminal escapes for browser display
 
 ### Directory Structure
 
@@ -78,7 +75,7 @@ Owned **entirely** by the server. Handles all host-only work:
 │   ├── App.tsx                  # Root component
 │   ├── manifest.ts              # Feature card registry
 │   └── components/
-│       ├── StarshipPlayground.tsx
+│       ├── StarshipPlayground.tsx (MVP demo)
 │       └── explorer/
 │           ├── StarshipCard.tsx
 │           ├── RecolorDemo.tsx
@@ -103,36 +100,15 @@ Owned **entirely** by the server. Handles all host-only work:
 
 ---
 
-## Starship Playground
-
-### What It Does
-
-The Playground drives your real `starship` binary through a UI with toggles for:
-
-- **SSH Mode:** Sets `SSH_CONNECTION` environment variable
-- **Git State:** Branch name, detached HEAD, dirty working tree, ahead/behind commits
-- **Rebase/Merge:** Simulates `.git/rebase-merge` or `.git/merge-head` state
-- **Exit Status:** Non-zero exit to trigger recolor
-- **Command Duration:** Milliseconds for the duration module
-- **Terminal Width:** Matches real truncation behavior
-
-The server builds an isolated temporary git repository reflecting each state, runs `starship prompt` against it, and applies your dotfiles' exact recolor logic.
-
-### Color Mode & Fidelity
-
-The server forces `true_color = false` in the starship config to emit 8-color `36m` (cyan) escapes that your recolor code demonstrably transforms to `31m` (red). This keeps the demo faithful to your dotfiles' OWN logic, though it surfaces a known gap: in a real truecolor TTY (Ghostty), starship emits `38;2;r;g;b` which the recolor code doesn't yet handle.
-
----
-
 ## Feature Explorer
 
-Covers the following dotfile tools and configurations with live or fallback content:
+Browse and interact with your dotfile tools and configurations:
 
-- **Starship:** Prompt configuration and rendering
-- **Recolor:** Failure-status color transformation demo
+- **Starship:** Prompt configuration viewer (MVP demo includes real-time preview)
+- **Recolor:** Shell failure-status color transformation showcase
 - **Git Safety:** Diagram of commit/push guardrails (Cline/Codex/Claude/OpenCode blocks)
 - **Lazygit + Ollama:** Commit message generation flow
-- **fzf, zoxide, atuin:** Simulated mini-demos (these are TUI/native-DB tools; browser rendering is simulation only)
+- **fzf, zoxide, atuin:** Interactive mini-demos (simulated; these are TUI/native-DB tools)
 - **Ghostty:** Theme palette browser
 - **mise:** Tools and versions table
 - **Brewfile & pacman:** Package manager browser
@@ -144,6 +120,25 @@ Each card renders live configuration data where available, with bundled fallback
 
 ---
 
+## MVP Demo: Starship Playground
+
+The **Starship Playground** is an early demo feature that showcases how the app integrates with real host binaries. It drives the actual `starship` binary through a UI with toggles for:
+
+- **SSH Mode:** Sets `SSH_CONNECTION` environment variable
+- **Git State:** Branch name, detached HEAD, dirty working tree, ahead/behind commits
+- **Rebase/Merge:** Simulates `.git/rebase-merge` or `.git/merge-head` state
+- **Exit Status:** Non-zero exit to trigger shell-specific recolor
+- **Command Duration:** Milliseconds for the duration module
+- **Terminal Width:** Matches real truncation behavior
+
+The server builds an isolated temporary git repository reflecting each state, runs `starship prompt` against it, and applies your dotfiles' exact recolor logic (both zsh and bash modes).
+
+### Color Mode & Fidelity
+
+The server forces `true_color = false` in the starship config to emit 8-color `36m` (cyan) escapes that your recolor code demonstrably transforms to `31m` (red). This demonstrates what the recolor logic *does* match in 8-color mode, though it surfaces a known gap: in a real truecolor TTY (Ghostty), starship emits `38;2;r;g;b` which the recolor code doesn't yet handle.
+
+---
+
 ## Project Scope & Constraints
 
 ### In Scope (v1)
@@ -151,19 +146,19 @@ Each card renders live configuration data where available, with bundled fallback
 - React 19 + Vite + TypeScript + Tailwind client
 - Hono/Bun API server for host-only work
 - Live config reads with bundled fallback
-- Starship Playground (headline feature)
-- Broad Explorer covering 11+ dotfile tools
+- Feature Explorer covering 11+ dotfile tools
+- MVP demo: Starship Playground with real binary integration
 - Unit tests for recolor, ANSI, and starship integration
 - Full typecheck, zero console errors
 
 ### Out of Scope (v1)
 
-- **No public deployment.** This app is strictly local-first and depends on your host `starship` binary.
+- **No public deployment.** This app is strictly local-first and depends on your host tools.
 - **No dotfile editing or syncing.** The showcase is read-only and visualization-focused.
 
 ### Hard Safety Boundaries
 
-- **No faking starship output.** The server invokes the real `starship` binary—no canned strings, no precomputed ANSI.
+- **No faking binary output.** Any host binary execution is real—no canned strings, no precomputed output.
 - **No secrets committed.** Never bundle credentials, SSH keys, age keys, or `.linear.toml`. Only reference live paths; bundled content is non-secret snapshots only.
 - **chezmoiignore covers the submodule.** The path `dotfiles-showcase/` must be in `/home/harlan/.local/share/chezmoi/.chezmoiignore.tmpl` so chezmoi never applies the app as a dotfile.
 - **Live config reads must fall back gracefully.** No throws or crashes when host config is absent.
@@ -248,11 +243,11 @@ Strict TypeScript configuration:
 
 This project follows an explicit milestone-based roadmap with measurable exit criteria. See [ROADMAP.md](./ROADMAP.md) for:
 
-- **Milestones M1–M6:** Scaffolding → libraries → Playground → Explorer → integration → verification
+- **Milestones M1–M6:** Scaffolding → libraries → MVP demo → Explorer → integration → verification
 - **Work item breakdown:** 20+ clearly scoped items with exclusive ownership
 - **Metrics & gates:** Build success, typecheck, test pass rates, recolor correctness, latency baselines
 - **Dependency graph & concurrency:** Safe parallelization across independent tasks
-- **Risk matrix:** Known gaps (truecolor TTY) and mitigation strategies
+- **Risk matrix:** Known gaps and mitigation strategies
 
 ### Current Status
 
@@ -273,15 +268,15 @@ Work items are defined in [ROADMAP.md](./ROADMAP.md) with exclusive file/compone
 
 ## Known Limitations
 
-### Truecolor TTY Mismatch
+### Truecolor TTY Mismatch (MVP Demo)
 
-In your real terminal (Ghostty), starship emits `38;2;r;g;b` (truecolor) when `true_color = true`. The dotfiles' recolor logic only handles 8-color `36m` escapes. The Playground forces `true_color = false` to demonstrate what the recolor *does* match, but this means the preview may not perfectly reflect your real prompt in a truecolor TTY until the recolor code is updated.
+In your real terminal (Ghostty), starship emits `38;2;r;g;b` (truecolor) when `true_color = true`. The dotfiles' recolor logic only handles 8-color `36m` escapes. The MVP demo forces `true_color = false` to demonstrate what the recolor *does* match, but this means the preview may not perfectly reflect your real prompt in a truecolor TTY until the recolor code is updated.
 
 ### TUI Tools Are Simulated
 
 fzf, zoxide, and atuin are terminal user interface tools with native databases—they cannot run meaningfully in the browser. The Explorer cards show *simulated* mini-demos of their functionality, clearly labeled as such.
 
-### Starship Version Pinning
+### Starship Version Pinning (MVP Demo)
 
 The temp-repo git-state simulator is version-specific. The project currently targets `starship v1.26.0`. Format changes in `starship.toml` or git-internals simulation may require updates.
 
