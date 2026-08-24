@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* JetBrainsMono Nerd Font — self-hosted (bundled in public/fonts), so the
+   live-terminal preview renders Nerd Font glyphs without a system install. */
+@font-face {
+  font-family: "JetBrainsMono Nerd Font";
+  src: url("/fonts/JetBrainsMonoNerdFont-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrainsMono Nerd Font";
+  src: url("/fonts/JetBrainsMonoNerdFont-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #0b0e14;
+  color: #e6e6e6;
+}
+
+.font-mono-nerd {
+  font-family: "JetBrainsMono Nerd Font", ui-monospace, "JetBrains Mono",
+    monospace;
+}

@@ -1,0 +1,12 @@
+# Fallback snapshot: lazygit config as rendered by chezmoi (delta present).
+# Live source: ~/.config/lazygit/config.yml
+
+customCommands:
+  - key: '<c-g>'
+    context: 'files'
+    description: 'Generate commit message with Ollama'
+    command: '~/.local/bin/lazygit-ollama-commit.sh'
+    loadingText: 'Generating commit message with Ollama...'
+    output: terminal
+git:
+  pager: delta --dark --paging=never

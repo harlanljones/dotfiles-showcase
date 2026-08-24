@@ -40,14 +40,16 @@ recolor) for a chosen shell state.
   `.chezmoiignore.tmpl` + submodule registration.
 - Bun is the package manager and runtime.
 
+**Resolved decisions (updated after execution):**
+- D1: `dev.ts` Bun orchestrator spawns Vite + Hono via `Bun.spawn`; either exiting kills both.
+- D2: bundled fallbacks are verbatim non-secret copies/snapshots (tool lists, colors, flags)
+  under `fallback/`; no host secrets are ever committed.
+- D3: git-safety diagram is static (agent cards + flow strip) — sufficient for v1.
+- D4: manifest schema = typed registry (`src/manifest.ts`: id/title/blurb/kind) mapping to
+  one component per card; server exposes `/api/cards/:key` with per-key builders.
+- D5: submodule hosted at github.com/harlanljones/dotfiles-showcase (branch main).
+
 **Unresolved decisions (open — see §8 decision gates):**
-- D1: Exact orchestration for `bun run dev` (concurrently-style Bun script vs. separate
-  processes). Resolution target: M1.
-- D2: Bundled-fallback content strategy for each live config (full copy vs. trimmed sample).
-  Partial guidance: never bundle secrets; sanitize before commit. Resolution target: M4.
-- D3: Whether the git-safety diagram is static (SVG/markdown) or interactive. Resolution
-  target: M4.
-- D4: How `manifest.ts` entries declare live-config source + fallback path (schema TBD in M4).
 - D5 (BLOCKER for SUB-02): Submodule hosting / remote URL. `git submodule add <url>
   dotfiles-showcase` requires a resolvable URL; the chezmoi new-machine bootstrap
   (`chezmoi init`) will fail on `git submodule update --init` if the showcase repo is not
@@ -78,16 +80,16 @@ by the early tasks noted. Do not treat TBD as zero.
 
 | Metric | Baseline | Target / Threshold | Measurement Method | Owner | Review Cadence |
 |---|---|---|---|---|---|
-| Build/install success on fresh clone | none (TBD) | `bun install` + `bun run build` succeed | fresh-clone CI run | M1 owner | per merge |
-| Typecheck clean | none (TBD) | `tsc --noEmit` exits 0 | `bun run typecheck` | M1 owner | per merge |
-| Unit test pass rate | none (TBD) | 100% of recolor/ansi/starship tests pass | `bun test` | M2/M3 owners | per merge |
-| Starship render latency (server) | none (TBD) | < TBD ms per `/api/starship` call | server timing log | M3 owner | per merge |
-| Recolor correctness (8-color + truecolor) | none (TBD) | both shell modes transform expected escapes; golden-file match | unit + golden tests | M2/M3 owner | per merge |
-| Git-state sim parity vs real repos | none (TBD) | golden files match real `starship` output per state (dirty/ahead/behind/detached/rebase/merge) | golden-file diff | M3 owner | per merge |
-| Live-config fallback coverage | none (TBD) | all live reads have a fallback path | code review + test | M4 owner | per milestone |
-| chezmoiignore covers submodule | not yet present | `dotfiles-showcase/` in `.chezmoiignore.tmpl` | grep check | M1 owner | once, + per merge |
-| Secrets committed | 0 (hard floor) | 0 | repo scan / review | all | per merge |
-| No-fake-starship compliance | N/A | real binary invoked, no canned output | code review + test | M3 owner | per merge |
+| Build/install success on fresh clone | established M1 | `bun install` + `bun run build` succeed | fresh-clone CI run | M1 owner | per merge |
+| Typecheck clean | clean (M1–M5) | `tsc --noEmit` exits 0 | `bun run typecheck` | M1 owner | per merge |
+| Unit test pass rate | 53/53 (M4) | 100% of recolor/ansi/starship/configs tests pass | `bun test` | M2/M3 owners | per merge |
+| Starship render latency (server) | p50 ≈ 46 ms, p95 ≈ 48 ms (10 renders, incl. temp-repo build) | **p95 < 500 ms** (proposed, accepted DG-4) | server timing via curl wall-clock | M3 owner | per merge |
+| Recolor correctness (8-color + truecolor) | golden tests green | both shell modes transform expected escapes; golden-file match | unit + behavioral tests | M2/M3 owner | per merge |
+| Git-state sim parity vs real repos | behavioral goldens green (v1.26.0 pinned) | output matches real `starship` output per state | behavioral diff vs binary | M3 owner | per merge |
+| Live-config fallback coverage | exercised: brew live-miss → fallback (Linux host); all others live | all live reads have a fallback path | code review + test | M4 owner | per milestone |
+| chezmoiignore covers submodule | verified SUB-01 | `dotfiles-showcase/` in `.chezmoiignore.tmpl` | grep check | M1 owner | once, + per merge |
+| Secrets committed | 0 | 0 | repo scan / review | all | per merge |
+| No-fake-starship compliance | upheld (real binary only) | real binary invoked, no canned output | code review + test | M3 owner | per merge |
 
 **Why the TBDs matter / early tasks to establish them:**
 - **Starship render latency baseline (TBD):** needed to set a real threshold; until measured

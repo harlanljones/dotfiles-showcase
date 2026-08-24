@@ -1,0 +1,7 @@
+{
+  "LazyVim": { "branch": "main", "commit": "c10948c50b18fae7f256433afdef09e432410480" },
+  "SchemaStore.nvim": { "branch": "main", "commit": "cef8d093b63c9be7e8b49f7dc341e8447fc4c300" },
+  "aether": { "branch": "v3", "commit": "02af9ba1ef9d6f136a6b20404d39f2a4e3857e16" },
+  "bamboo.nvim": { "branch": "main", "commit": "e3ebf9d26f92f7be5b0e05a3b40ac2f4d23e35f1" },
+  "lazy.nvim": { "branch": "main", "commit": "54dc5bc0a5d30c28da7f0f7e9a3c8b76c0b6ad6b" }
+}

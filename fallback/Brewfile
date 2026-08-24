@@ -1,0 +1,18 @@
+# Fallback copy of the Homebrew Bundle manifest (macOS parity list).
+# Live source: ~/.Brewfile (or chezmoi dot_Brewfile)
+
+brew "age"
+brew "direnv"
+brew "eza"
+brew "fzf"
+brew "gh"
+brew "lazygit"
+brew "mise"
+brew "neovim"
+brew "starship"
+brew "zoxide"
+brew "atuin"
+brew "delta"
+
+cask "ghostty"
+cask "font-jetbrainsmono-nerd-font"

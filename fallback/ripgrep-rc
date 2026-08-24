@@ -1,0 +1,9 @@
+# Fallback copy: ripgrep config, loaded via RIPGREP_CONFIG_PATH.
+# Live source: ~/.config/ripgrep/rc
+
+--smart-case
+--max-columns=160
+--max-columns-preview
+--follow
+--hidden
+--glob=!.git/

@@ -1,0 +1,14 @@
+# Fallback snapshot: mise-managed tools ([tools] table).
+# Live source: ~/.config/mise/config.toml
+
+[tools]
+bun = "latest"
+chezmoi = "latest"
+claude = "latest"
+codex = "latest"
+gh = "latest"
+node = "latest"
+"npm:playwright" = "latest"
+opencode = "latest"
+python = "3.12.13"
+uv = "latest"

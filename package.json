@@ -1,0 +1,30 @@
+{
+  "name": "dotfiles-showcase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run dev.ts",
+    "dev:client": "vite",
+    "dev:server": "bun run server/index.ts",
+    "build": "vite build",
+    "start": "bun run server/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ansi-to-html": "^0.7.2",
+    "hono": "^4.9.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/bun": "latest",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

@@ -1,0 +1,18 @@
+# Fallback snapshot: ghostty main config (trimmed).
+# Live source: ~/.config/ghostty/config
+
+config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"
+
+font-family = "JetBrainsMono Nerd Font"
+font-style = Regular
+font-size = 9
+
+window-theme = ghostty
+window-padding-x = 14
+window-padding-y = 14
+
+cursor-style = "block"
+cursor-style-blink = false
+
+keybind = shift+insert=paste_from_clipboard
+keybind = control+insert=copy_to_clipboard
