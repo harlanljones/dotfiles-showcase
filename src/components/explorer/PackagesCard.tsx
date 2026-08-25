@@ -10,8 +10,8 @@ interface PackagesData {
   pacman: string[];
 }
 
-type PkgKind = "formula" | "cask" | "pacman";
-type View = "all" | "brew" | "pacman";
+type PkgKind = "formula" | "cask" | "pacman" | "both";
+type View = "all" | "brew" | "pacman" | "both";
 
 interface Pkg {
   name: string;
@@ -22,18 +22,28 @@ const KIND_STYLE: Record<PkgKind, string> = {
   formula: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
   cask: "border-amber-500/30 bg-amber-500/10 text-amber-200",
   pacman: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200",
+  both: "border-violet-500/30 bg-violet-500/10 text-violet-200",
 };
 
 const KIND_TAG: Record<PkgKind, string> = {
   formula: "f",
   cask: "c",
   pacman: "p",
+  both: "b",
+};
+
+/** Homebrew name → pacman name equivalences where the two tools disagree on
+ * naming. Only included for honest mappings verified from the fallback data. */
+const BREW_TO_PACMAN_ALIAS: Record<string, string> = {
+  "font-jetbrainsmono-nerd-font": "ttf-jetbrains-mono-nerd",
+  ghostty: "ghostty",
 };
 
 const VIEWS: Array<{ key: View; label: string }> = [
   { key: "all", label: "All" },
   { key: "brew", label: "Homebrew" },
   { key: "pacman", label: "pacman" },
+  { key: "both", label: "Both" },
 ];
 
 function PkgPill({ pkg }: { pkg: Pkg }) {
@@ -75,16 +85,48 @@ export default function PackagesCard() {
     ];
   }, [data]);
 
+  /** Brew names (formulae + casks) that also exist under pacman, honoring the
+   * known alias pairs — your portable core. Keyed on the brew-side name. */
+  const bothNames = useMemo(() => {
+    if (!data) return new Set<string>();
+    const pacmanSet = new Set(data.pacman);
+    const found = new Set<string>();
+    for (const name of [...data.formulae, ...data.casks]) {
+      const pacmanCounterpart = BREW_TO_PACMAN_ALIAS[name] ?? name;
+      if (pacmanSet.has(pacmanCounterpart)) found.add(name);
+    }
+    return found;
+  }, [data]);
+
   const filtered = useMemo(() => {
     let list = all;
     if (view === "brew") list = list.filter((p) => p.kind === "formula" || p.kind === "cask");
     else if (view === "pacman") list = list.filter((p) => p.kind === "pacman");
+    else if (view === "both") {
+      const seen = new Set<string>();
+      list = all
+        .filter(
+          (p) =>
+            (p.kind === "formula" || p.kind === "cask") &&
+            bothNames.has(p.name) &&
+            !seen.has(p.name) &&
+            seen.add(p.name),
+        )
+        .map((p) => ({ ...p, kind: "both" as PkgKind }));
+    }
     const needle = q.trim().toLowerCase();
     if (needle) list = list.filter((p) => p.name.toLowerCase().includes(needle));
     return list;
-  }, [all, view, q]);
+  }, [all, view, q, bothNames]);
 
-  const countFor = (v: View): number => (v === "all" ? counts.total : v === "brew" ? counts.brew : counts.pacman);
+  const countFor = (v: View): number =>
+    v === "all"
+      ? counts.total
+      : v === "brew"
+        ? counts.brew
+        : v === "pacman"
+          ? counts.pacman
+          : bothNames.size;
 
   return (
     <CardShell
@@ -92,9 +134,15 @@ export default function PackagesCard() {
       blurb="macOS machines restore from the Homebrew Bundle (formulae + casks); this Arch box tracks its explicit pacman set. Search, slice, and compare the two manifests below."
       badges={
         data ? (
-          <div className="flex gap-1.5">
-            <SourceBadge source={data.brewSource} />
-            <SourceBadge source={data.pacmanSource} />
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-[9px] text-white/40">brew ·</span>
+              <SourceBadge source={data.brewSource} />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-[9px] text-white/40">pacman ·</span>
+              <SourceBadge source={data.pacmanSource} />
+            </div>
           </div>
         ) : undefined
       }
@@ -135,6 +183,7 @@ export default function PackagesCard() {
             <LegendChip kind="formula" count={counts.formula} />
             <LegendChip kind="cask" count={counts.cask} />
             <LegendChip kind="pacman" count={counts.pacman} />
+            <LegendChip kind="both" count={bothNames.size} />
           </div>
 
           {filtered.length > 0 ? (
@@ -146,6 +195,13 @@ export default function PackagesCard() {
           ) : (
             <p className="font-mono text-xs text-white/40">
               {q.trim() ? `no packages match "${q.trim()}"` : "no packages in this view"}
+            </p>
+          )}
+
+          {view === "both" && (
+            <p className="text-xs leading-5 text-white/40">
+              {bothNames.size} package{bothNames.size === 1 ? "" : "s"} restored on both
+              macOS (Homebrew) and Arch (pacman) — your portable core.
             </p>
           )}
 

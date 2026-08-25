@@ -93,15 +93,25 @@ export interface HyprLayout {
   monitors: HyprMonitor[];
 }
 
-/** omarchy lua monitor layout: hl.monitor({ output=…, mode=…, position=…, scale=… }). */
+/** omarchy lua monitor layout: hl.monitor({ output=…, mode=…, position=…, scale=… }).
+ * Tolerant label scan: fields are extracted by name regardless of order, extra
+ * unknown keys are ignored, and scale may be quoted — so reordered / augmented
+ * blocks are still captured instead of silently dropped. */
 export function parseHyprMonitors(content: string): HyprLayout {
   const gdkMatch = content.match(/omarchy_gdk_scale\s*=\s*([\d.]+)/);
   const monitors: HyprMonitor[] = [];
-  const re =
-    /hl\.monitor\(\{\s*output\s*=\s*"([^"]+)"\s*,\s*mode\s*=\s*"([^"]+)"\s*,\s*position\s*=\s*"([^"]+)"\s*,\s*scale\s*=\s*([\d.]+)\s*,?\s*\}\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content))) {
-    monitors.push({ output: m[1], mode: m[2], position: m[3], scale: Number(m[4]) });
+  const blockRe = /hl\.monitor\(\{([\s\S]*?)\}\)/g;
+  let block: RegExpExecArray | null;
+  while ((block = blockRe.exec(content))) {
+    const body = block[1];
+    const output = body.match(/output\s*=\s*"([^"]*)"/)?.[1];
+    if (!output) continue;
+    const mode = body.match(/mode\s*=\s*"([^"]*)"/)?.[1] ?? "";
+    const position = body.match(/position\s*=\s*"([^"]*)"/)?.[1] ?? "";
+    const scaleRaw = body.match(/scale\s*=\s*(?:"([^"]*)"|'([^']*)'|([\d.]+))/);
+    const scale = scaleRaw ? Number(scaleRaw[1] ?? scaleRaw[2] ?? scaleRaw[3]) : 1;
+    if (Number.isNaN(scale)) continue;
+    monitors.push({ output, mode, position, scale });
   }
   return { gdkScale: gdkMatch ? Number(gdkMatch[1]) : null, monitors };
 }

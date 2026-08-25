@@ -23,8 +23,8 @@ interface ParsedMonitor {
 
 interface DrawEntry {
   p: ParsedMonitor;
-  lw: number;
-  lh: number;
+  w: number;
+  h: number;
   drawX: number;
   drawY: number;
 }
@@ -47,6 +47,10 @@ const SCALE_MIN = 0.5;
 const SCALE_MAX = 3;
 const SCALE_STEP = 0.25;
 
+/** By convention the last "primary" monitor carries this tag (the payload has no
+ * primary flag; the omarchy fallback documents DP-2 as primary). */
+const PRIMARY_OUTPUT = "DP-2";
+
 export default function HyprlandCard() {
   const { data, error } = useJson<HyprData>("/api/cards/hyprland");
   const [disabled, setDisabled] = useState<Record<string, boolean>>({});
@@ -61,27 +65,32 @@ export default function HyprlandCard() {
     return { output: m.output, mode: m.mode, position: m.position, w, h, hz, x, y, baseScale: m.scale, scale };
   });
   const visible = parsed.filter((p) => !disabled[p.output]);
-  const logical = visible.map((p) => ({ p, x: p.x, y: p.y, lw: p.w / p.scale, lh: p.h / p.scale }));
+
+  // Geometry uses each monitor's PHYSICAL footprint — raw (x,y) position and the
+  // mode's physical w×h — so outputs sit flush against each other exactly as the
+  // config encodes, and share one coordinate space. Scale is applied to the
+  // uniform canvas fit, not to the position (that's what caused the phantom gap).
+  const physical = visible.map((p) => ({ p, x: p.x, y: p.y, w: p.w, h: p.h }));
 
   let drawList: DrawEntry[] = [];
   let scaleFit = 1;
   let boxW = 0;
   let boxH = 0;
 
-  if (logical.length > 0) {
-    const minX = logical.reduce((mn, e) => Math.min(mn, e.x), 0);
-    const minY = logical.reduce((mn, e) => Math.min(mn, e.y), 0);
-    const maxX = logical.reduce((mx, e) => Math.max(mx, e.x + e.lw), 0);
-    const maxY = logical.reduce((mx, e) => Math.max(mx, e.y + e.lh), 0);
+  if (physical.length > 0) {
+    const minX = physical.reduce((mn, e) => Math.min(mn, e.x), 0);
+    const minY = physical.reduce((mn, e) => Math.min(mn, e.y), 0);
+    const maxX = physical.reduce((mx, e) => Math.max(mx, e.x + e.w), 0);
+    const maxY = physical.reduce((mx, e) => Math.max(mx, e.y + e.h), 0);
     boxW = Math.max(maxX - minX, 1);
     boxH = Math.max(maxY - minY, 1);
     scaleFit = Math.min(DIAGRAM_W / boxW, DIAGRAM_H / boxH);
-    drawList = logical.map((e) => {
-      const mirrorX = swapped ? minX + maxX - e.x - e.lw : e.x;
+    drawList = physical.map((e) => {
+      const mirrorX = swapped ? minX + maxX - e.x - e.w : e.x;
       return {
         p: e.p,
-        lw: e.lw * scaleFit,
-        lh: e.lh * scaleFit,
+        w: e.w * scaleFit,
+        h: e.h * scaleFit,
         drawX: (mirrorX - minX) * scaleFit,
         drawY: (e.y - minY) * scaleFit,
       };
@@ -90,6 +99,12 @@ export default function HyprlandCard() {
 
   const hasMonitors = baseMonitors.length > 0;
   const allOff = visible.length === 0;
+  const layoutSummary =
+    drawList.length === 0
+      ? ""
+      : drawList.length === 1
+        ? "single monitor"
+        : `${drawList.length} monitors side by side`;
 
   return (
     <CardShell
@@ -116,7 +131,12 @@ export default function HyprlandCard() {
             )}
             <div className="rounded-lg border border-white/10 bg-black/40 p-3">
               <div className="overflow-x-auto">
-                <div className="relative" style={{ width: DIAGRAM_W, height: DIAGRAM_H }}>
+                <div
+                  className="relative"
+                  style={{ width: DIAGRAM_W, height: DIAGRAM_H }}
+                  aria-label={layoutSummary}
+                  role="img"
+                >
                   {allOff && (
                     <div className="absolute inset-0 flex items-center justify-center font-mono text-xs text-white/40">
                       all monitors off — toggle one on
@@ -126,8 +146,13 @@ export default function HyprlandCard() {
                     <div
                       key={d.p.output}
                       className="absolute flex flex-col justify-between overflow-hidden rounded border border-emerald-500/40 bg-emerald-500/[0.08] p-1.5"
-                      style={{ left: d.drawX, top: d.drawY, width: d.lw, height: d.lh }}
+                      style={{ left: d.drawX, top: d.drawY, width: d.w, height: d.h }}
                     >
+                      {d.p.output === PRIMARY_OUTPUT && (
+                        <span className="absolute right-1 top-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-1 font-mono text-[8px] tracking-wider text-emerald-200">
+                          PRIMARY
+                        </span>
+                      )}
                       <span className="font-mono text-[11px] font-semibold text-emerald-300">
                         {d.p.output}
                       </span>
@@ -145,7 +170,7 @@ export default function HyprlandCard() {
                 </div>
               </div>
               <div className="mt-2 font-mono text-[10px] text-white/40">
-                bounding box {Math.round(boxW)}×{Math.round(boxH)} logical · fit{" "}
+                bounding box {Math.round(boxW)}×{Math.round(boxH)} physical · fit{" "}
                 {scaleFit.toFixed(3)}
                 {swapped ? " · mirrored" : ""}
               </div>

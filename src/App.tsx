@@ -1,11 +1,19 @@
 import { useState } from "react";
 import Explorer from "./components/Explorer";
-import StarshipPlayground from "./components/StarshipPlayground";
+import StarshipPlayground, { type ApiStatus } from "./components/StarshipPlayground";
 
 type Tab = "playground" | "explorer";
 
+const SIGNAL: Record<ApiStatus, { label: string; bg: string; glow: string; text: string }> = {
+  idle: { label: "local API · idle", bg: "rgba(255,255,255,.25)", glow: "none", text: "text-white/40" },
+  live: { label: "live render", bg: "#69e7d1", glow: "0 0 10px #69e7d1", text: "text-white/70" },
+  degraded: { label: "degraded snapshot", bg: "#fbbf24", glow: "0 0 10px #fbbf24", text: "text-amber-200" },
+  error: { label: "unreachable", bg: "#f87171", glow: "0 0 10px #f87171", text: "text-red-300" },
+};
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("playground");
+  const [apiStatus, setApiStatus] = useState<ApiStatus>("idle");
 
   return (
     <div className="app-shell min-h-screen flex flex-col">
@@ -54,9 +62,9 @@ export default function App() {
                   Drive the real <code>starship</code> binary and watch your prompt respond to the shell state.
                 </p>
               </div>
-              <div className="intro-signal" aria-label="Connected to local render API"><span /> local render API</div>
+              <div className="intro-signal" aria-label={`local render API — ${SIGNAL[apiStatus].label}`}><span style={{ background: SIGNAL[apiStatus].bg, boxShadow: SIGNAL[apiStatus].glow }} /><span className={SIGNAL[apiStatus].text}>{SIGNAL[apiStatus].label}</span></div>
             </section>
-            <StarshipPlayground />
+            <StarshipPlayground onRenderOutcome={setApiStatus} />
           </>
         ) : (
           <>

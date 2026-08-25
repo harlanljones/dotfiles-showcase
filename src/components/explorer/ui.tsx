@@ -26,6 +26,55 @@ export function SourceBadge({ source }: { source: SourceKind }) {
   );
 }
 
+export function ToggleGroup({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex overflow-hidden rounded-lg border border-white/15">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`px-3 py-1.5 font-mono text-xs transition-colors ${value === o.value ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const NOTICE_TONES: Record<"warning" | "info" | "error", string> = {
+  warning: "border-amber-300/30 bg-amber-900/30 text-amber-200",
+  info: "border-cyan-300/30 bg-cyan-900/30 text-cyan-200",
+  error: "border-red-300/30 bg-red-900/30 text-red-200",
+};
+
+export function Notice({
+  tone,
+  children,
+}: {
+  tone: "warning" | "info" | "error";
+  children?: ReactNode;
+}) {
+  return (
+    <p
+      role="status"
+      className={`rounded-lg border px-3 py-2 font-mono text-xs font-medium ${NOTICE_TONES[tone]}`}
+    >
+      {children}
+    </p>
+  );
+}
+
 export function CardShell({
   title,
   blurb,

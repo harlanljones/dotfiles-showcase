@@ -77,6 +77,34 @@ hl.monitor({ output = "DP-2", mode = "2560x1440@240", position = "3840x360", sca
     ]);
   });
 
+  it("parses monitors regardless of field order", () => {
+    const layout = parseHyprMonitors(`hl.monitor({ scale = 1.25, position = "3840x360", mode = "2560x1440@240", output = "DP-2" })`);
+    expect(layout.monitors).toEqual([
+      { output: "DP-2", mode: "2560x1440@240", position: "3840x360", scale: 1.25 },
+    ]);
+  });
+
+  it("ignores extra unknown fields and quoted scale instead of dropping the monitor", () => {
+    const layout = parseHyprMonitors(`hl.monitor({ vrr = 1, output = "DP-1", bitdepth = 10, mode = "3840x2160@60", scale = "1.6" })`);
+    expect(layout.monitors).toEqual([
+      { output: "DP-1", mode: "3840x2160@60", position: "", scale: 1.6 },
+    ]);
+  });
+
+  it("parses the documented DP-1/DP-2 fallback snapshot identically", () => {
+    const layout = parseHyprMonitors(`local omarchy_gdk_scale = 1
+hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
+-- Secondary: 32" 4K 60Hz on the left
+hl.monitor({ output = "DP-1", mode = "3840x2160@60", position = "0x0", scale = 1.6 })
+-- Primary: 27" 2K 240Hz on the right, centered at same height as 4K monitor
+hl.monitor({ output = "DP-2", mode = "2560x1440@240", position = "3840x360", scale = 1.25 })`);
+    expect(layout.gdkScale).toBe(1);
+    expect(layout.monitors).toEqual([
+      { output: "DP-1", mode: "3840x2160@60", position: "0x0", scale: 1.6 },
+      { output: "DP-2", mode: "2560x1440@240", position: "3840x360", scale: 1.25 },
+    ]);
+  });
+
   it("returns an empty layout for unrecognized content", () => {
     expect(parseHyprMonitors("nothing here")).toEqual({ gdkScale: null, monitors: [] });
   });

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode, type KeyboardEvent } from "react";
 import { CardShell, SourceBadge, Term } from "./ui";
 
 const FILES = [
@@ -149,9 +149,17 @@ function Highlighted({ text, positions }: { text: string; positions: number[] })
   );
 }
 
+/** Clamp a selected index to a valid list position (or 0 when empty). */
+function clampSel(sel: number, len: number): number {
+  if (len <= 0) return 0;
+  return Math.min(Math.max(sel, 0), len - 1);
+}
+
 function FzfPane({ items }: { items: string[] }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const [accepted, setAccepted] = useState<string | null>(null);
+
   const scored = useMemo(() => {
     const needle = q.trim();
     if (!needle) {
@@ -166,9 +174,28 @@ function FzfPane({ items }: { items: string[] }) {
     return out;
   }, [q, items]);
 
-  const idx = Math.min(sel, scored.length - 1);
-  const safeIdx = idx < 0 ? 0 : idx;
+  const safeIdx = clampSel(sel, scored.length);
   const preview = scored[safeIdx]?.item ?? "";
+
+  const accept = (idx: number) => {
+    const item = scored[idx]?.item;
+    if (!item) return;
+    setAccepted(item);
+    window.setTimeout(() => setAccepted((a) => (a === item ? null : a)), 800);
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSel((s) => clampSel(s + 1, scored.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSel((s) => clampSel(s - 1, scored.length));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      accept(safeIdx);
+    }
+  };
 
   return (
     <Pane label="fzf — fuzzy file finder">
@@ -178,23 +205,19 @@ function FzfPane({ items }: { items: string[] }) {
           setQ(e.target.value);
           setSel(0);
         }}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setSel((s) => Math.min(s + 1, scored.length - 1));
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setSel((s) => Math.max(s - 1, 0));
-          }
-        }}
+        onKeyDown={onKey}
         placeholder="fuzzy-match files…"
         className={inputCls}
       />
-      <ul className="max-h-40 space-y-0.5 overflow-y-auto">
+      <ul role="listbox" aria-label="matching files" className="max-h-40 space-y-0.5 overflow-y-auto">
         {scored.map((m, i) => (
           <li
             key={m.item}
+            role="option"
+            aria-selected={i === safeIdx}
+            tabIndex={0}
             onClick={() => setSel(i)}
+            onKeyDown={onKey}
             className={`flex cursor-pointer items-center justify-between gap-2 rounded px-2 py-0.5 font-mono text-[11px] ${
               i === safeIdx ? "bg-emerald-500/15 text-white" : "bg-white/[0.04] text-white/70"
             }`}
@@ -210,8 +233,26 @@ function FzfPane({ items }: { items: string[] }) {
         )}
       </ul>
       <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
-        <span className="text-emerald-300/80">open</span>{" "}
-        {preview || <span className="text-white/30">—</span>}
+        {accepted ? (
+          <>
+            <span className="text-emerald-300/80">✓ would exec $EDITOR</span> {accepted}
+          </>
+        ) : (
+          <>
+            <span className="text-emerald-300/80">would open:</span>{" "}
+            {preview || <span className="text-white/30">—</span>}
+          </>
+        )}
+      </div>
+      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/35">
+        <div>
+          <span className="text-white/50">FZF_DEFAULT_COMMAND</span>={" "}
+          <span className="text-white/60">'fd --type f --hidden --follow --exclude .git'</span>
+        </div>
+        <div>
+          <span className="text-white/50">FZF_DEFAULT_OPTS</span>={" "}
+          <span className="text-white/60">'--height=40% --layout=reverse --border --info=inline'</span>
+        </div>
       </div>
     </Pane>
   );
@@ -220,6 +261,7 @@ function FzfPane({ items }: { items: string[] }) {
 function ZoxidePane({ initial }: { initial: DirEntry[] }) {
   const [state, setState] = useState({ now: 100, dirs: initial });
   const [q, setQ] = useState("");
+  const [sel, setSel] = useState(0);
 
   const ranked = state.dirs
     .map((d) => {
@@ -242,39 +284,74 @@ function ZoxidePane({ initial }: { initial: DirEntry[] }) {
     });
   }
 
-  const needle = q.trim().toLowerCase();
+  const needle = q.trim();
   const candidates = needle
-    ? ranked.filter((d) => d.path.toLowerCase().includes(needle))
-    : ranked;
-  const target = candidates[0];
+    ? ranked
+        .map((d) => ({ d, positions: fuzzyMatch(d.path, needle)?.positions ?? null }))
+        .filter((c) => c.positions !== null)
+        .map((c) => ({ d: c.d, positions: c.positions as number[] }))
+    : ranked.map((d) => ({ d, positions: [] as number[] }));
+  const target = candidates[0]?.d ?? null;
+  const safeSel = clampSel(sel, candidates.length);
+  const activable = candidates[safeSel];
+
+  const onKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSel((s) => clampSel(s + 1, candidates.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSel((s) => clampSel(s - 1, candidates.length));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (activable) visit(activable.d.path);
+    }
+  };
 
   return (
     <Pane label="zoxide — frecency smart-cd">
       <input
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setSel(0);
+        }}
+        onKeyDown={onKey}
         placeholder="z <query>… (try 'ghostty')"
         className={inputCls}
       />
-      <ul className="max-h-40 space-y-0.5 overflow-y-auto">
-        {ranked.map((d) => {
+      <ul aria-label="matching directories" role="listbox" className="max-h-40 space-y-0.5 overflow-y-auto">
+        {candidates.map(({ d, positions }, i) => {
           const isTarget = !!needle && !!target && d.path === target.path;
+          const isSel = i === safeSel;
           return (
             <li
               key={d.path}
-              onClick={() => visit(d.path)}
+              role="option"
+              aria-selected={isSel}
+              tabIndex={0}
+              onClick={() => {
+                setSel(i);
+                visit(d.path);
+              }}
+              onKeyDown={onKey}
               title={`visits ${d.visits} · age ${d.age}`}
               className={`flex cursor-pointer items-center justify-between gap-2 truncate rounded px-2 py-0.5 font-mono text-[11px] ${
-                isTarget
+                isTarget || isSel
                   ? "border-l-2 border-emerald-400 bg-emerald-500/10 text-white"
                   : "bg-white/[0.04] text-white/70"
               }`}
             >
-              <span className="min-w-0 flex-1 truncate">{d.path}</span>
+              <span className="min-w-0 flex-1 truncate">
+                <Highlighted text={d.path} positions={positions} />
+              </span>
               <span className="shrink-0 text-white/35">{d.score.toFixed(2)}</span>
             </li>
           );
         })}
+        {candidates.length === 0 && (
+          <li className="px-2 py-0.5 font-mono text-[11px] text-white/30">no match</li>
+        )}
       </ul>
       <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
         {needle ? (
@@ -295,14 +372,37 @@ type ExitFilter = "all" | "ok" | "fail";
 function AtuinPane({ items }: { items: HistEntry[] }) {
   const [q, setQ] = useState("");
   const [exitFilter, setExitFilter] = useState<ExitFilter>("all");
+  const [sel, setSel] = useState(0);
+  const [ran, setRan] = useState<string | null>(null);
 
-  const needle = q.trim().toLowerCase();
+  const needle = q.trim();
   const results = items
-    .filter((h) => (needle ? h.cmd.toLowerCase().includes(needle) : true))
+    .filter((h) => (needle ? fuzzyMatch(h.cmd, needle) !== null : true))
     .filter((h) =>
       exitFilter === "all" ? true : exitFilter === "ok" ? h.exit === 0 : h.exit !== 0,
     )
     .sort((a, b) => b.sortTs - a.sortTs);
+
+  const safeSel = clampSel(sel, results.length);
+  const activable = results[safeSel];
+
+  const run = (cmd: string) => {
+    setRan(cmd);
+    window.setTimeout(() => setRan((r) => (r === cmd ? null : r)), 800);
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSel((s) => clampSel(s + 1, results.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSel((s) => clampSel(s - 1, results.length));
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (activable) run(activable.cmd);
+    }
+  };
 
   const syncedCount = items.filter((h) => h.synced).length;
 
@@ -310,7 +410,11 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
     <Pane label="atuin — synced history search">
       <input
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setSel(0);
+        }}
+        onKeyDown={onKey}
         placeholder="full-text search history…"
         className={inputCls}
       />
@@ -318,7 +422,9 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
         {(["all", "ok", "fail"] as const).map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => setExitFilter(f)}
+            aria-pressed={exitFilter === f}
             className={`rounded border px-2 py-0.5 font-mono text-[10px] transition-colors ${
               exitFilter === f
                 ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
@@ -332,34 +438,66 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
           {syncedCount}/{items.length} synced
         </span>
       </div>
-      <ul className="max-h-40 space-y-0.5 overflow-y-auto">
-        {results.map((h, i) => (
-          <li
-            key={`${h.cmd}-${i}`}
-            className="flex items-center gap-2 rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[11px] text-white/70"
-          >
-            <span className="shrink-0 text-white/30">{h.ts.slice(5)}</span>
-            <span className="min-w-0 flex-1 truncate">{h.cmd}</span>
-            <span
-              className={`shrink-0 rounded px-1 ${
-                h.exit === 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"
+      <ul aria-label="history results" role="listbox" className="max-h-40 space-y-0.5 overflow-y-auto">
+        {results.map((h, i) => {
+          const m = needle ? fuzzyMatch(h.cmd, needle) : null;
+          return (
+            <li
+              key={`${h.cmd}-${h.sortTs}-${i}`}
+              role="option"
+              aria-selected={i === safeSel}
+              tabIndex={0}
+              onClick={() => setSel(i)}
+              onKeyDown={onKey}
+              className={`flex items-center gap-2 rounded px-2 py-0.5 font-mono text-[11px] ${
+                i === safeSel ? "bg-emerald-500/15 text-white" : "bg-white/[0.04] text-white/70"
               }`}
             >
-              {h.exit}
-            </span>
-            <span
-              className={`shrink-0 text-[10px] ${
-                h.synced ? "text-emerald-300/70" : "text-amber-300/70"
-              }`}
-            >
-              {h.synced ? "synced" : "local"}
-            </span>
-          </li>
-        ))}
+              <span className="shrink-0 text-white/30">{h.ts.slice(5)}</span>
+              <span className="min-w-0 flex-1 truncate">
+                <Highlighted text={h.cmd} positions={m?.positions ?? []} />
+              </span>
+              <span
+                className={`shrink-0 rounded px-1 ${
+                  h.exit === 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"
+                }`}
+              >
+                {h.exit}
+              </span>
+              <span
+                className={`shrink-0 text-[10px] ${
+                  h.synced ? "text-emerald-300/70" : "text-amber-300/70"
+                }`}
+              >
+                {h.synced ? "synced" : "local"}
+              </span>
+            </li>
+          );
+        })}
         {results.length === 0 && (
           <li className="px-2 py-0.5 font-mono text-[11px] text-white/30">no match</li>
         )}
       </ul>
+      <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
+        {ran ? (
+          <>
+            <span className="text-emerald-300/80">✓ would run</span> {ran}
+          </>
+        ) : (
+          <span className="text-white/40">Enter would run the selected command</span>
+        )}
+      </div>
+      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/35">
+        <div>
+          <span className="text-white/50">↑</span> scoped to this directory ·{" "}
+          <span className="text-white/50">Ctrl+R</span> global
+        </div>
+        <div>
+          <span className="text-white/50">enter_accept</span> = true · E2E sync every{" "}
+          <span className="text-white/50">5m</span> ·{" "}
+          <span className="text-white/50">search_mode</span> = <span className="text-white/60">fuzzy</span>
+        </div>
+      </div>
     </Pane>
   );
 }
@@ -368,7 +506,7 @@ export default function FuzzyToolsCard() {
   return (
     <CardShell
       title="fzf · zoxide · atuin"
-      blurb="Wired into zsh with one guarded eval line each. These are client-side simulations of the real tools' ranking behavior: fzf subsequence scoring with contiguous and word-boundary bonuses, zoxide frequency × recency, and atuin synced full-text history."
+      blurb="Wired into zsh with one guarded eval line each. These are client-side simulations of the real tools' ranking behavior: fzf subsequence scoring with contiguous and word-boundary bonuses, zoxide frequency × recency, and atuin fuzzy full-text history."
       badges={<SourceBadge source="simulated" />}
     >
       <Term>
@@ -387,8 +525,8 @@ export default function FuzzyToolsCard() {
       <p className="mt-3 text-xs text-white/40">
         Simulated rankings: fzf scores ordered subsequence matches with contiguous
         and word-boundary bonuses; zoxide ranks by frequency × recency decay
-        (0.85^age); atuin filters full-text history by exit code and sync state,
-        sorted newest-first.
+        (0.85^age); atuin fuzzy-matches full-text history by exit code and sync
+        state, sorted newest-first.
       </p>
     </CardShell>
   );

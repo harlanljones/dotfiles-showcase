@@ -29,19 +29,23 @@ function groupOf(extra: string): string {
   return GROUP_LABELS[g] ?? g;
 }
 
-function extraKeyword(extra: string): string {
-  const parts = normalizeExtra(extra).split(".");
-  return parts[parts.length - 1];
-}
+const EXTRA_PLUGIN_MAP: Record<string, string[]> = {
+  "editor.dial": ["dial.nvim"],
+  "editor.inc-rename": ["inc-rename.nvim"],
+  "editor.neo-tree": ["neo-tree.nvim"],
+  "lang.astro": ["nvim-ts-autotag"],
+  "lang.json": ["SchemaStore.nvim"],
+  "lang.markdown": ["markdown-preview.nvim", "render-markdown.nvim"],
+  "lang.python": ["venv-selector.nvim"],
+  "lang.tailwind": ["nvim-ts-autotag"],
+  "lang.toml": ["SchemaStore.nvim"],
+  "lang.typescript": ["ts-comments.nvim", "nvim-ts-autotag"],
+  "util.chezmoi": ["chezmoi.nvim", "chezmoi.vim"],
+  "util.dot": ["nvim-treesitter", "nvim-treesitter-textobjects"],
+};
 
-function pluginsForExtra(
-  extra: string,
-  plugins: Array<[string, string]>,
-): Array<[string, string]> {
-  const kw = extraKeyword(extra);
-  if (!kw) return [];
-  const lower = kw.toLowerCase();
-  return plugins.filter(([name]) => name.toLowerCase().includes(lower));
+function pluginsForExtra(extra: string): string[] {
+  return EXTRA_PLUGIN_MAP[normalizeExtra(extra)] ?? [];
 }
 
 function shortHash(commit: string): string {
@@ -54,12 +58,21 @@ export default function NeovimCard() {
   const [disabled, setDisabled] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const [onlyEnabled, setOnlyEnabled] = useState(false);
+  const [copiedCommit, setCopiedCommit] = useState<string | null>(null);
+
+  const copyCommit = (name: string, commit: string) => {
+    setCopiedCommit(name);
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      void navigator.clipboard.writeText(commit).catch(() => {});
+    }
+    window.setTimeout(() => setCopiedCommit((c) => (c === name ? null : c)), 1400);
+  };
 
   const association = useMemo(() => {
-    const map = new Map<string, Array<[string, string]>>();
+    const map = new Map<string, string[]>();
     if (!data) return map;
     for (const ex of data.extras) {
-      map.set(ex, pluginsForExtra(ex, data.plugins));
+      map.set(ex, pluginsForExtra(ex));
     }
     return map;
   }, [data]);
@@ -68,7 +81,7 @@ export default function NeovimCard() {
     const map = new Map<string, string[]>();
     if (!data) return map;
     for (const ex of data.extras) {
-      for (const [name] of association.get(ex) ?? []) {
+      for (const name of association.get(ex) ?? []) {
         const arr = map.get(name);
         if (arr) arr.push(ex);
         else map.set(name, [ex]);
@@ -95,7 +108,7 @@ export default function NeovimCard() {
         let belongs = false;
         for (const ex of data.extras) {
           if (disabled.has(ex)) continue;
-          if ((association.get(ex) ?? []).some(([n]) => n === name)) {
+          if ((association.get(ex) ?? []).some((n) => n === name)) {
             belongs = true;
             break;
           }
@@ -219,13 +232,13 @@ export default function NeovimCard() {
                       </div>
                     ))}
                     <p className="font-mono text-[10px] leading-relaxed text-white/35">
-                      Plugin association is approximate — matched by keyword
-                      substring (e.g.{" "}
-                      <span className="text-white/50">lang.typescript</span> →
-                      plugins whose name contains{" "}
-                      <span className="text-white/50">typescript</span>).
-                      Real LazyVim spec files pull many more plugins than this
-                      heuristic catches.
+                      Plugin association is a curated snapshot mapped to the repos
+                      pinned here (e.g.{" "}
+                      <span className="text-white/50">lang.typescript</span> →{" "}
+                      <span className="text-white/50">ts-comments.nvim</span>,{" "}
+                      <span className="text-white/50">nvim-ts-autotag</span>).
+                      LazyVim's real spec files pull many more plugins than this
+                      snapshot lists.
                     </p>
                   </div>
                 )}
@@ -275,8 +288,21 @@ export default function NeovimCard() {
                                 <td className="px-3 py-1.5 text-white/80">
                                   {name}
                                 </td>
-                                <td className="px-3 py-1.5 text-white/40">
-                                  {shortHash(commit)}
+                                <td className="px-3 py-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => copyCommit(name, commit)}
+                                    title={`copy ${shortHash(commit)} → ${commit}`}
+                                    className="font-mono text-white/40 underline-offset-2 transition-colors hover:text-cyan-300 hover:underline"
+                                  >
+                                    {copiedCommit === name ? (
+                                      <span className="text-emerald-300">
+                                        copied
+                                      </span>
+                                    ) : (
+                                      shortHash(commit)
+                                    )}
+                                  </button>
                                 </td>
                                 <td className="px-3 py-1.5">
                                   {via.length > 0 ? (

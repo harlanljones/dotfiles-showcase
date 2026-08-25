@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useJson } from "../../lib/useApi";
-import { CardShell, SourceBadge, Term, Pill } from "./ui";
+import { CardShell, SourceBadge, Pill } from "./ui";
 
 interface GhosttyData {
   mainSource: "live" | "fallback";
@@ -35,10 +35,58 @@ function ansiLabel(idx: number): string {
 
 const SAMPLE_LINE = "$ ls -la ~/dev && git status --short --branch && echo done";
 
+interface Bind {
+  key: string;
+  action: string;
+}
+
+function parseBind(bind: string): Bind | null {
+  const i = bind.indexOf("=");
+  if (i === -1) return null;
+  return { key: bind.slice(0, i), action: bind.slice(i + 1) };
+}
+
+function buildBindGroups(binds: string[]): Array<{ label: string | null; items: Bind[] }> {
+  const groups: Array<{ label: string | null; items: Bind[] }> = [];
+  let run: Bind[] = [];
+  const flush = () => {
+    if (run.length) {
+      groups.push({
+        label: run[0].action.startsWith("resize_split") ? "split navigation" : null,
+        items: run,
+      });
+      run = [];
+    }
+  };
+  for (const b of binds) {
+    const p = parseBind(b);
+    if (!p) continue;
+    if (p.action.startsWith("resize_split")) {
+      run.push(p);
+    } else {
+      flush();
+      groups.push({ label: null, items: [p] });
+    }
+  }
+  flush();
+  return groups;
+}
+
+async function copyText(text: string): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+}
+
 export default function GhosttyPaletteCard() {
   const { data, error } = useJson<GhosttyData>("/api/cards/ghostty");
   const [selected, setSelected] = useState<number>(0);
   const [showFont, setShowFont] = useState<boolean>(true);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const palette: Array<[number, string]> = data
     ? Object.entries(data.theme.palette)
@@ -58,6 +106,27 @@ export default function GhosttyPaletteCard() {
   const fontFam = data?.fontFamily ?? "monospace";
   const fontSz = data?.fontSize ?? 12;
 
+  const handleCopy = (hex: string) => {
+    setCopied(hex);
+    void copyText(hex);
+    window.setTimeout(() => setCopied((c) => (c === hex ? null : c)), 1400);
+  };
+
+  const keybindGroups = data ? buildBindGroups(data.keybinds) : [];
+
+  const paletteColor = (idx: number): string => palette.find(([n]) => n === idx)?.[1] ?? fg;
+
+  const sampleSegments: Array<{ text: string; color?: string }> = [
+    { text: "~/dev/dotfiles-showcase ", color: paletteColor(4) },
+    { text: "❯ ", color: paletteColor(12) },
+    { text: "rg --smart-case TODO", color: fg },
+    { text: "\n", color: fg },
+    { text: "✓ ", color: paletteColor(2) },
+    { text: "42 matches", color: fg },
+    { text: "\n", color: fg },
+    { text: "- tsconfig.json", color: paletteColor(1) },
+  ];
+
   return (
     <CardShell
       title="Ghostty Theme"
@@ -65,8 +134,14 @@ export default function GhosttyPaletteCard() {
       badges={
         data ? (
           <div className="flex gap-1.5">
-            <SourceBadge source={data.mainSource} />
-            <SourceBadge source={data.themeSource} />
+            <span className="flex items-center gap-1">
+              <span className="font-mono text-[10px] text-white/40">config:</span>
+              <SourceBadge source={data.mainSource} />
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="font-mono text-[10px] text-white/40">theme:</span>
+              <SourceBadge source={data.themeSource} />
+            </span>
           </div>
         ) : undefined
       }
@@ -106,18 +181,41 @@ export default function GhosttyPaletteCard() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 font-mono text-xs">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
             {(["background", "foreground"] as const).map((k) =>
               data.theme[k] ? (
-                <span key={k} className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1">
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => handleCopy(data.theme[k] ?? "")}
+                  title="copy hex"
+                  className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1 transition-colors hover:bg-white/10"
+                >
                   <span
                     className="inline-block h-3 w-3 rounded-sm border border-black/40"
                     style={{ background: data.theme[k] ?? "" }}
                   />
                   {k}: {data.theme[k]}
-                </span>
+                </button>
               ) : null,
             )}
+            {copied && <span className="text-emerald-300/80">copied {copied}</span>}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="font-mono text-xs text-white/50">
+              ANSI palette sample — every color through the real palette
+            </div>
+            <pre
+              className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono text-sm leading-relaxed"
+              style={{ background: bg, color: fg }}
+            >
+              {sampleSegments.map((seg, i) => (
+                <span key={i} style={seg.color ? { color: seg.color } : undefined}>
+                  {seg.text}
+                </span>
+              ))}
+            </pre>
           </div>
 
           {showFont && (
@@ -140,8 +238,9 @@ export default function GhosttyPaletteCard() {
           )}
 
           <div className="space-y-2">
-            <div className="font-mono text-xs text-white/50">
-              ANSI palette — click a swatch to preview as foreground
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-white/50">
+              ANSI palette — click a swatch to preview as foreground &amp; copy its hex
+              {copied && <span className="text-emerald-300/80">copied {copied}</span>}
             </div>
             {palette.length === 0 ? (
               <p className="font-mono text-xs text-white/35">
@@ -156,9 +255,12 @@ export default function GhosttyPaletteCard() {
                     <button
                       key={n}
                       type="button"
-                      onClick={() => setSelected(n)}
+                      onClick={() => {
+                        setSelected(n);
+                        handleCopy(hex);
+                      }}
                       aria-pressed={isSelected}
-                      title={ansiLabel(n)}
+                      title={`${ansiLabel(n)} · ${hex}`}
                       className={`rounded border p-1.5 text-left transition-colors ${
                         isSelected
                           ? "border-cyan-300/50 bg-cyan-300/10"
@@ -217,7 +319,33 @@ export default function GhosttyPaletteCard() {
             </div>
           )}
 
-          {data.keybinds.length > 0 && <Term>{data.keybinds.join("\n")}</Term>}
+          {keybindGroups.length > 0 && (
+            <div className="space-y-2">
+              <div className="font-mono text-xs text-white/50">keybinds</div>
+              {keybindGroups.map((grp, gi) => (
+                <div key={gi} className="space-y-1">
+                  {grp.label && (
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-cyan-300/70">
+                      {grp.label}
+                    </div>
+                  )}
+                  <ul className="space-y-1">
+                    {grp.items.map((b) => (
+                      <li
+                        key={`${b.key}=${b.action}`}
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5"
+                      >
+                        <kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-white/80">
+                          {b.key}
+                        </kbd>
+                        <span className="font-mono text-xs text-white/50">{b.action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </CardShell>

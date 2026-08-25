@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useJson } from "../../lib/useApi";
 import { CardShell, SourceBadge, Term } from "./ui";
 
@@ -6,6 +6,8 @@ interface LazygitData {
   source: "live" | "fallback";
   content: string;
 }
+
+const LOADING_TEXT = "Generating commit message with Ollama...";
 
 const SAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
 index abc1234..def5678 100644
@@ -69,6 +71,8 @@ function buildCandidates(diff: string): string[] {
 
 const CANDIDATES = buildCandidates(SAMPLE_DIFF);
 
+type Phase = "idle" | "loading" | "review" | "pushed";
+
 function DiffPreview({ diff }: { diff: string }) {
   const lines = diff.split("\n");
   return (
@@ -131,20 +135,48 @@ function HighlightedConfig({
 export default function LazygitCard() {
   const { data, error } = useJson<LazygitData>("/api/cards/lazygit");
   const [showCommands, setShowCommands] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [candidateIdx, setCandidateIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentMessage = hasGenerated
-    ? CANDIDATES[candidateIdx % CANDIDATES.length]
-    : null;
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  const currentMessage =
+    phase === "review" || phase === "pushed"
+      ? CANDIDATES[candidateIdx % CANDIDATES.length]
+      : null;
+
+  const startLoading = (advance: boolean) => {
+    setPhase("loading");
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      if (advance) setCandidateIdx((i) => (i + 1) % CANDIDATES.length);
+      setPhase("review");
+    }, 600);
+  };
 
   const handleGenerate = () => {
-    if (!hasGenerated) {
-      setHasGenerated(true);
-    } else {
-      setCandidateIdx((i) => (i + 1) % CANDIDATES.length);
-    }
+    if (phase === "loading") return;
+    startLoading(phase !== "idle");
   };
+
+  const handleAccept = () => setPhase("pushed");
+  const handleAbort = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPhase("idle");
+  };
+
+  const generateLabel =
+    phase === "loading"
+      ? "generating…"
+      : phase === "idle"
+        ? "generate commit message"
+        : "regenerate commit message";
 
   return (
     <CardShell
@@ -168,15 +200,27 @@ export default function LazygitCard() {
           <span className="rounded bg-white/10 px-2 py-1">ollama (local LLM)</span>
           <span className="text-white/30">→</span>
           <span className="rounded bg-emerald-500/15 px-2 py-1 text-emerald-300">
-            commit message draft
+            draft
           </span>
+          <span className="text-white/30">→</span>
+          <span className="rounded bg-white/10 px-2 py-1">$EDITOR review</span>
+          <span className="text-white/30">→</span>
+          <span className="rounded bg-white/10 px-2 py-1">git commit</span>
+          <span className="text-white/30">→</span>
+          <span className="rounded bg-white/10 px-2 py-1">git push*</span>
         </div>
+        <p className="font-mono text-[10px] text-white/35">
+          * auto-push after the editor closes — set{" "}
+          <span className="text-white/55">LAZYGIT_OLLAMA_NO_PUSH=1</span> to commit only
+        </p>
 
         <p className="text-xs leading-relaxed text-white/50">
-          The command is declared as a lazygit{" "}
-          <span className="font-mono">customCommands</span> entry with{" "}
-          <span className="font-mono">output: terminal</span>. The playground below
-          simulates the ollama call client-side — no model runs.
+          The script hands the draft to{" "}
+          <span className="font-mono">git commit --edit</span>, so you review and
+          tweak the message in $EDITOR before anything is committed — nothing
+          lands until you save. It then runs <span className="font-mono">git push</span>{" "}
+          by default; set <span className="font-mono">LAZYGIT_OLLAMA_NO_PUSH=1</span> for
+          commit-only.
         </p>
 
         <div className="space-y-3 rounded-lg border border-violet-500/20 bg-violet-500/[0.04] p-3">
@@ -200,11 +244,22 @@ export default function LazygitCard() {
               <button
                 type="button"
                 onClick={handleGenerate}
-                className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs text-emerald-200 transition-colors hover:bg-emerald-500/25"
+                disabled={phase === "loading"}
+                className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${
+                  phase === "loading"
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
+                    : "border-emerald-500/30 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25"
+                }`}
               >
-                {hasGenerated ? "regenerate commit message" : "generate commit message"}
+                {generateLabel}
               </button>
             </div>
+          </div>
+
+          <div className="font-mono text-[10px] text-white/35">
+            model=<span className="text-white/60">qwen2.5-coder:7b</span> · host=
+            <span className="text-white/60">localhost:11434</span> · output=
+            <span className="text-white/60">terminal</span>
           </div>
 
           <div className="space-y-1">
@@ -214,17 +269,58 @@ export default function LazygitCard() {
             <DiffPreview diff={SAMPLE_DIFF} />
           </div>
 
-          {currentMessage !== null && (
-            <div className="space-y-1">
-              <div className="font-mono text-[11px] text-white/45">
-                generated commit message · candidate{" "}
-                {(candidateIdx % CANDIDATES.length) + 1} / {CANDIDATES.length}
+          <div aria-live="polite" className="space-y-1">
+            {phase === "loading" && (
+              <div>
+                <div className="font-mono text-[11px] text-white/45">
+                  calling ollama…
+                </div>
+                <pre className="animate-pulse rounded-lg border border-violet-500/20 bg-violet-500/[0.07] p-3 font-mono text-xs text-violet-100">
+                  {LOADING_TEXT}
+                </pre>
               </div>
-              <pre className="overflow-x-auto rounded-lg border border-emerald-500/20 bg-emerald-500/[0.07] p-3 font-mono text-xs text-emerald-100">
-{currentMessage}
-              </pre>
-            </div>
-          )}
+            )}
+            {currentMessage !== null && (
+              <div className="space-y-1">
+                <div className="font-mono text-[11px] text-white/45">
+                  generated commit message · candidate{" "}
+                  {(candidateIdx % CANDIDATES.length) + 1} / {CANDIDATES.length}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-emerald-500/20">
+                  <div className="border-b border-white/10 bg-white/[0.05] px-3 py-1 font-mono text-[10px] text-white/45">
+                    -- EDIT DRAFT -- save:y abort:n --
+                  </div>
+                  <pre className="overflow-x-auto bg-emerald-500/[0.07] p-3 font-mono text-xs text-emerald-100">
+                    {currentMessage}
+                  </pre>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {phase === "review" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleAccept}
+                        className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs text-emerald-200 transition-colors hover:bg-emerald-500/25"
+                      >
+                        accept (save:y)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAbort}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-xs text-white/60 transition-colors hover:bg-white/10"
+                      >
+                        abort (abort:n)
+                      </button>
+                    </>
+                  ) : (
+                    <span className="rounded border border-emerald-500/20 bg-emerald-500/[0.07] px-2 py-1 font-mono text-[11px] text-emerald-200/80">
+                      ✓ accepted → git commit --edit → git push*
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">

@@ -18,6 +18,7 @@ mock.module("../../lib/useApi", () => ({
 }));
 
 const { default: LazygitCard } = await import("./LazygitCard");
+const { recolorSourceKind } = await import("./RecolorCard");
 const { default: GhosttyPaletteCard } = await import("./GhosttyPaletteCard");
 const { default: MiseCard } = await import("./MiseCard");
 const { default: PackagesCard } = await import("./PackagesCard");
@@ -169,5 +170,40 @@ describe("explorer card render parity", () => {
   it("fuzzy card is labeled simulated", () => {
     const html = render(FuzzyToolsCard);
     expect(html).toContain("SIMULATED");
+  });
+
+  it("recolor badge never claims LIVE while degraded (spec §5b/§6)", () => {
+    // A degraded /api/starship response must render a FALLBACK badge, not LIVE,
+    // so it never sits as "LIVE" above the "NOT a live render" banner.
+    expect(recolorSourceKind("prompt", true)).toBe("fallback");
+    expect(recolorSourceKind("prompt", false)).toBe("live");
+    // Custom/preset mode is always a client-side simulation.
+    expect(recolorSourceKind("custom", false)).toBe("simulated");
+  });
+});
+
+describe("hyprland geometry fidelity", () => {
+  it("keeps physical footprints flush (no phantom gap) and reports the physical bounding box", () => {
+    // Matches fallback/hypr-monitors.lua: DP-1 3840x2160@60 at 0x0, DP-2
+    // 2560x1440@240 at 3840x360 (flush after DP-1, vertically centered).
+    current = {
+      data: {
+        source: "live",
+        gdkScale: 1,
+        monitors: [
+          { output: "DP-1", mode: "3840x2160@60", position: "0x0", scale: 1.6 },
+          { output: "DP-2", mode: "2560x1440@240", position: "3840x360", scale: 1.25 },
+        ],
+      },
+      error: null,
+    };
+    const html = render(HyprlandCard);
+    // React SSR may split text at expression boundaries with "<!-- -->".
+    const text = html.replace(/<!--.*?-->/gs, "");
+    expect(text).toContain("DP-1");
+    expect(text).toContain("DP-2");
+    expect(text).toContain("PRIMARY");
+    // Physical union: maxX = 3840 + 2560 = 6400, maxY = max(2160, 360 + 1440) = 2160.
+    expect(text).toContain("bounding box 6400×2160 physical");
   });
 });

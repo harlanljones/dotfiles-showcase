@@ -35,8 +35,9 @@ jobs:
       # main: production deploy. Requires repo secrets
       #   CLOUDFLARE_API_TOKEN     (token with "Edit Cloudflare Workers" template)
       #   CLOUDFLARE_ACCOUNT_ID
+      # Skips gracefully when secrets are absent so pushes stay green.
       - name: Wrangler deploy (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
         run: bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

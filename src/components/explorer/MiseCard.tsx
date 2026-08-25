@@ -13,25 +13,25 @@ interface PinState {
   pin: string;
 }
 
-const ALT_VERSIONS: Record<string, string[]> = {
-  bun: ["1.2.0", "1.1.4", "1.0.27"],
-  node: ["22.11.0", "20.18.0", "18.20.4"],
-  python: ["3.13.0", "3.12.7", "3.11.10"],
-  go: ["1.23.2", "1.22.8"],
-  rust: ["1.82.0", "1.81.0"],
-  deno: ["2.1.0", "2.0.6"],
-  java: ["23.0.1", "21.0.5"],
-  ruby: ["3.3.5", "3.2.6"],
-};
+function isNumericVersion(served: string): boolean {
+  return /^\d+(\.\d+)*$/.test(served);
+}
 
-function alternatesFor(name: string, served: string): string[] {
-  const known = ALT_VERSIONS[name];
-  if (known) return known;
-  if (/^\d+(\.\d+)*$/.test(served)) {
-    const base = served.split(".")[0] ?? served;
-    return [`${base}.0.0`, `${base}.1.0`, served];
-  }
-  return ["1.0.0", "2.0.0", "0.1.0"];
+/**
+ * Hypothetical neighbours derived from the served numeric version. These are
+ * ILLUSTRATIVE — the card never claims mise would resolve them; resolve is
+ * simulated client-side. Returns an empty list for non-numeric ("latest")
+ * values: the card then shows no fabricated chips, only a free-text pin.
+ */
+function nearbyVersions(served: string): string[] {
+  if (!isNumericVersion(served)) return [];
+  const p = served.split(".").map(Number);
+  if (p.length === 1) return [served, `${p[0] + 1}.0.0`];
+  const next = [...p];
+  next[next.length - 1] = next[next.length - 1] + 1;
+  const prev = [...p];
+  prev[prev.length - 1] = Math.max(0, prev[prev.length - 1] - 1);
+  return Array.from(new Set([served, next.join("."), prev.join(".")]));
 }
 
 export default function MiseCard() {
@@ -57,7 +57,9 @@ export default function MiseCard() {
   function setMode(name: string, served: string, mode: PinMode) {
     const cur = stateOf(name, served);
     if (mode === "pinned") {
-      const pin = cur.pin || (alternatesFor(name, served)[0] ?? served);
+      // Never invent a version for a "latest" tool — leave the pin blank so the
+      // user types a real value; for a numeric served version default to it.
+      const pin = cur.pin || (served === "latest" ? "" : served);
       setPins((p) => ({ ...p, [name]: { mode: "pinned", pin } }));
     } else {
       setPins((p) => ({ ...p, [name]: { mode: "latest", pin: cur.pin } }));
@@ -75,7 +77,7 @@ export default function MiseCard() {
   return (
     <CardShell
       title="mise Toolchains"
-      blurb="One declarative config manages every runtime, pinned or latest — activated on cd via mise's shell hook. Flip a tool between latest and a pinned version to see what mise would resolve."
+      blurb="One declarative config manages every runtime, pinned or latest — activated on cd via mise's shell hook. The pin here is simulated client-side; it does not change your config."
       badges={data ? <SourceBadge source={data.source} /> : undefined}
     >
       <div className="space-y-3">
@@ -124,8 +126,8 @@ export default function MiseCard() {
                 <tbody>
                   {filtered.map(([name, served]) => {
                     const st = stateOf(name, served);
-                    const resolved = st.mode === "pinned" ? st.pin : "latest";
-                    const alts = alternatesFor(name, served);
+                    const resolved = st.mode === "pinned" ? st.pin || "—" : "latest";
+                    const alts = nearbyVersions(served);
                     const pinned = st.mode === "pinned";
                     return (
                       <tr key={name} className="border-b border-white/5 last:border-0">
@@ -150,16 +152,27 @@ export default function MiseCard() {
                             </button>
                             {pinned && (
                               <>
-                                {alts.map((v) => (
-                                  <button
-                                    key={v}
-                                    type="button"
-                                    onClick={() => setPin(name, v)}
-                                    className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${st.pin === v ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
-                                  >
-                                    {v}
-                                  </button>
-                                ))}
+                                {alts.length > 0 ? (
+                                  <>
+                                    <span className="font-mono text-[10px] text-white/40">
+                                      nearby versions (illustrative)
+                                    </span>
+                                    {alts.map((v) => (
+                                      <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => setPin(name, v)}
+                                        className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${st.pin === v ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
+                                      >
+                                        {v}
+                                      </button>
+                                    ))}
+                                  </>
+                                ) : (
+                                  <span className="font-mono text-[10px] text-white/40">
+                                    no pinned version recorded
+                                  </span>
+                                )}
                                 <input
                                   type="text"
                                   value={st.pin}
@@ -188,9 +201,10 @@ export default function MiseCard() {
             </div>
 
             <p className="text-xs leading-5 text-white/35">
-              Resolved version is what <code>mise activate</code> would set in the
-              shell. Pinning is simulated client-side — the real config lives in{" "}
-              <span className="font-mono">~/.config/mise/config.toml</span>.
+              Pin simulation is client-side only — the real config lives in{" "}
+              <span className="font-mono">~/.config/mise/config.toml</span>. The
+              card never claims a version mise would resolve; nearby-versions chips
+              are illustrative and not fetched from any registry.
             </p>
           </>
         )}

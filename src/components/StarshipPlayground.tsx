@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SourceBadge } from "./explorer/ui";
+
+export type ApiStatus = "idle" | "live" | "degraded" | "error";
 
 type ShellMode = "zsh" | "bash";
 type GitState = "none" | "rebase" | "merge";
@@ -14,6 +17,7 @@ interface State {
   shell: ShellMode;
   status: number;
   durationMs: number;
+  width: number;
 }
 
 const DEFAULT: State = {
@@ -27,22 +31,67 @@ const DEFAULT: State = {
   shell: "zsh",
   status: 0,
   durationMs: 0,
+  width: 200,
 };
 
-export default function StarshipPlayground() {
+type ScenarioState = Omit<State, "width" | "durationMs">;
+
+interface Scenario {
+  key: string;
+  label: string;
+  state: ScenarioState;
+  keepShell?: boolean;
+}
+
+const SCENARIOS: Scenario[] = [
+  { key: "clean-main", label: "clean main", state: { branch: "main", dirty: false, ahead: 0, behind: 0, detached: false, state: "none", ssh: false, shell: "zsh", status: 0 } },
+  { key: "dirty-feature", label: "dirty feature work", state: { branch: "feat/ghostty-palette", dirty: true, ahead: 0, behind: 0, detached: false, state: "none", ssh: false, shell: "zsh", status: 1 } },
+  { key: "rebase-wrong", label: "rebase gone wrong", state: { branch: "main", dirty: true, ahead: 0, behind: 0, detached: false, state: "rebase", ssh: false, shell: "zsh", status: 1 }, keepShell: true },
+  { key: "diverged", label: "diverged", state: { branch: "main", dirty: false, ahead: 3, behind: 5, detached: false, state: "none", ssh: false, shell: "zsh", status: 1 } },
+  { key: "ssh-hotfix", label: "SSH detached hotfix", state: { branch: "hotfix/ssh", dirty: false, ahead: 0, behind: 0, detached: true, state: "none", ssh: true, shell: "zsh", status: 1 } },
+];
+
+type RenderResponse = {
+  error?: string;
+  ansi?: string;
+  html?: string;
+  rawAnsi?: string;
+  rawHtml?: string;
+  spans?: Array<{ recolored?: boolean; reason?: string; [k: string]: unknown }>;
+  theme?: { background?: string; foreground?: string; source?: "live" | "fallback" };
+  warnings?: string[];
+  degraded?: boolean;
+};
+
+export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcome?: (status: ApiStatus) => void }) {
   const [s, setS] = useState<State>(DEFAULT);
   const [html, setHtml] = useState("");
+  const [rawHtml, setRawHtml] = useState("");
+  const [ansi, setAnsi] = useState("");
+  const [rawAnsi, setRawAnsi] = useState("");
+  const [recoloredCount, setRecoloredCount] = useState(0);
   const [theme, setTheme] = useState({ background: "#060912", foreground: "#959aa4" });
+  const [themeSource, setThemeSource] = useState<"live" | "fallback">("live");
   const [warnings, setWarnings] = useState<string[]>([]);
   const [degraded, setDegraded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [view, setView] = useState<"after" | "before">("after");
+  const [copied, setCopied] = useState(false);
+  const [scenarioKey, setScenarioKey] = useState("clean-main");
+
+  const onRenderOutcomeRef = useRef(onRenderOutcome);
+  onRenderOutcomeRef.current = onRenderOutcome;
 
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     setLoading(true);
     setError(null);
+    setLatencyMs(null);
+    onRenderOutcomeRef.current?.("idle");
+    const started = performance.now();
     const timer = window.setTimeout(() => fetch("/api/starship", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,29 +99,35 @@ export default function StarshipPlayground() {
       signal: controller.signal,
     })
       .then(async (r) => {
-        const data = (await r.json()) as {
-          error?: string;
-          html?: string;
-          theme?: { background: string; foreground: string };
-          warnings?: string[];
-          degraded?: boolean;
-        };
+        const data = (await r.json()) as RenderResponse;
         if (!r.ok) throw new Error(data.error ?? `Render failed (${r.status})`);
         return data;
       })
       .then((data) => {
         if (cancelled) return;
+        const ms = Math.round(performance.now() - started);
         if (data.error) setError(data.error);
         else {
           setHtml(data.html ?? "");
+          setRawHtml(data.rawHtml ?? data.html ?? "");
+          setAnsi(data.ansi ?? "");
+          setRawAnsi(data.rawAnsi ?? data.ansi ?? "");
+          setRecoloredCount(Array.isArray(data.spans) ? data.spans.filter((sp) => sp.recolored).length : 0);
           if (data.theme?.background) {
-            setTheme({ background: data.theme.background, foreground: data.theme.foreground });
+            setTheme((prev) => ({ background: data.theme!.background as string, foreground: data.theme!.foreground || prev.foreground }));
           }
+          if (data.theme?.source) setThemeSource(data.theme.source);
           setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
           setDegraded(!!data.degraded);
+          setLatencyMs(ms);
+          onRenderOutcomeRef.current?.(data.degraded ? "degraded" : "live");
         }
       })
-      .catch((e) => !cancelled && e.name !== "AbortError" && setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => {
+        if (cancelled || e.name === "AbortError") return;
+        setError(e instanceof Error ? e.message : String(e));
+        onRenderOutcomeRef.current?.("error");
+      })
       .finally(() => !cancelled && setLoading(false)), 180);
     return () => {
       cancelled = true;
@@ -81,12 +136,58 @@ export default function StarshipPlayground() {
     };
   }, [s]);
 
-  const set = <K extends keyof State>(k: K, v: State[K]) =>
+  const set = <K extends keyof State>(k: K, v: State[K]) => {
+    setScenarioKey("");
     setS((prev) => ({ ...prev, [k]: v }));
+  };
+
+  const applyScenario = (sc: Scenario) => {
+    setScenarioKey(sc.key);
+    setS((prev) => ({
+      ...prev,
+      ...sc.state,
+      width: prev.width,
+      durationMs: prev.durationMs,
+      shell: sc.keepShell ? prev.shell : sc.state.shell,
+    }));
+  };
+
+  const copyAnsi = async () => {
+    const target = view === "before" ? rawAnsi : ansi;
+    if (target && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(target);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      } catch {
+        /* clipboard unavailable — ignore */
+      }
+    }
+  };
+
+  const narrowPreview = s.width <= 140;
+  const hasRecolor = s.status !== 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr]">
       <div className="control-panel space-y-5 rounded-2xl border border-white/10 bg-white/[.045] p-5">
+        <div className="space-y-2">
+          <p className="section-eyebrow">scenarios</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Scenario presets">
+            {SCENARIOS.map((sc) => (
+              <button
+                key={sc.key}
+                type="button"
+                aria-pressed={scenarioKey === sc.key}
+                onClick={() => applyScenario(sc)}
+                className={`rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors ${scenarioKey === sc.key ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
+              >
+                {sc.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex items-start justify-between gap-4"><div><p className="section-eyebrow">shell state</p><h2 className="mt-1 font-semibold">Tune the scene</h2></div><span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 font-mono text-[10px] text-cyan-200">8-COLOR</span></div>
         <p className="text-xs leading-5 text-white/45">Every change renders against an isolated temporary Git repo.</p>
 
@@ -136,6 +237,24 @@ export default function StarshipPlayground() {
           </select>
         </label>
 
+        <label className="block text-sm">
+          <span className="text-white/60">Terminal width</span>
+          <input
+            type="range"
+            min={60}
+            max={200}
+            step={10}
+            aria-label="Terminal width"
+            value={s.width}
+            onChange={(e) => set("width", Number(e.target.value))}
+            className="mt-1 w-full accent-cyan-300"
+          />
+          <span className="mt-1 block text-xs leading-4 text-white/35">
+            Drives <code>--terminal-width</code>, which squeezes the directory via{" "}
+            <code>truncation_length = 2</code>. Narrow widths truncate the path.
+          </span>
+        </label>
+
         <fieldset className="text-sm"><legend className="mb-2 text-white/60">Last command result</legend>
           <div className="mt-1 flex gap-2">
             <button
@@ -173,18 +292,58 @@ export default function StarshipPlayground() {
           style={{ background: theme.background, color: theme.foreground }}
         >
           <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-3 text-xs text-white/40">
-            <span className="flex items-center gap-2"><span className="terminal-dot" /> live terminal preview — your ghostty theme</span>
-            <span aria-live="polite" className={loading ? "text-cyan-200" : ""}>{loading ? "rendering…" : "ready"}</span>
+            <span className="flex items-center gap-2"><span className="terminal-dot" /> live terminal preview — your ghostty theme <SourceBadge source={themeSource} /></span>
+            <span aria-live="polite" className={loading ? "text-cyan-200" : ""}>{loading ? "rendering…" : latencyMs != null ? `ready · ${latencyMs} ms` : "ready"}</span>
           </div>
+
+          {hasRecolor && (
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-white/60">
+                {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
+              </span>
+              <span className="flex overflow-hidden rounded border border-white/15" role="group" aria-label="Preview recolor state">
+                <button
+                  type="button"
+                  aria-pressed={view === "after"}
+                  onClick={() => setView("after")}
+                  className={`px-2 py-0.5 font-mono transition-colors ${view === "after" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:bg-white/5"}`}
+                >
+                  after
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={view === "before"}
+                  onClick={() => setView("before")}
+                  className={`px-2 py-0.5 font-mono transition-colors ${view === "before" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:bg-white/5"}`}
+                >
+                  before
+                </button>
+              </span>
+              <button
+                type="button"
+                onClick={copyAnsi}
+                className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-white/60 transition-colors hover:bg-white/10"
+              >
+                {copied ? "copied" : "copy ANSI"}
+              </button>
+            </div>
+          )}
+
           <pre
             aria-label="Rendered Starship prompt" aria-busy={loading}
-            className="font-mono-nerd min-h-8 whitespace-pre-wrap break-words text-sm leading-relaxed"
+            className={`font-mono-nerd min-h-8 text-sm leading-relaxed ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
             style={{ color: theme.foreground }}
-            dangerouslySetInnerHTML={{ __html: html || "" }}
+            dangerouslySetInnerHTML={{ __html: view === "before" ? rawHtml : html }}
           />
         </div>
         {error && (
-          <div role="alert" className="rounded-xl border border-red-300/20 bg-red-900/30 p-3 text-sm text-red-200"><p>{error}</p><button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>Retry render</button></div>
+          <div role="alert" className="rounded-xl border border-red-300/20 bg-red-900/30 p-3 text-sm text-red-200">
+            <div className="flex items-start justify-between gap-3">
+              <p>{error}</p>
+              <span className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/45">stale — last good render</span>
+            </div>
+            <button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>Retry render</button>
+          </div>
         )}
         {degraded && !error && (
           <p role="status" className="rounded-xl border border-amber-300/30 bg-amber-900/30 p-3 text-xs font-medium text-amber-200">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { CardShell, SourceBadge } from "./ui";
+import { CardShell, SourceBadge, ToggleGroup, Notice, type SourceKind } from "./ui";
+import { postJson } from "../../lib/useApi";
 import type { SgrSpan } from "../../../server/lib/recolor";
 
 type ShellMode = "zsh" | "bash";
@@ -60,6 +61,10 @@ function escapeLabel(s: string): string {
   return s.replace("\x1b", "ESC").replace(/\x1b/g, "ESC");
 }
 
+export function recolorSourceKind(mode: "prompt" | "custom", degraded: boolean): SourceKind {
+  return mode === "prompt" ? (degraded ? "fallback" : "live") : "simulated";
+}
+
 export default function RecolorCard() {
   const [shell, setShell] = useState<ShellMode>("zsh");
   const [mode, setMode] = useState<PlaygroundMode>("prompt");
@@ -84,17 +89,14 @@ export default function RecolorCard() {
     setLoading(true);
     setError(null);
     const timer = window.setTimeout(() => {
-      fetch("/api/starship", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branch: "main", dirty, ahead, ssh, status, shell }),
-        signal: controller.signal,
+      postJson<StarshipResult>("/api/starship", {
+        branch: "main",
+        dirty,
+        ahead,
+        ssh,
+        status,
+        shell,
       })
-        .then(async (r) => {
-          const data = (await r.json()) as StarshipResult & { error?: string };
-          if (!r.ok) throw new Error((data as { error?: string }).error ?? `Render failed (${r.status})`);
-          return data as StarshipResult;
-        })
         .then((data) => {
           if (cancelled) return;
           setPromptResult(data);
@@ -124,17 +126,11 @@ export default function RecolorCard() {
     setLoading(true);
     setError(null);
     const timer = window.setTimeout(() => {
-      fetch("/api/recolor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: customInput, shell, status }),
-        signal: controller.signal,
+      postJson<RecolorResult>("/api/recolor", {
+        input: customInput,
+        shell,
+        status,
       })
-        .then(async (r) => {
-          const data = (await r.json()) as RecolorResult & { error?: string };
-          if (!r.ok) throw new Error((data as { error?: string }).error ?? `Recolor failed (${r.status})`);
-          return data as RecolorResult;
-        })
         .then((data) => {
           if (cancelled) return;
           setCustomResult(data);
@@ -162,7 +158,11 @@ export default function RecolorCard() {
   const spans: SgrSpan[] = (mode === "prompt" ? promptResult?.spans : customResult?.spans) ?? [];
   const themeBg = active?.theme.background ?? "#060912";
   const themeFg = active?.theme.foreground ?? "#959aa4";
+  const themeSource = active?.theme.source;
   const recoloredCount = spans.filter((s) => s.recolored).length;
+  const rawBytes = escapeLabel(customInput);
+  const preClass = "overflow-x-auto rounded-lg border border-white/10 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic";
+  const preStyle = { background: themeBg, color: themeFg };
 
   return (
     <CardShell
@@ -170,7 +170,7 @@ export default function RecolorCard() {
       blurb="On non-zero exit the shell rewrites the prompt's colors before drawing. Flip shell and input to see what each wrapper really matches."
       badges={
         <div className="flex gap-1.5">
-          {mode === "prompt" ? <SourceBadge source="live" /> : <SourceBadge source="simulated" />}
+          {mode === "prompt" ? <SourceBadge source={recolorSourceKind(mode, promptResult?.degraded ?? false)} /> : <SourceBadge source="simulated" />}
           <span className="rounded border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-cyan-200">8-COLOR</span>
         </div>
       }
@@ -178,28 +178,22 @@ export default function RecolorCard() {
       <div className="space-y-4">
         {/* Shell + mode toggles */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-white/15">
-            {(["zsh", "bash"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setShell(s)}
-                className={`px-3 py-1.5 font-mono text-xs transition-colors ${shell === s ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
-              >
-                {s === "zsh" ? "zsh (cyan only)" : "bash (all → red)"}
-              </button>
-            ))}
-          </div>
-          <div className="flex overflow-hidden rounded-lg border border-white/15">
-            {(["prompt", "custom"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`px-3 py-1.5 font-mono text-xs transition-colors ${mode === m ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
-              >
-                {m === "prompt" ? "real prompt" : "custom escapes"}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            value={shell}
+            onChange={(v) => setShell(v as ShellMode)}
+            options={[
+              { value: "zsh", label: "zsh (cyan only)" },
+              { value: "bash", label: "bash (all → red)" },
+            ]}
+          />
+          <ToggleGroup
+            value={mode}
+            onChange={(v) => setMode(v as PlaygroundMode)}
+            options={[
+              { value: "prompt", label: "real prompt" },
+              { value: "custom", label: "custom escapes" },
+            ]}
+          />
           <div className="flex overflow-hidden rounded-lg border border-white/15">
             <button
               onClick={() => setStatus(0)}
@@ -279,7 +273,7 @@ export default function RecolorCard() {
                 placeholder="e.g. \x1b[36mhello\x1b[0m"
               />
             </label>
-            <p className="font-mono text-[11px] text-white/35">Raw bytes: {escapeLabel(customInput).slice(0, 120)}{customInput.length > 40 ? "…" : ""} · {customInput.length} chars</p>
+            <p className="font-mono text-[11px] text-white/35">Raw bytes: {rawBytes.slice(0, 120)}{rawBytes.length > 120 ? "…" : ""} · {customInput.length} chars</p>
           </div>
         )}
 
@@ -291,36 +285,37 @@ export default function RecolorCard() {
 
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
         {mode === "prompt" && promptResult?.degraded && !error && (
-          <p role="status" className="rounded-lg border border-amber-300/30 bg-amber-900/30 px-3 py-2 font-mono text-xs font-medium text-amber-200">
-            ⚠ Degraded snapshot — no starship binary on this deployment. NOT a live render; run `bun run dev` locally.
-          </p>
+          <Notice tone="warning">⚠ Degraded snapshot — no starship binary on this deployment. NOT a live render; run `bun run dev` locally.</Notice>
         )}
         {warnings.map((w) => (
-          <p key={w} className="rounded-lg border border-amber-300/20 bg-amber-900/25 px-3 py-2 font-mono text-xs text-amber-200">
-            {w}
-          </p>
+          <Notice key={w} tone="warning">{w}</Notice>
         ))}
 
         {/* Before / After panes */}
         {active && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <div className="font-mono text-xs text-white/50">Before (status {status === 0 ? "0 — no recolor" : "1 — pre-recolor"})</div>
-              <pre
-                className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
-                style={{ background: themeBg, color: themeFg }}
-                dangerouslySetInnerHTML={{ __html: htmlBefore || "<span class='text-white/30'>empty</span>" }}
-              />
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <div className="font-mono text-xs text-white/50">Before (status {status === 0 ? "0 — no recolor" : "1 — pre-recolor"})</div>
+                {htmlBefore ? (
+                  <pre className={preClass} style={preStyle} dangerouslySetInnerHTML={{ __html: htmlBefore }} />
+                ) : (
+                  <pre className={preClass} style={preStyle}><span className="text-white/30">empty</span></pre>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <div className="font-mono text-xs text-white/50">After — {shell} recolor {recoloredCount === 0 ? "(no change)" : `(${recoloredCount} escape${recoloredCount === 1 ? "" : "s"} recolored)`}</div>
+                {htmlAfter ? (
+                  <pre className={preClass} style={preStyle} dangerouslySetInnerHTML={{ __html: htmlAfter }} />
+                ) : (
+                  <pre className={preClass} style={preStyle}><span className="text-white/30">empty</span></pre>
+                )}
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <div className="font-mono text-xs text-white/50">After — {shell} recolor {recoloredCount === 0 ? "(no change)" : `(${recoloredCount} escape${recoloredCount === 1 ? "" : "s"} recolored)`}</div>
-              <pre
-                className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
-                style={{ background: themeBg, color: themeFg }}
-                dangerouslySetInnerHTML={{ __html: htmlAfter || "<span class='text-white/30'>empty</span>" }}
-              />
-            </div>
-          </div>
+            <p className="font-mono text-[11px] text-white/35">
+              {themeSource === "fallback" ? "theme from bundled snapshot" : "theme from live host"}
+            </p>
+          </>
         )}
 
         {/* Escape ledger */}

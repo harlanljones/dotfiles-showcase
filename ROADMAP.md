@@ -98,7 +98,8 @@ by the early tasks noted. Do not treat TBD as zero.
 | Typecheck clean | clean (M1–M5) | `tsc --noEmit` exits 0 | `bun run typecheck` | M1 owner | per merge |
 | Unit test pass rate | 53/53 (M4) | 100% of recolor/ansi/starship/configs tests pass | `bun test` | M2/M3 owners | per merge |
 | Starship render latency (server) | p50 ≈ 61 ms, p95 ≈ 73 ms (10 renders, incl. temp-repo build; re-measured DEPLOY-08) | **p95 < 500 ms** (proposed, accepted DG-4) | server timing via curl wall-clock | M3 owner | per merge |
-| Workers degraded render latency (edge) | p50 ≈ 6 ms, p95 ≈ 15 ms (local workerd, 8 renders, DEPLOY-08) | informational — no binary on edge | curl wall-clock vs `wrangler dev` | DEPLOY-08 owner | per merge |
+| Workers degraded render latency (edge) | local workerd: p50 ≈ 6 ms, p95 ≈ 15 ms; **live deploy**: p50 ≈ 88 ms, p95 ≈ 150 ms incl. network RTT (8 renders, DEPLOY-08) | informational — no binary on edge | curl wall-clock vs `wrangler dev` + deployed workers.dev URL | DEPLOY-08 owner | per merge |
+| Workers deployment | `https://dotfiles-showcase.harlanljones.workers.dev` (version b835f72f) | health + degraded starship + cards + SPA smoke green | curl against deployed URL | DEPLOY-08 owner | per deploy |
 | Recolor correctness (8-color + truecolor) | golden tests green | both shell modes transform expected escapes; golden-file match | unit + behavioral tests | M2/M3 owner | per merge |
 | Git-state sim parity vs real repos | behavioral goldens green (v1.26.0 pinned) | output matches real `starship` output per state | behavioral diff vs binary | M3 owner | per merge |
 | Live-config fallback coverage | exercised: brew live-miss → fallback (Linux host); all others live | all live reads have a fallback path | code review + test | M4 owner | per milestone |
