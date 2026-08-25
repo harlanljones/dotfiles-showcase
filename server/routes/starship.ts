@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { readConfig } from "../lib/configs";
-import { applyFailureColor, type ShellMode } from "../lib/recolor";
+import { applyFailureColor, explainRecolor, type SgrSpan, type ShellMode } from "../lib/recolor";
 import { ansiToHtml } from "../lib/ansi";
 import { loadGhosttyTheme } from "../lib/theme";
 import { buildTempRepo, type PromptState } from "../lib/tempRepo";
@@ -27,6 +27,9 @@ function servedConfigPath(): string {
 export interface RenderResult {
   ansi: string;
   html: string;
+  rawAnsi?: string;
+  rawHtml?: string;
+  spans?: SgrSpan[];
   state: PromptState;
   theme: { background: string; foreground: string; source: "live" | "fallback" };
   /** Non-fatal degradations the UI should surface (e.g. missing shell binary). */
@@ -118,9 +121,15 @@ export function renderStarship(input: PromptState): RenderResult {
       shell,
     });
     const theme = loadGhosttyTheme();
+    const rawHtml = ansiToHtml(ansi, { palette: theme.palette });
+    const html = ansiToHtml(recolored, { palette: theme.palette });
+    const spans = state.status !== 0 ? explainRecolor(ansi, shell).spans : [];
     return {
       ansi: recolored,
-      html: ansiToHtml(recolored, { palette: theme.palette }),
+      html,
+      rawAnsi: ansi,
+      rawHtml,
+      spans,
       state,
       theme: {
         background: theme.background,

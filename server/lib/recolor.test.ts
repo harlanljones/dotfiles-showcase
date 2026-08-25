@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyFailureColor, recolor } from "./recolor";
+import { applyFailureColor, explainRecolor, recolor } from "./recolor";
 
 const ESC = "\x1b[";
 
@@ -57,5 +57,67 @@ describe("applyFailureColor", () => {
     expect(applyFailureColor(`${ESC}32mhi`, { status: 1, shell: "bash" })).toBe(
       `${ESC}31mhi`,
     );
+  });
+});
+
+describe("explainRecolor — ledger matches recolor()", () => {
+  const corpus = [
+    `${ESC}36mhi`,
+    `${ESC}1;36mhi`,
+    `${ESC}4;36mhi`,
+    `${ESC}32mhi`,
+    `${ESC}1;32mhi`,
+    `${ESC}90mhi`,
+    `${ESC}42mhi`,
+    `${ESC}0mhi`,
+    `${ESC}1;2;3;36mhi`,
+    `${ESC}38;2;12;34;56mhi`,
+    `${ESC}38;5;36mhi`,
+    `${ESC}38;2;1;2;33mhi`,
+    `${ESC}36ma${ESC}0m ${ESC}1;36mb`,
+    `${ESC}30m30 ${ESC}32m32 ${ESC}36m36`,
+  ];
+  for (const input of corpus) {
+    for (const shell of ["zsh", "bash"] as const) {
+      test(`ledger output equals recolor(${JSON.stringify(input)}, ${shell})`, () => {
+        expect(explainRecolor(input, shell).output).toBe(recolor(input, shell));
+      });
+    }
+  }
+
+  test("zsh leaves 4;36m untouched with prefix-not-in-list reason", () => {
+    const { spans } = explainRecolor(`${ESC}4;36mhi`, "zsh");
+    expect(spans[0].recolored).toBe(false);
+    expect(spans[0].reason).toBe("untouched:prefix-not-in-zsh-list");
+  });
+
+  test("bash recolors 4;36m", () => {
+    const { spans } = explainRecolor(`${ESC}4;36mhi`, "bash");
+    expect(spans[0].recolored).toBe(true);
+    expect(spans[0].reason).toBe("bash:fg-to-red");
+    expect(spans[0].after).toBe(`${ESC}4;31m`);
+  });
+
+  test("truecolor 38;2;12;34;56m untouched in both shells", () => {
+    for (const shell of ["zsh", "bash"] as const) {
+      const { spans } = explainRecolor(`${ESC}38;2;12;34;56mhi`, shell);
+      expect(spans[0].recolored).toBe(false);
+      expect(spans[0].reason).toBe("untouched:truecolor-tail");
+    }
+  });
+
+  test("bash tail-matches 38;5;36m (256-color) to 38;5;31m", () => {
+    const zsh = explainRecolor(`${ESC}38;5;36mhi`, "zsh");
+    expect(zsh.spans[0].recolored).toBe(false);
+    const bash = explainRecolor(`${ESC}38;5;36mhi`, "bash");
+    expect(bash.spans[0].recolored).toBe(true);
+    expect(bash.spans[0].reason).toBe("bash:tail-256");
+    expect(bash.output).toBe(`${ESC}38;5;31mhi`);
+  });
+
+  test("bash tail-matches 38;2;1;2;33m to 38;2;1;2;31m", () => {
+    const bash = explainRecolor(`${ESC}38;2;1;2;33mhi`, "bash");
+    expect(bash.spans[0].recolored).toBe(true);
+    expect(bash.spans[0].reason).toBe("bash:tail-truecolor");
   });
 });

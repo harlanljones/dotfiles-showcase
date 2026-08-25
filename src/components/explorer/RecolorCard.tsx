@@ -1,81 +1,363 @@
-import { useState } from "react";
-import { postJson } from "../../lib/useApi";
-import { CardShell, SourceBadge, Term } from "./ui";
-
-interface RenderResult {
-  ansi: string;
-  html: string;
-}
+import { useEffect, useState } from "react";
+import { CardShell, SourceBadge } from "./ui";
+import type { SgrSpan } from "../../../server/lib/recolor";
 
 type ShellMode = "zsh" | "bash";
+type PlaygroundMode = "prompt" | "custom";
+
+interface StarshipResult {
+  ansi: string;
+  html: string;
+  rawAnsi: string;
+  rawHtml: string;
+  spans: SgrSpan[];
+  theme: { background: string; foreground: string; source: "live" | "fallback" };
+  warnings?: string[];
+}
+
+interface RecolorResult {
+  input: string;
+  output: string;
+  htmlBefore: string;
+  htmlAfter: string;
+  spans: SgrSpan[];
+  shell: ShellMode;
+  status: number;
+  theme: { background: string; foreground: string; source: "live" | "fallback" };
+}
+
+const CUSTOM_PRESETS: Array<{ label: string; value: string }> = [
+  { label: "Cyan 36m", value: "\x1b[36mhello\x1b[0m" },
+  { label: "Bold cyan 1;36m", value: "\x1b[1;36mhello\x1b[0m" },
+  { label: "Italic cyan 3;36m", value: "\x1b[3;36mhello\x1b[0m" },
+  { label: "Underline cyan 4;36m — diverges (zsh×, bash✓)", value: "\x1b[4;36munderline cyan\x1b[0m" },
+  { label: "Green 32m — bash only", value: "\x1b[32mgreen\x1b[0m" },
+  { label: "Blue 34m — bash only", value: "\x1b[34mblue\x1b[0m" },
+  { label: "All FG rainbow", value: "\x1b[30m30 \x1b[32m32 \x1b[33m33 \x1b[34m34 \x1b[35m35 \x1b[36m36 \x1b[37m37 \x1b[90m90 \x1b[92m92 \x1b[96m96\x1b[0m" },
+  { label: "Truecolor 38;2;80;130;150m — untouched", value: "\x1b[38;2;80;130;150mtruecolor\x1b[0m" },
+  { label: "256-color 38;5;36m — bash tails", value: "\x1b[38;5;36m256-color\x1b[0m" },
+  { label: "Mixed cyan + truecolor", value: "\x1b[36mcyan\x1b[0m \x1b[38;2;80;130;150mtruecolor\x1b[0m \x1b[1;32mgreen\x1b[0m" },
+];
+
+function reasonLabel(r: SgrSpan["reason"]): { text: string; tone: string } {
+  switch (r) {
+    case "zsh:cyan-variant": return { text: "zsh cyan → red", tone: "text-emerald-300" };
+    case "bash:fg-to-red": return { text: "bash fg → red", tone: "text-emerald-300" };
+    case "bash:tail-256": return { text: "bash tails 256-color → red", tone: "text-amber-300" };
+    case "bash:tail-truecolor": return { text: "bash tails truecolor → red", tone: "text-amber-300" };
+    case "untouched:not-cyan": return { text: "not cyan (zsh×)", tone: "text-white/40" };
+    case "untouched:prefix-not-in-zsh-list": return { text: "prefix not in zsh 8 (zsh×)", tone: "text-white/40" };
+    case "untouched:truecolor-tail": return { text: "truecolor — known gap (×)", tone: "text-white/35" };
+    case "untouched:256color-tail": return { text: "256-color — not recolored", tone: "text-white/35" };
+    case "untouched:no-fg-code": return { text: "no fg code", tone: "text-white/30" };
+    case "untouched:non-sgr": return { text: "non-SGR", tone: "text-white/30" };
+    default: return { text: r, tone: "text-white/40" };
+  }
+}
+
+function escapeLabel(s: string): string {
+  return s.replace("\x1b", "ESC").replace(/\x1b/g, "ESC");
+}
 
 export default function RecolorCard() {
   const [shell, setShell] = useState<ShellMode>("zsh");
-  const [result, setResult] = useState<RenderResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<PlaygroundMode>("prompt");
+  const [dirty, setDirty] = useState(false);
+  const [ssh, setSsh] = useState(false);
+  const [ahead, setAhead] = useState(0);
+  const [status, setStatus] = useState(1);
+  const [customInput, setCustomInput] = useState(CUSTOM_PRESETS[0].value);
+  const [presetLabel, setPresetLabel] = useState(CUSTOM_PRESETS[0].label);
 
-  async function run() {
+  const [promptResult, setPromptResult] = useState<StarshipResult | null>(null);
+  const [customResult, setCustomResult] = useState<RecolorResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  // Prompt mode: fetch real starship render with raw + recolored
+  useEffect(() => {
+    if (mode !== "prompt") return;
+    let cancelled = false;
+    const controller = new AbortController();
+    setLoading(true);
     setError(null);
-    try {
-      setResult(
-        await postJson<RenderResult>("/api/starship", {
-          branch: "main",
-          status: 1,
-          shell,
-        }),
-      );
-    } catch (e) {
-      setError(String(e instanceof Error ? e.message : e));
-    }
-  }
+    const timer = window.setTimeout(() => {
+      fetch("/api/starship", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch: "main", dirty, ahead, ssh, status, shell }),
+        signal: controller.signal,
+      })
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error ?? `Render failed (${r.status})`);
+          return data as StarshipResult;
+        })
+        .then((data) => {
+          if (cancelled) return;
+          setPromptResult(data);
+          setWarnings(data.warnings ?? []);
+          setCustomResult(null);
+        })
+        .catch((e) => {
+          if (cancelled || e.name === "AbortError") return;
+          setError(e instanceof Error ? e.message : String(e));
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 180);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [mode, shell, dirty, ssh, ahead, status]);
+
+  // Custom mode: call /api/recolor
+  useEffect(() => {
+    if (mode !== "custom") return;
+    let cancelled = false;
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    const timer = window.setTimeout(() => {
+      fetch("/api/recolor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: customInput, shell, status }),
+        signal: controller.signal,
+      })
+        .then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error ?? `Recolor failed (${r.status})`);
+          return data as RecolorResult;
+        })
+        .then((data) => {
+          if (cancelled) return;
+          setCustomResult(data);
+          setPromptResult(null);
+          setWarnings([]);
+        })
+        .catch((e) => {
+          if (cancelled || e.name === "AbortError") return;
+          setError(e instanceof Error ? e.message : String(e));
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 180);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [mode, shell, customInput, status]);
+
+  const active = mode === "prompt" ? promptResult : customResult;
+  const htmlBefore = mode === "prompt" ? promptResult?.rawHtml ?? "" : customResult?.htmlBefore ?? "";
+  const htmlAfter = mode === "prompt" ? promptResult?.html ?? "" : customResult?.htmlAfter ?? "";
+  const spans: SgrSpan[] = (mode === "prompt" ? promptResult?.spans : customResult?.spans) ?? [];
+  const themeBg = active?.theme.background ?? "#060912";
+  const themeFg = active?.theme.foreground ?? "#959aa4";
+  const recoloredCount = spans.filter((s) => s.recolored).length;
 
   return (
     <CardShell
       title="Failure Recolor"
-      blurb="On a non-zero exit, the shell rewrites the prompt's colors before drawing. The two shells disagree — run it to see."
-      badges={<SourceBadge source="live" />}
+      blurb="On non-zero exit the shell rewrites the prompt's colors before drawing. Flip shell and input to see what each wrapper really matches."
+      badges={
+        <div className="flex gap-1.5">
+          {mode === "prompt" ? <SourceBadge source="live" /> : <SourceBadge source="simulated" />}
+          <span className="rounded border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-cyan-200">8-COLOR</span>
+        </div>
+      }
     >
       <div className="space-y-4">
+        {/* Shell + mode toggles */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex overflow-hidden rounded-lg border border-white/15">
             {(["zsh", "bash"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setShell(s)}
-                className={`px-3 py-1.5 font-mono text-xs transition-colors ${
-                  shell === s ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"
-                }`}
+                className={`px-3 py-1.5 font-mono text-xs transition-colors ${shell === s ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
               >
                 {s === "zsh" ? "zsh (cyan only)" : "bash (all → red)"}
               </button>
             ))}
           </div>
-          <button
-            onClick={run}
-            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs text-emerald-300 transition-colors hover:bg-emerald-500/20"
-          >
-            render status=1
-          </button>
+          <div className="flex overflow-hidden rounded-lg border border-white/15">
+            {(["prompt", "custom"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`px-3 py-1.5 font-mono text-xs transition-colors ${mode === m ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
+              >
+                {m === "prompt" ? "real prompt" : "custom escapes"}
+              </button>
+            ))}
+          </div>
+          <div className="flex overflow-hidden rounded-lg border border-white/15">
+            <button
+              onClick={() => setStatus(0)}
+              aria-pressed={status === 0}
+              className={`px-3 py-1.5 font-mono text-xs transition-colors ${status === 0 ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
+            >
+              status 0 (no-op)
+            </button>
+            <button
+              onClick={() => setStatus(1)}
+              aria-pressed={status === 1}
+              className={`px-3 py-1.5 font-mono text-xs transition-colors ${status === 1 ? "bg-red-500/20 text-red-300" : "text-white/50 hover:bg-white/5"}`}
+            >
+              status 1 (recolor)
+            </button>
+          </div>
+          {loading && <span className="font-mono text-xs text-cyan-200">rendering…</span>}
         </div>
 
+        {/* Mode-specific controls */}
+        {mode === "prompt" ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDirty((v) => !v)}
+              aria-pressed={dirty}
+              className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${dirty ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10"}`}
+            >
+              Dirty
+            </button>
+            <button
+              type="button"
+              onClick={() => setSsh((v) => !v)}
+              aria-pressed={ssh}
+              className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${ssh ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10"}`}
+            >
+              SSH
+            </button>
+            <label className="flex items-center gap-2 font-mono text-xs text-white/60">
+              Ahead
+              <input
+                type="number"
+                min={0}
+                max={9}
+                value={ahead}
+                onChange={(e) => setAhead(Math.max(0, Math.min(9, Number(e.target.value))))}
+                className="w-16 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-xs text-white outline-none focus:border-cyan-300/50"
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {CUSTOM_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => {
+                    setPresetLabel(p.label);
+                    setCustomInput(p.value);
+                  }}
+                  className={`rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors ${presetLabel === p.label ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <label className="block">
+              <span className="font-mono text-xs text-white/50">ANSI input (ESC sequences — paste or pick a preset)</span>
+              <textarea
+                value={customInput}
+                onChange={(e) => {
+                  setPresetLabel("");
+                  setCustomInput(e.target.value);
+                }}
+                rows={2}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs text-white outline-none focus:border-cyan-300/50"
+                placeholder="e.g. \x1b[36mhello\x1b[0m"
+              />
+            </label>
+            <p className="font-mono text-[11px] text-white/35">Raw bytes: {escapeLabel(customInput).slice(0, 120)}{customInput.length > 40 ? "…" : ""} · {customInput.length} chars</p>
+          </div>
+        )}
+
         <p className="text-xs leading-relaxed text-white/50">
-          <span className="font-mono text-white/70">dot_zshrc</span> replaces{" "}
-          <span className="font-mono">36m → 31m</span> across exactly 8 style-prefix
-          variants — cyan turns red, everything else is untouched.{" "}
-          <span className="font-mono text-white/70">dot_bashrc</span> instead maps every
-          foreground color (30|32|33|34|35|36|37|90|92|93|94|95|96|97) to red.
+          <span className="font-mono text-white/70">zsh</span> rewrites only <span className="font-mono">36m</span> with one of 8 exact style prefixes (<span className="font-mono">"" / 1; / 2; / 3; / 1;2; / 1;3; / 2;3; / 1;2;3;</span>).{" "}
+          <span className="font-mono text-white/70">bash</span> rewrites every 8-color foreground (<span className="font-mono">30|32|33|34|35|36|37|90|92|93|94|95|96|97</span>) and will tail-match the end of 256-color/truecolor sequences.{" "}
+          {mode === "custom" && <span className="text-amber-300/80">Try "Underline cyan" and flip zsh→bash — only bash moves.</span>}
         </p>
 
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
-        {result && (
-          <Term html={result.html} />
-        )}
-        {result && (
-          <p className="text-xs text-white/40">
-            Rendered by the real starship binary in 8-color mode so the recolor code
-            demonstrably applies.
+        {warnings.map((w) => (
+          <p key={w} className="rounded-lg border border-amber-300/20 bg-amber-900/25 px-3 py-2 font-mono text-xs text-amber-200">
+            {w}
           </p>
+        ))}
+
+        {/* Before / After panes */}
+        {active && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <div className="font-mono text-xs text-white/50">Before (status {status === 0 ? "0 — no recolor" : "1 — pre-recolor"})</div>
+              <pre
+                className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
+                style={{ background: themeBg, color: themeFg }}
+                dangerouslySetInnerHTML={{ __html: htmlBefore || "<span class='text-white/30'>empty</span>" }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="font-mono text-xs text-white/50">After — {shell} recolor {recoloredCount === 0 ? "(no change)" : `(${recoloredCount} escape${recoloredCount === 1 ? "" : "s"} recolored)`}</div>
+              <pre
+                className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
+                style={{ background: themeBg, color: themeFg }}
+                dangerouslySetInnerHTML={{ __html: htmlAfter || "<span class='text-white/30'>empty</span>" }}
+              />
+            </div>
+          </div>
         )}
+
+        {/* Escape ledger */}
+        {active && spans.length > 0 && (
+          <div className="space-y-2">
+            <div className="font-mono text-xs text-white/60">
+              Escape ledger — {spans.length} SGR escape{spans.length === 1 ? "" : "s"} in input · {recoloredCount} recolored · {spans.length - recoloredCount} untouched
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-white/10">
+              <table className="w-full font-mono text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.04] text-left text-white/50">
+                    <th className="px-2 py-1.5 font-medium">#</th>
+                    <th className="px-2 py-1.5 font-medium">escape</th>
+                    <th className="px-2 py-1.5 font-medium">after</th>
+                    <th className="px-2 py-1.5 font-medium">verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spans.map((s, i) => {
+                    const lbl = reasonLabel(s.reason);
+                    return (
+                      <tr key={`${s.offset}-${i}`} className="border-b border-white/5 last:border-0">
+                        <td className="px-2 py-1 text-white/40">{i + 1}</td>
+                        <td className="px-2 py-1 text-white/80">{escapeLabel(s.raw)}</td>
+                        <td className="px-2 py-1 text-white/60">{s.recolored ? escapeLabel(s.after) : "—"}</td>
+                        <td className={`px-2 py-1 ${lbl.tone}`}>{s.recolored ? "● " : "○ "}{lbl.text}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {active && spans.length === 0 && status !== 0 && (
+          <p className="font-mono text-xs text-white/35">No SGR escapes matched in this input — try a preset with color codes.</p>
+        )}
+
+        <p className="text-xs leading-5 text-white/35">
+          Rendered by the real <code>starship</code> binary in 8-color mode so the recolor code demonstrably applies. Truecolor TTYs (<span className="font-mono">38;2;r;g;b</span>) are a known limitation — neither wrapper recolors them.
+        </p>
       </div>
     </CardShell>
   );

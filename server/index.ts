@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cardsApp } from "./routes/cards";
+import { recolorApp } from "./routes/recolor";
 import { starshipApp } from "./routes/starship";
 
 const app = new Hono();
@@ -9,6 +10,7 @@ app.get("/api/health", (c) =>
 );
 
 app.route("/api", starshipApp);
+app.route("/api", recolorApp);
 app.route("/api/cards", cardsApp);
 
 const port = Number(process.env.PORT ?? 3000);
