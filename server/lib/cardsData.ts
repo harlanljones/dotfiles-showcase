@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 import { join } from "node:path";
 import { readConfig, userHome, type ConfigResult } from "./configs";
 import { getManifestEntry, type CardId, type ConfigSource, type FallbackFile } from "../../src/manifest";
+import { isWorkerd } from "./runtime";
 
 // ---------------------------------------------------------------------------
 // Pure parsers (unit-tested without filesystem access)
@@ -212,11 +213,16 @@ function packagesCard() {
   }
   let pacmanSource: "live" | "fallback" = "fallback";
   let pacman: string[] = [];
-  try {
-    const out = execSync(pacmanSrc.livePath.slice("derived:".length), { encoding: "utf8" });
-    pacmanSource = "live";
-    pacman = out.split("\n").map((l) => l.split(" ")[0]).filter(Boolean);
-  } catch {
+  // On workerd there is no child_process/pacman; degrade directly.
+  if (!isWorkerd()) {
+    try {
+      const out = execSync(pacmanSrc.livePath.slice("derived:".length), { encoding: "utf8" });
+      pacmanSource = "live";
+      pacman = out.split("\n").map((l) => l.split(" ")[0]).filter(Boolean);
+    } catch {
+      pacman = parseListFile(readConfig([], pacmanSrc.fallbackFile).content);
+    }
+  } else {
     pacman = parseListFile(readConfig([], pacmanSrc.fallbackFile).content);
   }
   return { brewSource: brew.source, ...parseBrewfile(brew.content), pacmanSource, pacman };

@@ -11,10 +11,16 @@ export interface GhosttyTheme {
   source: "live" | "fallback";
 }
 
-const LIVE_THEME_PATHS = [
-  // omarchy's dynamic theme target (referenced by ~/.config/ghostty/config)
-  homePath(".local", "state", "omarchy", "current", "theme", "ghostty.conf"),
-];
+/**
+ * Live theme paths, computed lazily — never at module top level (homedir()
+ * is unavailable under workerd and would throw on import).
+ */
+function liveThemePaths(): string[] {
+  return [
+    // omarchy's dynamic theme target (referenced by ~/.config/ghostty/config)
+    homePath(".local", "state", "omarchy", "current", "theme", "ghostty.conf"),
+  ];
+}
 
 /**
  * Parse a ghostty theme file's color directives into a palette.
@@ -42,7 +48,7 @@ export function parseGhosttyTheme(content: string): Omit<GhosttyTheme, "source">
  * to the bundled sanitized snapshot. Never throws in the steady state.
  */
 export function loadGhosttyTheme(): GhosttyTheme {
-  const { source, content } = readConfig(LIVE_THEME_PATHS, "ghostty-theme.conf");
+  const { source, content } = readConfig(liveThemePaths(), "ghostty-theme.conf");
   return { ...parseGhosttyTheme(content), source };
 }
 

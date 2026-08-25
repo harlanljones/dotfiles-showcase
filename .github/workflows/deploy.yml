@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun test
+
+      - name: Build
+        run: bun run build
+
+      # PRs: validate the Worker bundles and assets without deploying.
+      - name: Wrangler dry-run (PR)
+        if: github.event_name == 'pull_request'
+        run: bunx wrangler deploy --dry-run
+
+      # main: production deploy. Requires repo secrets
+      #   CLOUDFLARE_API_TOKEN     (token with "Edit Cloudflare Workers" template)
+      #   CLOUDFLARE_ACCOUNT_ID
+      - name: Wrangler deploy (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

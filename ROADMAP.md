@@ -4,7 +4,8 @@ Executable plan. Work items have stable IDs, exclusive ownership, and measurable
 criteria. Metrics that are unknown are marked **TBD** with the reason and an early task to
 establish them. Do not invent baselines, owners, budgets, dates, or targets.
 
-Linear project for later issue sync: `1e5540b9-7bb5-4d43-8c59-9f56a82b40cf` (team **HJ**).
+Linear project: `6a256cdee686` — **Dotfiles Showcase** (team **HJ**).
+Historical placeholder `1e5540b9-7bb5-4d43-8c59-9f56a82b40cf` is superseded; all DEPLOY tickets live in `6a256cdee686`.
 Work item IDs below are the canonical local IDs; map each to a Linear issue in that project
 when sync happens.
 
@@ -21,7 +22,7 @@ functionality, headlined by a Starship Playground that drives the real `starship
 a Hono/Bun API and reproduces the exact prompt (including the `starship_status_prompt`
 recolor) for a chosen shell state.
 
-**Scope (v1):**
+**Scope (v1 — local-first, shipped):**
 - React 19 + Vite + TypeScript + Tailwind client (Bun).
 - Hono/Bun API server for host-only work (starship execution, live config reads).
 - Live config reads from `~/.config/*` with bundled fallback.
@@ -31,7 +32,15 @@ recolor) for a chosen shell state.
   browser, hyprland dual-monitor diagram, neovim/LazyVim extras+plugins, ripgrep flags.
 - Tests (recolor/ansi/starship), typecheck, manual dev run.
 
-**Non-goals (v1):** public deployment; editing/syncing dotfiles from the app.
+**Scope (v2 — public Workers, added DEPLOY-01 / ADR-001):**
+- Dual-mode runtime: `bun run dev` (Bun, real starship) remains canonical; Cloudflare Workers
+  is a read-only public mirror serving `dist/` + `/api/*` via Workers assets.
+- On Workers: no `starship` binary, no `~/.config/*` host reads — `/api/starship` returns
+  `{ degraded: true }` snapshot from `fallback/starship.toml` + recolor; every config read
+  degrades to `fallback/*`; UI banners the degraded state.
+- CI/CD via `wrangler deploy` (GitHub Actions, `workers.dev` previews).
+
+**Non-goals (v1 + v2):** editing/syncing dotfiles from the app (read-only showcase in both modes).
 
 **Assumptions:**
 - A `starship` binary is available on the host where the API runs (the app is local-first).
@@ -49,6 +58,10 @@ recolor) for a chosen shell state.
 - D4: manifest schema = typed registry (`src/manifest.ts`: id/title/blurb/kind) mapping to
   one component per card; server exposes `/api/cards/:key` with per-key builders.
 - D5: submodule hosted at github.com/harlanljones/dotfiles-showcase (branch main).
+- D6 (DEPLOY-01 / ADR-001): dual-mode runtime — local Bun+Hono (real starship, live configs)
+  remains canonical; Cloudflare Workers (workerd, assets) is a read-only public mirror with
+  degraded starship (`degraded: true` + fallback toml + recolor) and fallback-only config reads.
+  See `docs/adr/001-workers-deployment.md` and `AGENTS.md §5b`.
 
 **Unresolved decisions (open — see §8 decision gates):**
 - D5 (BLOCKER for SUB-02): Submodule hosting / remote URL. `git submodule add <url>
@@ -84,7 +97,8 @@ by the early tasks noted. Do not treat TBD as zero.
 | Build/install success on fresh clone | established M1 | `bun install` + `bun run build` succeed | fresh-clone CI run | M1 owner | per merge |
 | Typecheck clean | clean (M1–M5) | `tsc --noEmit` exits 0 | `bun run typecheck` | M1 owner | per merge |
 | Unit test pass rate | 53/53 (M4) | 100% of recolor/ansi/starship/configs tests pass | `bun test` | M2/M3 owners | per merge |
-| Starship render latency (server) | p50 ≈ 46 ms, p95 ≈ 48 ms (10 renders, incl. temp-repo build) | **p95 < 500 ms** (proposed, accepted DG-4) | server timing via curl wall-clock | M3 owner | per merge |
+| Starship render latency (server) | p50 ≈ 61 ms, p95 ≈ 73 ms (10 renders, incl. temp-repo build; re-measured DEPLOY-08) | **p95 < 500 ms** (proposed, accepted DG-4) | server timing via curl wall-clock | M3 owner | per merge |
+| Workers degraded render latency (edge) | p50 ≈ 6 ms, p95 ≈ 15 ms (local workerd, 8 renders, DEPLOY-08) | informational — no binary on edge | curl wall-clock vs `wrangler dev` | DEPLOY-08 owner | per merge |
 | Recolor correctness (8-color + truecolor) | golden tests green | both shell modes transform expected escapes; golden-file match | unit + behavioral tests | M2/M3 owner | per merge |
 | Git-state sim parity vs real repos | behavioral goldens green (v1.26.0 pinned) | output matches real `starship` output per state | behavioral diff vs binary | M3 owner | per merge |
 | Live-config fallback coverage | exercised: brew live-miss → fallback (Linux host); all others live | all live reads have a fallback path | code review + test | M4 owner | per milestone |

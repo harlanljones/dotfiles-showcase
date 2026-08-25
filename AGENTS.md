@@ -25,7 +25,7 @@ inside the chezmoi dotfiles repo at `/home/harlan/.local/share/chezmoi`, at path
 
 ## 2. Boundaries
 
-In scope (v1):
+In scope (v1 — local-first, shipped):
 - React 19 + Vite + TypeScript + Tailwind client, run via Bun.
 - Hono/Bun API server for host-only work (running the real `starship` binary, reading live
   config files).
@@ -37,9 +37,20 @@ In scope (v1):
   browser, hyprland dual-monitor diagram, neovim/LazyVim extras+plugins, ripgrep flags.
 - Unit tests (recolor / ansi / starship), typecheck, manual dev run.
 
-Out of scope (v1, explicitly prohibited from being started):
-- Public deployment. This app is local-first and depends on the host `starship` binary.
-- Editing or syncing dotfiles from the app.
+In scope (v2 — public Workers, added via DEPLOY-01 / ADR-001):
+- **Dual-mode runtime:** local `bun run dev` remains canonical (real `starship` binary,
+  live `~/.config/*` reads); public Cloudflare Workers deployment is a **read-only
+  showcase** sharing the same Hono app + Vite `dist/` via Workers assets.
+- Workers serves `dist/` (SPA) and `/api/*` (Hono). On Workers there is no `starship`
+  binary and no host filesystem, so `/api/starship` returns a **degraded snapshot**
+  (`{ degraded: true }` with fallback `starship.toml` + recolor applied) and the UI
+  surfaces an explicit banner. See §5b.
+- Workers reads no live host config — every `~/.config/*` read degrades to the committed
+  `fallback/*` snapshot (CFG-01 contract upheld). No secrets, no host-identifying literals.
+- CI/CD via `wrangler deploy` (GitHub Actions, `workers.dev` previews).
+
+Out of scope (v1 + v2, prohibited):
+- Editing or syncing dotfiles from the app (read-only showcase in both modes).
 
 ---
 
@@ -124,15 +135,36 @@ recolor logic demonstrably transforms. The UI MUST surface this as an explicit "
 pretend the demo reproduces truecolor-TTY behavior.
 
 The real `starship` binary is the single source of truth. The server must NOT fabricate,
-template, or statically store prompt output.
+template, or statically store prompt output — **except on Workers where the binary is
+unavailable** (see §5b degraded mode).
+
+### 5b. Workers degraded mode (v2, DEPLOY-01 / ADR-001)
+
+On Cloudflare Workers (`workerd` runtime) there is no `starship` binary, no `~/.config/*`
+host filesystem, and no Node `child_process`/`fs` host APIs. The Workers build:
+
+- Serves Vite `dist/` via Workers assets and the same Hono `app.fetch`.
+- Returns `{ degraded: true, html, ansi, warnings }` from `POST /api/starship` using the
+  committed `fallback/starship.toml` + the same recolor logic (§5.3) and `ansiToHtml`.
+  The response MUST include `degraded: true` and a warning string the UI renders as a banner.
+- Reads every config via the CFG-01 fallback path (`fallback/*`) — never `~/.config/*`.
+- Dual-mode is intentional: `bun run dev` (Bun+Hono) remains the canonical high-fidelity path
+  and the no-fake gate (§6) still applies there. Workers is a read-only public mirror.
+
+A single file may contain both paths (runtime-detected), or the Worker may delegate to a
+separate entry (`server/worker.ts`) that shares the Hono app. Either satisfies the contract
+as long as local still invokes the real binary and Workers never pretends to.
 
 ---
 
 ## 6. Quality Gates & Prohibited Shortcuts
 
 Hard prohibitions (violation = blocking, escalate immediately):
-- **NO faking starship output.** The server MUST invoke the real `starship` binary. No
-  canned strings, no precomputed ANSI, no regex-only simulations of the prompt.
+- **NO faking starship output (local).** The Bun server MUST invoke the real `starship`
+  binary. No canned strings, no precomputed ANSI, no regex-only simulations of the prompt.
+  On Workers the binary is unavailable — the degraded snapshot (`degraded: true` + fallback
+  `starship.toml` + recolor) is the explicitly allowed exception (ADR-001 §5b); the UI MUST
+  banner it and MUST NOT claim it is live. The no-fake gate still applies to every local path.
 - **NO committing secrets.** Never commit `~/.config` contents, age keys, SSH material,
   `.linear.toml`, or any credential. Only *reference* live paths; never bundle secrets.
 - **chezmoiignore MUST cover the submodule path.** The path `dotfiles-showcase/` (and
@@ -180,9 +212,12 @@ create them so the commands below become valid.
 - `bun run build` — `vite build` for the client.
 - `bun test` — run the unit suite (recolor / ansi / starship).
 - `bun run typecheck` — `tsc --noEmit`.
+- `bunx wrangler dev` — run the Workers build locally (serves `dist/` + `/api/*` via workerd, degraded starship).
+- `bunx wrangler deploy` — deploy to Cloudflare Workers (requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`, set as GitHub Actions secrets; never committed).
+- `bunx wrangler types` — regenerate `Env` types from `wrangler.jsonc` (never hand-write `Env`).
 
 Agents must NOT assume these exist before M1; M1's exit gate is that all five commands run
-cleanly on a fresh clone.
+cleanly on a fresh clone. After DEPLOY-01, `wrangler.jsonc` is required and the Workers commands above are part of the canonical interface.
 
 ---
 
@@ -216,8 +251,8 @@ project's measures defined in `ROADMAP.md`:
   (starship invocation + temp-repo build) when measurable; flag if it threatens the
   <TBD> threshold in the roadmap.
 - **Security:** confirm no secrets committed and chezmoiignore covers the submodule path.
-- **Cost:** N/A for v1 (local-only, no cloud spend) — state "local-only, no cost" rather than
-  omitting.
+- **Cost:** v1 is local-only (no spend). For v2 Workers: state the observed tier
+  (e.g. "Workers free tier, $0 observed") rather than omitting.
 - **Delivery:** reference the relevant Linear issue in project
   `1e5540b9-7bb5-4d43-8c59-9f56a82b40cf` (team HJ) once issues are synced.
 

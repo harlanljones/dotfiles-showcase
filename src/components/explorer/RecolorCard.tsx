@@ -13,6 +13,7 @@ interface StarshipResult {
   spans: SgrSpan[];
   theme: { background: string; foreground: string; source: "live" | "fallback" };
   warnings?: string[];
+  degraded?: boolean;
 }
 
 interface RecolorResult {
@@ -90,8 +91,8 @@ export default function RecolorCard() {
         signal: controller.signal,
       })
         .then(async (r) => {
-          const data = await r.json();
-          if (!r.ok) throw new Error(data.error ?? `Render failed (${r.status})`);
+          const data = (await r.json()) as StarshipResult & { error?: string };
+          if (!r.ok) throw new Error((data as { error?: string }).error ?? `Render failed (${r.status})`);
           return data as StarshipResult;
         })
         .then((data) => {
@@ -130,8 +131,8 @@ export default function RecolorCard() {
         signal: controller.signal,
       })
         .then(async (r) => {
-          const data = await r.json();
-          if (!r.ok) throw new Error(data.error ?? `Recolor failed (${r.status})`);
+          const data = (await r.json()) as RecolorResult & { error?: string };
+          if (!r.ok) throw new Error((data as { error?: string }).error ?? `Recolor failed (${r.status})`);
           return data as RecolorResult;
         })
         .then((data) => {
@@ -289,6 +290,11 @@ export default function RecolorCard() {
         </p>
 
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
+        {mode === "prompt" && promptResult?.degraded && !error && (
+          <p role="status" className="rounded-lg border border-amber-300/30 bg-amber-900/30 px-3 py-2 font-mono text-xs font-medium text-amber-200">
+            ⚠ Degraded snapshot — no starship binary on this deployment. NOT a live render; run `bun run dev` locally.
+          </p>
+        )}
         {warnings.map((w) => (
           <p key={w} className="rounded-lg border border-amber-300/20 bg-amber-900/25 px-3 py-2 font-mono text-xs text-amber-200">
             {w}
@@ -356,7 +362,11 @@ export default function RecolorCard() {
         )}
 
         <p className="text-xs leading-5 text-white/35">
-          Rendered by the real <code>starship</code> binary in 8-color mode so the recolor code demonstrably applies. Truecolor TTYs (<span className="font-mono">38;2;r;g;b</span>) are a known limitation — neither wrapper recolors them.
+          {mode === "prompt" && promptResult?.degraded ? (
+            <>Degraded mode: reconstructed from <code>fallback/starship.toml</code> in 8-color so the recolor code demonstrably applies. The local app renders with the real binary.</>
+          ) : (
+            <>Rendered by the real <code>starship</code> binary in 8-color mode so the recolor code demonstrably applies. Truecolor TTYs (<span className="font-mono">38;2;r;g;b</span>) are a known limitation — neither wrapper recolors them.</>
+          )}
         </p>
       </div>
     </CardShell>

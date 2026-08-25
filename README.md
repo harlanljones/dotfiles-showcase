@@ -39,6 +39,41 @@ The development server brings up:
 
 ---
 
+## Deployment (Cloudflare Workers, v2)
+
+The app ships **dual-mode** (ADR-001): `bun run dev` remains the canonical,
+high-fidelity path; Cloudflare Workers hosts a **read-only public mirror**.
+
+```bash
+# Regenerate Env types after editing wrangler.jsonc (never hand-write Env)
+bun run wrangler:types
+
+# Run the Workers build locally (workerd; serves dist/ + /api/*, degraded starship)
+bun run wrangler:dev
+
+# Deploy to Cloudflare Workers (needs CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)
+bun run wrangler:deploy
+```
+
+CI/CD: `.github/workflows/deploy.yml` runs install → typecheck → test → build on every
+push/PR; PRs get a `wrangler deploy --dry-run` gate and pushes to `main` deploy to
+`https://dotfiles-showcase.<account>.workers.dev`. Set `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets — never commit them.
+
+### Degraded mode on Workers
+
+Workers has no `starship` binary and no host filesystem. There:
+
+- `POST /api/starship` returns `{ degraded: true, ... }` — a static reconstruction from the
+  bundled `fallback/starship.toml` with the exact recolor applied, plus a warning string.
+- The UI renders an explicit **degraded banner**; it never claims to be a live render.
+- Every config read degrades to the committed `fallback/*` snapshots (CFG-01). These are
+  point-in-time sanitized copies — refresh them via `fallback/README.md` when your live
+  configs change.
+- The local Bun path still invokes the real binary and reads live configs (no-fake gate).
+
+---
+
 ## Architecture
 
 ### Client (React 19 + Vite + TypeScript + Tailwind)
@@ -153,15 +188,15 @@ The server forces `true_color = false` in the starship config to emit 8-color `3
 
 ### Out of Scope (v1)
 
-- **No public deployment.** This app is strictly local-first and depends on your host tools.
-- **No dotfile editing or syncing.** The showcase is read-only and visualization-focused.
+- **No dotfile editing or syncing.** The showcase is read-only and visualization-focused
+  in both local and Workers modes.
 
 ### Hard Safety Boundaries
 
-- **No faking binary output.** Any host binary execution is real—no canned strings, no precomputed output.
+- **No faking binary output (local).** Any host binary execution is real—no canned strings, no precomputed output. The Workers degraded snapshot (`degraded: true`) is the sole, explicitly-bannered exception (ADR-001).
 - **No secrets committed.** Never bundle credentials, SSH keys, age keys, or `.linear.toml`. Only reference live paths; bundled content is non-secret snapshots only.
 - **chezmoiignore covers the submodule.** The path `dotfiles-showcase/` must be in `/home/harlan/.local/share/chezmoi/.chezmoiignore.tmpl` so chezmoi never applies the app as a dotfile.
-- **Live config reads must fall back gracefully.** No throws or crashes when host config is absent.
+- **Live config reads must fall back gracefully.** No throws or crashes when host config is absent — locally to `fallback/`, on Workers always `fallback/`.
 
 ---
 
@@ -202,6 +237,9 @@ bun run build
 | `bun run build` | Build client for production |
 | `bun test` | Run unit test suite |
 | `bun run typecheck` | Type-check (tsc --noEmit) |
+| `bun run wrangler:types` | Regenerate Workers `Env` types from `wrangler.jsonc` |
+| `bun run wrangler:dev` | Run the Workers build locally via workerd (degraded starship) |
+| `bun run wrangler:deploy` | Deploy to Cloudflare Workers |
 
 ### Testing Strategy
 

@@ -34,6 +34,7 @@ export default function StarshipPlayground() {
   const [html, setHtml] = useState("");
   const [theme, setTheme] = useState({ background: "#060912", foreground: "#959aa4" });
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [degraded, setDegraded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +50,13 @@ export default function StarshipPlayground() {
       signal: controller.signal,
     })
       .then(async (r) => {
-        const data = await r.json();
+        const data = (await r.json()) as {
+          error?: string;
+          html?: string;
+          theme?: { background: string; foreground: string };
+          warnings?: string[];
+          degraded?: boolean;
+        };
         if (!r.ok) throw new Error(data.error ?? `Render failed (${r.status})`);
         return data;
       })
@@ -62,6 +69,7 @@ export default function StarshipPlayground() {
             setTheme({ background: data.theme.background, foreground: data.theme.foreground });
           }
           setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
+          setDegraded(!!data.degraded);
         }
       })
       .catch((e) => !cancelled && e.name !== "AbortError" && setError(e instanceof Error ? e.message : String(e)))
@@ -178,15 +186,27 @@ export default function StarshipPlayground() {
         {error && (
           <div role="alert" className="rounded-xl border border-red-300/20 bg-red-900/30 p-3 text-sm text-red-200"><p>{error}</p><button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>Retry render</button></div>
         )}
+        {degraded && !error && (
+          <p role="status" className="rounded-xl border border-amber-300/30 bg-amber-900/30 p-3 text-xs font-medium text-amber-200">
+            ⚠ Degraded snapshot — the <code>starship</code> binary is unavailable on this
+            deployment, so this preview is a static reconstruction from the bundled
+            config with recolor applied. It is NOT a live render. Run{" "}
+            <code>bun run dev</code> locally for the real binary.
+          </p>
+        )}
         {warnings.map((w) => (
           <p key={w} role="status" className="rounded-xl border border-amber-300/20 bg-amber-900/25 p-3 text-xs text-amber-200">
             {w}
           </p>
         ))}
         <p className="border-l border-cyan-300/30 pl-3 text-xs leading-5 text-white/45">
-          Rendered by the real <code>starship</code> binary (forced to 8-color so
-          the dotfiles&apos; recolor code applies). Truecolor TTYs are a known
-          limitation.
+          {degraded ? (
+            <>Degraded mode: reconstructed from <code>fallback/starship.toml</code> (8-color so the recolor code applies). The local app renders with the real binary.</>
+          ) : (
+            <>Rendered by the real <code>starship</code> binary (forced to 8-color so
+            the dotfiles&apos; recolor code applies). Truecolor TTYs are a known
+            limitation.</>
+          )}
         </p>
       </div>
     </div>
