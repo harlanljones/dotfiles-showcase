@@ -152,25 +152,17 @@ export default function GhosttyPaletteCard() {
       )}
       {data && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-            <span className="rounded bg-white/5 px-2 py-1">
-              font: <span className="text-white/80">{data.fontFamily ?? "?"}</span>{" "}
-              {data.fontSize && <span className="text-white/50">@ {data.fontSize}px</span>}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-[#5f656e]">
+            <span>
+              font: <span className="text-[#959aa4]">{data.fontFamily ?? "?"}</span>{" "}
+              {data.fontSize && <span>@ {data.fontSize}px</span>}
             </span>
-            {data.themeRef && (
-              <span className="rounded bg-white/5 px-2 py-1 text-white/50">
-                theme ← {data.themeRef}
-              </span>
-            )}
+            {data.themeRef && <span>theme ← {data.themeRef}</span>}
             <button
               type="button"
               onClick={() => setShowFont((v) => !v)}
               aria-pressed={showFont}
-              className={`rounded-lg border px-3 py-1 font-mono text-xs transition-colors ${
-                showFont
-                  ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100"
-                  : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10"
-              }`}
+              className={`py-1 ${showFont ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}`}
             >
               font preview
             </button>
@@ -189,7 +181,7 @@ export default function GhosttyPaletteCard() {
                   type="button"
                   onClick={() => handleCopy(data.theme[k] ?? "")}
                   title="copy hex"
-                  className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1 transition-colors hover:bg-white/10"
+                  className="flex items-center gap-1.5 py-1 text-[#5f656e] hover:text-[#959aa4]"
                 >
                   <span
                     className="inline-block h-3 w-3 rounded-sm border border-black/40"
@@ -199,7 +191,7 @@ export default function GhosttyPaletteCard() {
                 </button>
               ) : null,
             )}
-            {copied && <span className="text-emerald-300/80">copied {copied}</span>}
+            {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
           </div>
 
           <div className="space-y-1.5">
@@ -240,14 +232,14 @@ export default function GhosttyPaletteCard() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-white/50">
               ANSI palette — click a swatch to preview as foreground &amp; copy its hex
-              {copied && <span className="text-emerald-300/80">copied {copied}</span>}
+            {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
             </div>
             {palette.length === 0 ? (
               <p className="font-mono text-xs text-white/35">
                 No palette entries in this payload (fallback).
               </p>
             ) : (
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+              <div className="swatch-grid grid grid-cols-4 gap-1.5 sm:grid-cols-8">
                 {palette.map(([n, hex]) => {
                   const isSelected = n === selected;
                   const isBright = n >= 8;
@@ -261,10 +253,10 @@ export default function GhosttyPaletteCard() {
                       }}
                       aria-pressed={isSelected}
                       title={`${ansiLabel(n)} · ${hex}`}
-                      className={`rounded border p-1.5 text-left transition-colors ${
+                      className={`border p-1.5 text-left ${
                         isSelected
-                          ? "border-cyan-300/50 bg-cyan-300/10"
-                          : "border-white/10 bg-white/[0.03] hover:bg-white/10"
+                          ? "border-[#6fa3a0]/50 bg-[#6fa3a0]/10"
+                          : "border-[#959aa4]/15 hover:border-[#959aa4]/35"
                       }`}
                     >
                       <div
@@ -272,7 +264,7 @@ export default function GhosttyPaletteCard() {
                         style={{ background: hex }}
                       />
                       <div className="mt-1 flex items-baseline justify-between font-mono text-[9px]">
-                        <span className={isSelected ? "text-cyan-200" : "text-white/55"}>{n}</span>
+                        <span className={isSelected ? "text-[#6fa3a0]" : "text-[#5f656e]"}>{n}</span>
                         <span className="text-white/35">{isBright ? "bright" : "reg"}</span>
                       </div>
                     </button>
@@ -285,7 +277,7 @@ export default function GhosttyPaletteCard() {
           {selectedHex && (
             <div className="space-y-2">
               <div className="font-mono text-xs text-white/60">
-                Selected: <span className="text-cyan-200">{ansiLabel(selected)}</span> ·{" "}
+                Selected: <span className="text-[#6fa3a0]">{ansiLabel(selected)}</span> ·{" "}
                 <span className="text-white/80">{selectedHex}</span>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -325,17 +317,17 @@ export default function GhosttyPaletteCard() {
               {keybindGroups.map((grp, gi) => (
                 <div key={gi} className="space-y-1">
                   {grp.label && (
-                    <div className="font-mono text-[10px] uppercase tracking-wider text-cyan-300/70">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-[#6fa3a0]/80">
                       {grp.label}
                     </div>
                   )}
                   <ul className="space-y-1">
                     {grp.items.map((b) => (
-                      <li
-                        key={`${b.key}=${b.action}`}
-                        className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5"
-                      >
-                        <kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-white/80">
+                        <li
+                          key={`${b.key}=${b.action}`}
+                          className="flex flex-wrap items-center gap-2 py-1.5"
+                        >
+                          <kbd className="border border-[#959aa4]/20 px-1.5 py-0.5 font-mono text-[11px] text-[#959aa4]">
                           {b.key}
                         </kbd>
                         <span className="font-mono text-xs text-white/50">{b.action}</span>

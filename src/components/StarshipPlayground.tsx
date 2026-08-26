@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { SourceBadge } from "./explorer/ui";
 
 export type ApiStatus = "idle" | "live" | "degraded" | "error";
 
@@ -66,7 +65,13 @@ type RenderResponse = {
   degraded?: boolean;
 };
 
-export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcome?: (status: ApiStatus) => void }) {
+export default function StarshipPlayground({
+  onRenderOutcome,
+  onNotes,
+}: {
+  onRenderOutcome?: (status: ApiStatus) => void;
+  onNotes?: (notes: string[]) => void;
+}) {
   const [s, setS] = useState<State>(DEFAULT);
   const [html, setHtml] = useState("");
   const [rawHtml, setRawHtml] = useState("");
@@ -74,8 +79,6 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
   const [rawAnsi, setRawAnsi] = useState("");
   const [recoloredCount, setRecoloredCount] = useState(0);
   const [theme, setTheme] = useState({ background: "#060912", foreground: "#959aa4" });
-  const [themeSource, setThemeSource] = useState<"live" | "fallback">("live");
-  const [warnings, setWarnings] = useState<string[]>([]);
   const [degraded, setDegraded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,6 +89,8 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
 
   const onRenderOutcomeRef = useRef(onRenderOutcome);
   onRenderOutcomeRef.current = onRenderOutcome;
+  const onNotesRef = useRef(onNotes);
+  onNotesRef.current = onNotes;
 
   useEffect(() => {
     let cancelled = false;
@@ -119,11 +124,18 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
           if (data.theme?.background) {
             setTheme((prev) => ({ background: data.theme!.background as string, foreground: data.theme!.foreground || prev.foreground }));
           }
-          if (data.theme?.source) setThemeSource(data.theme.source);
-          setWarnings(Array.isArray(data.warnings) ? data.warnings : []);
+          const nextWarnings = Array.isArray(data.warnings) ? data.warnings : [];
           setDegraded(!!data.degraded);
           setLatencyMs(ms);
           onRenderOutcomeRef.current?.(data.degraded ? "degraded" : "live");
+          onNotesRef.current?.(
+            s.trueColor
+              ? [
+                  ...nextWarnings,
+                  "Proposed-fix preview — not current behavior. true_color plus 38;2 cyan→red. Shipped wrappers still match 8-color only.",
+                ]
+              : nextWarnings,
+          );
         }
       })
       .catch((e) => {
@@ -170,234 +182,211 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
 
   const narrowPreview = s.width <= 140;
   const hasRecolor = s.status !== 0;
+  const failed = s.status !== 0;
+
+  useEffect(() => {
+    document.documentElement.dataset.failed = failed ? "1" : "0";
+    return () => {
+      delete document.documentElement.dataset.failed;
+    };
+  }, [failed]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(260px,320px)_1fr]">
-      <div className="control-panel space-y-5 rounded-2xl border border-white/10 bg-white/[.045] p-5">
-        <div className="space-y-2">
-          <p className="section-eyebrow">scenarios</p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Scenario presets">
+    <div className="prompt-stage" data-failed={failed ? "1" : "0"}>
+      <div
+        className="terminal-window"
+        style={{ background: theme.background, color: theme.foreground }}
+      >
+        <div className="terminal-meta">
+          <span>
+            <span className="terminal-dot" />
+            {loading ? "rendering" : latencyMs != null ? `${latencyMs} ms` : "ready"}
+          </span>
+          <span>{s.trueColor ? "truecolor preview" : "8-color"}</span>
+        </div>
+
+        {hasRecolor && (
+          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-[#5f656e]">
+            <span>
+              {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
+            </span>
+            <span className="flex gap-3" role="group" aria-label="Preview recolor state">
+              <button
+                type="button"
+                aria-pressed={view === "after"}
+                onClick={() => setView("after")}
+                className={view === "after" ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}
+              >
+                after
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "before"}
+                onClick={() => setView("before")}
+                className={view === "before" ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}
+              >
+                before
+              </button>
+            </span>
+            <button type="button" onClick={copyAnsi} className="hover:text-[#959aa4]">
+              {copied ? "copied" : "copy ANSI"}
+            </button>
+          </div>
+        )}
+
+        <pre
+          aria-label="Rendered Starship prompt"
+          aria-busy={loading}
+          className={`font-mono-nerd min-h-8 text-[1.05rem] leading-relaxed sm:text-lg ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
+          style={{ color: theme.foreground }}
+          dangerouslySetInnerHTML={{ __html: view === "before" ? rawHtml : html }}
+        />
+      </div>
+
+      {error && (
+        <div role="alert" className="border border-[#b16371]/35 bg-[#b16371]/10 p-3 text-sm text-[#d38290]">
+          <div className="flex items-start justify-between gap-3">
+            <p>{error}</p>
+            <span className="shrink-0 text-[10px] tracking-wider text-[#5f656e]">stale</span>
+          </div>
+          <button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>
+            Retry render
+          </button>
+        </div>
+      )}
+      {degraded && !error && (
+        <p role="status" className="border border-[#b16371]/35 bg-[#b16371]/10 p-3 text-xs text-[#d38290]">
+          Degraded snapshot — the <code>starship</code> binary is unavailable on this
+          deployment, so this preview is a static reconstruction from the bundled
+          config with recolor applied. It is not a live render. Run{" "}
+          <code>bun run dev</code> locally for the real binary.
+        </p>
+      )}
+
+
+      <div className="control-panel">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Scenario presets">
             {SCENARIOS.map((sc) => (
               <button
                 key={sc.key}
                 type="button"
                 aria-pressed={scenarioKey === sc.key}
                 onClick={() => applyScenario(sc)}
-                className={`rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors ${scenarioKey === sc.key ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
+                className={`py-1 font-mono text-[11px] tracking-wide ${scenarioKey === sc.key ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
               >
                 {sc.label}
               </button>
             ))}
           </div>
-        </div>
 
-        <div className="flex items-start justify-between gap-4"><div><p className="section-eyebrow">shell state</p><h2 className="mt-1 font-semibold">Tune the scene</h2></div><span className={`rounded-full border px-2 py-1 font-mono text-[10px] ${s.trueColor ? "border-amber-300/40 bg-amber-300/15 text-amber-200" : "border-cyan-300/20 bg-cyan-300/10 text-cyan-200"}`}>{s.trueColor ? "TRUECOLOR (preview)" : "8-COLOR"}</span></div>
-        <p className="text-xs leading-5 text-white/45">Every change renders against an isolated temporary Git repo.</p>
-
-        <label className="block text-sm">
-          <span className="text-white/60">Branch</span>
-          <input
-            aria-label="Git branch"
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
-            value={s.branch}
-            onChange={(e) => set("branch", e.target.value)}
-          />
-        </label>
-
-        <fieldset className="flex flex-wrap gap-2 text-sm"><legend className="sr-only">Session flags</legend>
-          <Toggle label="Dirty" on={s.dirty} onClick={() => set("dirty", !s.dirty)} />
-          <Toggle label="Detached HEAD" on={s.detached} onClick={() => set("detached", !s.detached)} />
-          <Toggle label="SSH session" on={s.ssh} onClick={() => set("ssh", !s.ssh)} />
-        </fieldset>
-
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <NumberField label="Ahead" value={s.ahead} onChange={(v) => set("ahead", v)} />
-          <NumberField label="Behind" value={s.behind} onChange={(v) => set("behind", v)} />
-        </div>
-
-        <label className="block text-sm">
-          <span className="text-white/60">Git state</span>
-          <select
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
-            value={s.state}
-            onChange={(e) => set("state", e.target.value as GitState)}
-          >
-            <option value="none">none</option>
-            <option value="rebase">rebase</option>
-            <option value="merge">merge</option>
-          </select>
-        </label>
-
-        <label className="block text-sm">
-          <span className="text-white/60">Shell recolor mode</span>
-          <select
-            className="mt-1 w-full rounded bg-black/40 px-2 py-1 text-white outline-none"
-            value={s.shell}
-            onChange={(e) => set("shell", e.target.value as ShellMode)}
-          >
-            <option value="zsh">zsh — hadrian (cyan→red only)</option>
-            <option value="bash">bash — augustus (all fg→red)</option>
-          </select>
-        </label>
-
-        <label className="block text-sm">
-          <span className="text-white/60">Truecolor preview (proposed fix)</span>
-          <div className="mt-1">
-            <Toggle
-              label="Render with true_color=true and recolor 38;2 cyan→red"
-              on={s.trueColor}
-              onClick={() => set("trueColor", !s.trueColor)}
+          <label className="block text-sm text-[#5f656e]">
+            Branch
+            <input
+              aria-label="Git branch"
+              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none focus:border-[#6fa3a0]"
+              value={s.branch}
+              onChange={(e) => set("branch", e.target.value)}
             />
+          </label>
+
+          <fieldset className="flex flex-wrap gap-3 text-sm">
+            <legend className="sr-only">Session flags</legend>
+            <Toggle label="Dirty" on={s.dirty} onClick={() => set("dirty", !s.dirty)} />
+            <Toggle label="Detached HEAD" on={s.detached} onClick={() => set("detached", !s.detached)} />
+            <Toggle label="SSH session" on={s.ssh} onClick={() => set("ssh", !s.ssh)} />
+          </fieldset>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <NumberField label="Ahead" value={s.ahead} onChange={(v) => set("ahead", v)} />
+            <NumberField label="Behind" value={s.behind} onChange={(v) => set("behind", v)} />
           </div>
-          <span className="mt-1 block text-xs leading-4 text-white/35">
-            Demonstrates the TC-01 proposed dotfiles fix. Not the current shipped
-            behavior — the live recolor only matches 8-color escapes.
-          </span>
-        </label>
+        </div>
 
-        <label className="block text-sm">
-          <span className="text-white/60">Terminal width</span>
-          <input
-            type="range"
-            min={60}
-            max={200}
-            step={10}
-            aria-label="Terminal width"
-            value={s.width}
-            onChange={(e) => set("width", Number(e.target.value))}
-            className="mt-1 w-full accent-cyan-300"
-          />
-          <span className="mt-1 block text-xs leading-4 text-white/35">
-            Drives <code>--terminal-width</code>, which squeezes the directory via{" "}
-            <code>truncation_length = 2</code>. Narrow widths truncate the path.
-          </span>
-        </label>
-
-        <fieldset className="text-sm"><legend className="mb-2 text-white/60">Last command result</legend>
-          <div className="mt-1 flex gap-2">
-            <button
-              className={`flex-1 rounded px-2 py-1 ${s.status === 0 ? "bg-cyan-600" : "bg-white/10"}`}
-              type="button" aria-pressed={s.status === 0} onClick={() => set("status", 0)}
+        <div className="space-y-3">
+          <label className="block text-sm text-[#5f656e]">
+            Git state
+            <select
+              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              value={s.state}
+              onChange={(e) => set("state", e.target.value as GitState)}
             >
-              Success
-            </button>
-            <button
-              className={`flex-1 rounded px-2 py-1 ${s.status === 1 ? "bg-red-600" : "bg-white/10"}`}
-              type="button" aria-pressed={s.status === 1} onClick={() => set("status", 1)}
+              <option value="none">none</option>
+              <option value="rebase">rebase</option>
+              <option value="merge">merge</option>
+            </select>
+          </label>
+
+          <label className="block text-sm text-[#5f656e]">
+            Shell recolor
+            <select
+              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              value={s.shell}
+              onChange={(e) => set("shell", e.target.value as ShellMode)}
             >
-              Error
-            </button>
-          </div>
-        </fieldset>
+              <option value="zsh">zsh — cyan only</option>
+              <option value="bash">bash — all foreground → red</option>
+            </select>
+          </label>
 
-        <label className="block text-sm">
-          <span className="text-white/60">
-            Duration (ms) <span className="text-white/35">· reserved for future module</span>
-          </span>
-          <input
-            type="number"
-            min={0}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
-            value={s.durationMs}
-            onChange={(e) => set("durationMs", Number(e.target.value))}
-          />
-        </label>
-      </div>
+          <label className="block text-sm text-[#5f656e]">
+            Truecolor preview (proposed fix)
+            <div className="mt-1">
+              <Toggle
+                label="true_color + 38;2 cyan→red"
+                on={s.trueColor}
+                onClick={() => set("trueColor", !s.trueColor)}
+              />
+            </div>
+          </label>
 
-      <div className="space-y-3">
-        <div
-          className="terminal-window rounded-2xl border border-white/10 p-4 sm:p-5"
-          style={{ background: theme.background, color: theme.foreground }}
-        >
-          <div className="mb-5 flex items-center justify-between border-b border-white/10 pb-3 text-xs text-white/40">
-            <span className="flex items-center gap-2"><span className="terminal-dot" /> live terminal preview — your ghostty theme <SourceBadge source={themeSource} /></span>
-            <span aria-live="polite" className={loading ? "text-cyan-200" : ""}>{loading ? "rendering…" : latencyMs != null ? `ready · ${latencyMs} ms` : "ready"}</span>
-          </div>
+          <label className="block text-sm text-[#5f656e]">
+            Terminal width
+            <input
+              type="range"
+              min={60}
+              max={200}
+              step={10}
+              aria-label="Terminal width"
+              value={s.width}
+              onChange={(e) => set("width", Number(e.target.value))}
+              className="mt-2 w-full accent-[#6fa3a0]"
+            />
+          </label>
 
-          {hasRecolor && (
-            <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-white/60">
-                {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
-              </span>
-              <span className="flex overflow-hidden rounded border border-white/15" role="group" aria-label="Preview recolor state">
-                <button
-                  type="button"
-                  aria-pressed={view === "after"}
-                  onClick={() => setView("after")}
-                  className={`px-2 py-0.5 font-mono transition-colors ${view === "after" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:bg-white/5"}`}
-                >
-                  after
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={view === "before"}
-                  onClick={() => setView("before")}
-                  className={`px-2 py-0.5 font-mono transition-colors ${view === "before" ? "bg-cyan-300/15 text-cyan-100" : "text-white/50 hover:bg-white/5"}`}
-                >
-                  before
-                </button>
-              </span>
+          <fieldset className="text-sm">
+            <legend className="mb-2 text-[#5f656e]">Last command</legend>
+            <div className="flex gap-4">
               <button
+                className={`py-1 ${s.status === 0 ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
                 type="button"
-                onClick={copyAnsi}
-                className="rounded border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-white/60 transition-colors hover:bg-white/10"
+                aria-pressed={s.status === 0}
+                onClick={() => set("status", 0)}
               >
-                {copied ? "copied" : "copy ANSI"}
+                Success
+              </button>
+              <button
+                className={`py-1 ${s.status === 1 ? "text-[#b16371]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                type="button"
+                aria-pressed={s.status === 1}
+                onClick={() => set("status", 1)}
+              >
+                Error
               </button>
             </div>
-          )}
+          </fieldset>
 
-          <pre
-            aria-label="Rendered Starship prompt" aria-busy={loading}
-            className={`font-mono-nerd min-h-8 text-sm leading-relaxed ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
-            style={{ color: theme.foreground }}
-            dangerouslySetInnerHTML={{ __html: view === "before" ? rawHtml : html }}
-          />
+          <label className="block text-sm text-[#5f656e]">
+            Duration (ms)
+            <input
+              type="number"
+              min={0}
+              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              value={s.durationMs}
+              onChange={(e) => set("durationMs", Number(e.target.value))}
+            />
+          </label>
         </div>
-        {error && (
-          <div role="alert" className="rounded-xl border border-red-300/20 bg-red-900/30 p-3 text-sm text-red-200">
-            <div className="flex items-start justify-between gap-3">
-              <p>{error}</p>
-              <span className="shrink-0 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-white/45">stale — last good render</span>
-            </div>
-            <button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>Retry render</button>
-          </div>
-        )}
-        {degraded && !error && (
-          <p role="status" className="rounded-xl border border-amber-300/30 bg-amber-900/30 p-3 text-xs font-medium text-amber-200">
-            ⚠ Degraded snapshot — the <code>starship</code> binary is unavailable on this
-            deployment, so this preview is a static reconstruction from the bundled
-            config with recolor applied. It is NOT a live render. Run{" "}
-            <code>bun run dev</code> locally for the real binary.
-          </p>
-        )}
-        {warnings.map((w) => (
-          <p key={w} role="status" className="rounded-xl border border-amber-300/20 bg-amber-900/25 p-3 text-xs text-amber-200">
-            {w}
-          </p>
-        ))}
-        {s.trueColor && !error && (
-          <p role="status" className="rounded-xl border border-amber-300/50 bg-amber-900/40 p-3 text-xs font-semibold text-amber-100">
-            ⚠ PROPOSED FIX PREVIEW — not current dotfiles behavior. This renders
-            starship with <code>true_color=true</code> and recolors the palette cyan
-            <code> 38;2;r;g;b</code> → red (TC-01). The shipped wrappers still only
-            match 8-color escapes.
-          </p>
-        )}
-        <p className="border-l border-cyan-300/30 pl-3 text-xs leading-5 text-white/45">
-          {degraded ? (
-            <>Degraded mode: reconstructed from <code>fallback/starship.toml</code> (8-color so the recolor code applies). The local app renders with the real binary.</>
-          ) : s.trueColor ? (
-            <>Truecolor preview (proposed fix): the real <code>starship</code> binary
-            renders with <code>true_color=true</code> and the recolor remaps palette-cyan
-            <code> 38;2;r;g;b</code> → red. This demonstrates the proposed dotfiles
-            fix (TC-01), not current shipped behavior.</>
-          ) : (
-            <>Rendered by the real <code>starship</code> binary (forced to 8-color so
-            the dotfiles&apos; recolor code applies). Truecolor TTYs are a known
-            limitation.</>
-          )}
-        </p>
       </div>
     </div>
   );
@@ -417,7 +406,7 @@ function Toggle({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`rounded-lg border px-3 py-2 text-xs transition-colors ${on ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}
+      className={`py-1 text-xs tracking-wide ${on ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
     >
       {label}
     </button>
@@ -434,13 +423,13 @@ function NumberField({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="block text-sm">
-      <span className="text-white/60">{label}</span>
+    <label className="block text-sm text-[#5f656e]">
+      {label}
       <input
         type="number"
         min={0}
         aria-label={`${label} commits`}
-        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-white outline-none focus:border-cyan-300/50"
+        className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
         value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
       />

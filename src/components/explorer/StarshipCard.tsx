@@ -9,19 +9,22 @@ function sourceKind(status: ApiStatus): SourceKind {
 
 export default function StarshipCard() {
   const [status, setStatus] = useState<ApiStatus>("idle");
+  const [notes, setNotes] = useState<string[]>([]);
 
   return (
     <CardShell
       title="Starship Prompt"
-      blurb="The prompt is configured in starship.toml and rendered by the real starship binary. Drive the shell state below to watch it respond — including the exact 36m → 31m recolor on failure."
-      badges={
-        <div className="flex gap-1.5">
-          <SourceBadge source={sourceKind(status)} />
-          <span className="rounded border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-cyan-200">8-COLOR</span>
-        </div>
+      blurb="Rendered by the real starship binary against an isolated git repo. Failure recolors cyan to red in zsh, every foreground color in bash."
+      badges={<SourceBadge source={sourceKind(status)} />}
+      notes={
+        notes.length > 0
+          ? notes.map((n) => (
+              <p key={n}>{n}</p>
+            ))
+          : undefined
       }
     >
-      <StarshipPlayground onRenderOutcome={setStatus} />
+      <StarshipPlayground onRenderOutcome={setStatus} onNotes={setNotes} />
     </CardShell>
   );
 }

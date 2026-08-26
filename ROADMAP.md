@@ -13,8 +13,10 @@ when sync happens.
 
 ## 1. Current State, Objective, Scope
 
-**Current state:** New, empty git repository at `/home/harlan/dev/dotfiles-showcase`
-(initialized, no source yet). It will become a git submodule of
+**Current state:** Shipped local-first showcase; Cloudflare Workers public mirror already
+deployed (ADR-001). Submodule already registered at
+`/home/harlan/.local/share/chezmoi/dotfiles-showcase/`. v1 (M1–M6) and v2
+(DEPLOY-01..08, TC-01, FB-01) are complete; see §6 integration checkpoints. It will become a git submodule of
 `/home/harlan/.local/share/chezmoi` at `dotfiles-showcase/`.
 
 **Objective:** Ship a local-first web app that visualizes chezmoi-managed dotfile

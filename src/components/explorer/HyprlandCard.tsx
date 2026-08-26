@@ -115,7 +115,7 @@ export default function HyprlandCard() {
       <div className="space-y-4">
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
         {!data && !error && (
-          <p className="font-mono text-xs text-white/40">loading monitors…</p>
+          <p className="font-mono text-xs text-[#5f656e]">loading monitors…</p>
         )}
         {data && !hasMonitors && (
           <p className="font-mono text-xs text-white/40">
@@ -129,8 +129,8 @@ export default function HyprlandCard() {
                 GDK_SCALE = {data.gdkScale}
               </div>
             )}
-            <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-              <div className="overflow-x-auto">
+            <div className="hypr-desk p-3 sm:p-5">
+              <div className="hypr-fit">
                 <div
                   className="relative"
                   style={{ width: DIAGRAM_W, height: DIAGRAM_H }}
@@ -145,15 +145,15 @@ export default function HyprlandCard() {
                   {drawList.map((d) => (
                     <div
                       key={d.p.output}
-                      className="absolute flex flex-col justify-between overflow-hidden rounded border border-emerald-500/40 bg-emerald-500/[0.08] p-1.5"
+                      className="absolute flex flex-col justify-between overflow-hidden border border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] p-1.5"
                       style={{ left: d.drawX, top: d.drawY, width: d.w, height: d.h }}
                     >
                       {d.p.output === PRIMARY_OUTPUT && (
-                        <span className="absolute right-1 top-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-1 font-mono text-[8px] tracking-wider text-emerald-200">
+                        <span className="absolute right-1 top-1 font-mono text-[8px] tracking-wider text-[#6fa3a0]">
                           PRIMARY
                         </span>
                       )}
-                      <span className="font-mono text-[11px] font-semibold text-emerald-300">
+                      <span className="font-mono text-[11px] font-semibold text-[#6fa3a0]">
                         {d.p.output}
                       </span>
                       <span className="font-mono text-[10px] leading-tight text-white/55">
@@ -181,7 +181,7 @@ export default function HyprlandCard() {
                   type="button"
                   onClick={() => setSwapped((v) => !v)}
                   aria-pressed={swapped}
-                  className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${swapped ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100" : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10"}`}
+                  className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
                 >
                   Swap L/R{swapped ? " (on)" : ""}
                 </button>
@@ -193,7 +193,7 @@ export default function HyprlandCard() {
                       setDisabled((s) => ({ ...s, [p.output]: !s[p.output] }))
                     }
                     aria-pressed={!disabled[p.output]}
-                    className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${disabled[p.output] ? "border-white/10 bg-white/5 text-white/40 hover:bg-white/10" : "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"}`}
+                    className={`py-1 font-mono text-xs tracking-wide ${disabled[p.output] ? "text-[#5f656e]" : "text-[#6fa3a0]"}`}
                   >
                     {p.output} {disabled[p.output] ? "off" : "on"}
                   </button>
@@ -218,7 +218,7 @@ export default function HyprlandCard() {
                           [p.output]: Number(e.target.value),
                         }))
                       }
-                      className="mt-1 w-full accent-emerald-400"
+                      className="mt-1 w-full accent-[#6fa3a0]"
                     />
                   </label>
                 ))}

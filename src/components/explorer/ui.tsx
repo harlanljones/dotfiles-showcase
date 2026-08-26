@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 export type SourceKind = "live" | "fallback" | "simulated" | "static";
 
 const SOURCE_STYLES: Record<SourceKind, string> = {
-  live: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  fallback: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  simulated: "bg-violet-500/15 text-violet-300 border-violet-500/30",
-  static: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+  live: "text-[#6fa3a0]",
+  fallback: "text-[#b16371]",
+  simulated: "text-[#959aa4]",
+  static: "text-[#5f656e]",
 };
 
 const SOURCE_LABEL: Record<SourceKind, string> = {
@@ -18,9 +18,7 @@ const SOURCE_LABEL: Record<SourceKind, string> = {
 
 export function SourceBadge({ source }: { source: SourceKind }) {
   return (
-    <span
-      className={`rounded border px-1.5 py-0.5 font-mono text-[10px] tracking-wider ${SOURCE_STYLES[source]}`}
-    >
+    <span className={`font-mono text-[10px] tracking-[0.18em] ${SOURCE_STYLES[source]}`}>
       {SOURCE_LABEL[source]}
     </span>
   );
@@ -36,14 +34,14 @@ export function ToggleGroup({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex overflow-hidden rounded-lg border border-white/15">
+    <div className="flex gap-3">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`px-3 py-1.5 font-mono text-xs transition-colors ${value === o.value ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
+          className={`px-0 py-1 font-mono text-xs tracking-wide ${value === o.value ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
         >
           {o.label}
         </button>
@@ -53,9 +51,9 @@ export function ToggleGroup({
 }
 
 const NOTICE_TONES: Record<"warning" | "info" | "error", string> = {
-  warning: "border-amber-300/30 bg-amber-900/30 text-amber-200",
-  info: "border-cyan-300/30 bg-cyan-900/30 text-cyan-200",
-  error: "border-red-300/30 bg-red-900/30 text-red-200",
+  warning: "border-[#b16371]/35 bg-[#b16371]/10 text-[#d38290]",
+  info: "border-[#6fa3a0]/30 bg-[#6fa3a0]/10 text-[#6fa3a0]",
+  error: "border-[#b16371]/40 bg-[#b16371]/12 text-[#d38290]",
 };
 
 export function Notice({
@@ -66,10 +64,7 @@ export function Notice({
   children?: ReactNode;
 }) {
   return (
-    <p
-      role="status"
-      className={`rounded-lg border px-3 py-2 font-mono text-xs font-medium ${NOTICE_TONES[tone]}`}
-    >
+    <p role="status" className={`border px-3 py-2 font-mono text-xs ${NOTICE_TONES[tone]}`}>
       {children}
     </p>
   );
@@ -79,22 +74,26 @@ export function CardShell({
   title,
   blurb,
   badges,
+  notes,
   children,
 }: {
   title: string;
   blurb?: string;
   badges?: ReactNode;
+  notes?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="content-panel max-w-4xl">
-      <div className="mb-3 flex items-start justify-between gap-4">
-        <div>
-          <h3 className="font-semibold">{title}</h3>
-          {blurb && <p className="mt-1 max-w-2xl text-sm leading-6 text-white/50">{blurb}</p>}
+    <section className="content-panel">
+      <details className="inspect">
+        <summary>inspect</summary>
+        <div className="inspect-body">
+          <p className="m-0 text-sm tracking-wide text-[#959aa4]">{title}</p>
+          {badges}
+          {blurb && <p>{blurb}</p>}
+          {notes}
         </div>
-        <div className="flex shrink-0 gap-1.5">{badges}</div>
-      </div>
+      </details>
       {children}
     </section>
   );
@@ -104,13 +103,13 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
   if (html !== undefined) {
     return (
       <pre
-        className="code-surface overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
+        className="code-surface overflow-x-auto p-3 font-mono-nerd text-sm leading-relaxed [&_i]:italic"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
   return (
-    <pre className="code-surface overflow-x-auto rounded-lg border border-white/10 bg-black/60 p-3 font-mono text-xs leading-relaxed">
+    <pre className="code-surface overflow-x-auto p-3 font-mono text-xs leading-relaxed text-[#959aa4]">
       {children}
     </pre>
   );
@@ -118,8 +117,6 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
 
 export function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs">
-      {children}
-    </span>
+    <span className="font-mono text-xs tracking-wide text-[#5f656e]">{children}</span>
   );
 }

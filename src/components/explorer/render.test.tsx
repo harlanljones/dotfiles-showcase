@@ -167,6 +167,12 @@ describe("explorer card render parity", () => {
     }
   });
 
+  it("recolor is absorbed into the prompt room, not a peer", () => {
+    current = { data: null, error: null };
+    const html = render(StarshipCard);
+    expect(html).toContain("Rendered Starship prompt");
+  });
+
   it("fuzzy card is labeled simulated", () => {
     const html = render(FuzzyToolsCard);
     expect(html).toContain("SIMULATED");

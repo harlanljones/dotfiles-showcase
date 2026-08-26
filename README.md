@@ -2,7 +2,7 @@
 
 A local-first, interactive web app that visualizes and explores chezmoi-managed dotfiles. Browse live configurations, explore tool settings, and run mini-demos—all from a single browser interface. Built with React, Vite, TypeScript, and Tailwind.
 
-[AGENTS.md](./AGENTS.md) · [ROADMAP.md](./ROADMAP.md)
+[AGENTS.md](./AGENTS.md) · [ROADMAP.md](./ROADMAP.md) · [DESIGN.md](./DESIGN.md) · [review captures](./docs/review/)
 
 ---
 
@@ -11,7 +11,7 @@ A local-first, interactive web app that visualizes and explores chezmoi-managed 
 ### Prerequisites
 
 - [Bun](https://bun.sh) (package manager & runtime)
-- `starship` binary on the host (optional; for MVP demo only)
+- `starship` binary on the host (drives the live Playground)
 - `~/.config/starship.toml` (optional; or use bundled fallback)
 
 ### Installation & Running
@@ -93,7 +93,7 @@ Owned **entirely** by the server. Handles all host-only work:
 
 2. **Tool Execution:** Runs host binaries safely in isolated contexts where applicable
 
-3. **MVP Demo (Starship Playground):** Early feature to demonstrate real binary integration:
+3. **Starship Playground:** Headline feature demonstrating real binary integration:
    - Runs actual `starship` binary with isolated temporary git repository
    - Reflects shell state (branch, dirty files, ahead/behind, rebase/merge/detached)
    - Live `~/.config/starship.toml` with `true_color = false` for recolor demonstration
@@ -111,7 +111,7 @@ Owned **entirely** by the server. Handles all host-only work:
 │   ├── App.tsx                  # Root component
 │   ├── manifest.ts              # Feature card registry
 │   └── components/
-│       ├── StarshipPlayground.tsx (MVP demo)
+│       ├── StarshipPlayground.tsx (headline demo)
 │       └── explorer/
 │           ├── StarshipCard.tsx
 │           ├── RecolorDemo.tsx
@@ -156,9 +156,9 @@ Each card renders live configuration data where available, with bundled fallback
 
 ---
 
-## MVP Demo: Starship Playground
+## Starship Playground
 
-The **Starship Playground** is the Explorer's Starship card — an early demo feature that showcases how the app integrates with real host binaries. It sits inside the Explorer with the same weight as the other cards and drives the actual `starship` binary through a UI with toggles for:
+The **Starship Playground** is the Explorer's Starship card — the headline feature, integrating with real host binaries. It sits inside the Explorer with the same weight as the other cards and drives the actual `starship` binary through a UI with toggles for:
 
 - **SSH Mode:** Sets `SSH_CONNECTION` environment variable
 - **Git State:** Branch name, detached HEAD, dirty working tree, ahead/behind commits
@@ -183,7 +183,7 @@ The server forces `true_color = false` in the starship config to emit 8-color `3
 - Hono/Bun API server for host-only work
 - Live config reads with bundled fallback
 - Feature Explorer covering 11+ dotfile tools
-- MVP demo: Starship Playground with real binary integration
+- Starship Playground (live binary integration)
 - Unit tests for recolor, ANSI, and starship integration
 - Full typecheck, zero console errors
 
@@ -282,7 +282,7 @@ Strict TypeScript configuration:
 
 This project follows an explicit milestone-based roadmap with measurable exit criteria. See [ROADMAP.md](./ROADMAP.md) for:
 
-- **Milestones M1–M6:** Scaffolding → libraries → MVP demo → Explorer → integration → verification
+- **Milestones M1–M6:** Scaffolding → libraries → Starship Playground → Explorer → integration → verification
 - **Work item breakdown:** 20+ clearly scoped items with exclusive ownership
 - **Metrics & gates:** Build success, typecheck, test pass rates, recolor correctness, latency baselines
 - **Dependency graph & concurrency:** Safe parallelization across independent tasks
@@ -290,7 +290,11 @@ This project follows an explicit milestone-based roadmap with measurable exit cr
 
 ### Current Status
 
-**M1 (Scaffold + tooling + submodule/ignore/README)** — In progress. All foundational commands and configuration are being established.
+**v1 (local-first showcase) — Shipped.** Milestones M1–M6 are complete; integration checkpoints IC-1 through IC-5 all verified. The full app walks through clean: 106/106 unit tests pass, `bun run typecheck` is clean (0 errors), and the production `bun run build` succeeds. The Starship Playground drives the real `starship` binary (v1.26.0, pinned) and the Explorer renders all 11 feature cards (live-or-fallback configs, with fzf/zoxide/atuin as labeled simulated mini-demos).
+
+**v2 (Cloudflare Workers public mirror, ADR-001) — Deployed & verified.** `DEPLOY-08` shipped the read-only public mirror to `https://dotfiles-showcase.harlanljones.workers.dev` (version `b835f72f`); health + degraded starship + cards + SPA smoke are green. Latency baselines are recorded in [ROADMAP.md](./ROADMAP.md) §2: local starship render p95 ≈ 73 ms (threshold p95 < 500 ms); live Workers degraded render p50 ≈ 88 ms / p95 ≈ 150 ms. The Workers path serves `dist/` + `/api/*` via Workers assets and returns `{ degraded: true }` for `/api/starship`, with the UI bannering the degraded state (local `bun run dev` remains the canonical high-fidelity path).
+
+See [ROADMAP.md](./ROADMAP.md) §2 (metrics) and §6 (integration checkpoints) for the authoritative shipped state.
 
 ---
 
@@ -317,7 +321,7 @@ The playground forces `true_color = false` by default to demonstrate the shipped
 
 fzf, zoxide, and atuin are terminal user interface tools with native databases—they cannot run meaningfully in the browser. The Explorer cards show *simulated* mini-demos of their functionality, clearly labeled as such.
 
-### Starship Version Pinning (MVP Demo)
+### Starship Version Pinning
 
 The temp-repo git-state simulator is version-specific. The project currently targets `starship v1.26.0`. Format changes in `starship.toml` or git-internals simulation may require updates.
 
