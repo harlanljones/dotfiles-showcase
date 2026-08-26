@@ -68,8 +68,9 @@ Workers has no `starship` binary and no host filesystem. There:
   bundled `fallback/starship.toml` with the exact recolor applied, plus a warning string.
 - The UI renders an explicit **degraded banner**; it never claims to be a live render.
 - Every config read degrades to the committed `fallback/*` snapshots (CFG-01). These are
-  point-in-time sanitized copies — refresh them via `fallback/README.md` when your live
-  configs change.
+  point-in-time sanitized copies — refresh them with `bun run fallbacks:refresh`
+  (verify with `bun run fallbacks:check`) when your live configs change; see
+  `fallback/README.md`.
 - The local Bun path still invokes the real binary and reads live configs (no-fake gate).
 
 ---

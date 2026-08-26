@@ -10,6 +10,8 @@
     "start": "bun run server/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
+    "fallbacks:refresh": "bun run scripts/refresh-fallbacks.ts",
+    "fallbacks:check": "bun run scripts/refresh-fallbacks.ts --check",
     "wrangler:types": "wrangler types",
     "wrangler:dev": "wrangler dev --local",
     "wrangler:deploy": "wrangler deploy"

@@ -42,6 +42,32 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 
 ## Refresh procedure
 
+The executable form of this procedure is the refresh script (FB-01). It reads the
+per-file table above as its manifest, regenerates each snapshot from its live
+source, applies the sanitization rules, hard-fails on credential-like patterns,
+and keeps the embedded Workers bundle (`server/lib/fallbacks.ts`) in sync.
+
+```bash
+# Verify snapshots are fresh without writing (exit 1 if stale) — CI/pre-deploy gate
+bun run fallbacks:check
+
+# Regenerate stale/missing snapshots + rebuild the embedded bundle
+bun run fallbacks:refresh
+```
+
+Behavior notes:
+
+- Missing live source → that file is **skipped** (never throws; CFG-01 contract).
+- `SYNTHETIC` files (e.g. `Brewfile`) are never touched — hand-authored.
+- `DERIVED-SNAPSHOT` (`pacman.txt`) re-runs `pacman -Qe`; unavailable command = skip.
+- Provenance headers of existing snapshots are preserved byte-for-byte; only bodies regenerate.
+- Host-identifying literals (known machine names, username, IPv4, MACs) are substituted;
+  a unique machine hostname that survives is a **hard failure**, not a silent write.
+- Credential-like patterns (tokens, keys, `AGE-SECRET`, private-key blocks) are a
+  **hard failure** — nothing is written for the offending file.
+
+Manual alternative (kept for auditability of the original one-off process):
+
 ```bash
 # FULL-COPY files (repeat pattern per file)
 { printf '# Fallback snapshot: <name>.\n# Live source: <path>\n\n'; cat <path>; } > fallback/<file>
