@@ -356,6 +356,15 @@ After each IC, re-run `bun test` and `bun run typecheck` (once available) before
 - **DG-3 (M4):** resolve D3 (git-safety diagram static vs interactive).
 - **DG-4 (M3):** accept the measured Starship render latency baseline and set the TBD
   threshold in §2; also accept the recolor-correctness and git-state-parity golden baselines.
+- **DG-5 (TC-01 / HJ-431):** accept the truecolor recolor extension that amends the canonical
+  F2 decision. Both dotfiles wrappers now recolor truecolor cyan `38;2;r;g;b` (palette cyan) →
+  red, preserving per-shell semantics. The palette cyan/red RGB is matched exactly
+  (`[46,222,250]`/`[255,102,92]` defaults, i.e. `#2EDEFA`/`#FF665C`); if a custom hex palette
+  is introduced the wrapper constants must be revisited. The showcase exposes this behind an
+  explicit opt-in "Truecolor preview (proposed fix)" toggle, labeled as not-current behavior.
+  Implementation note: the server renders starship via `spawnSync` (no truecolor TTY), so the
+  binary emits 8-color `36m`; the preview elevates that output to `38;2` (cyan → `#2EDEFA`) and
+  replays the real recolor. Pinned to starship 1.26.0.
 
 Open decisions not resolvable here (flagged to user): D1, D3–D4 above; D5 (submodule hosting).
 (D2 is resolved: see `fallback/README.md` for the per-file fallback strategy and sanitization.)

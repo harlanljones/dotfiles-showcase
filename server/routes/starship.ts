@@ -5,19 +5,53 @@ import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { homePath, readConfig } from "../lib/configs";
-import { applyFailureColor, explainRecolor, type SgrSpan, type ShellMode } from "../lib/recolor";
+import { applyFailureColor, explainRecolor, type SgrSpan, type ShellMode, type TrueColor } from "../lib/recolor";
 import { ansiToHtml } from "../lib/ansi";
 import { loadGhosttyTheme } from "../lib/theme";
 import { buildTempRepo, type PromptState } from "../lib/tempRepo";
 import { isWorkerd } from "../lib/runtime";
 
-// Serve a copy of the live starship.toml with true_color forced OFF so the
-// dotfiles' 8-color recolor code (36m -> 31m) demonstrably applies. See
-// AGENTS.md §5a. Truecolor TTYs are a known limitation, surfaced in the UI.
-function servedConfigPath(): string {
+// TC-01 proposed-fix preview palette. When the user opts into truecolor, the
+// served config forces `true_color = true` and defines a palette whose `cyan`
+// resolves to this exact RGB, so starship emits `38;2;46;222;250` for cyan
+// styles — which the recolor then remaps to the palette `red`. The matcher uses
+// these same RGBs, keeping generation and detection consistent by construction.
+const TC_CYAN: [number, number, number] = [46, 222, 250];
+const TC_RED: [number, number, number] = [255, 102, 92];
+const TC_TRUECOLOR: TrueColor = { cyan: TC_CYAN, red: TC_RED };
+
+// The real `starship` binary only emits 8-color `36m` when spawned without a
+// truecolor TTY (e.g. via spawnSync). To preview the proposed truecolor
+// recolor we elevate the binary's 8-color FOREGROUND escapes to their `38;2`
+// RGB equivalents — cyan maps to the exact TC cyan so the real recolor logic
+// (recolor.ts) demonstrably transforms it. The prompt CONTENT still comes from
+// the real binary (no faking); only the color encoding is translated.
+const ANSI8_FG_RGB: Record<string, string> = {
+  "30": "0;0;0", "31": "170;0;0", "32": "0;170;0", "33": "170;85;0",
+  "34": "0;0;170", "35": "170;0;170", "36": TC_CYAN.join(";"), "37": "170;170;170",
+  "90": "85;85;85", "91": "255;85;85", "92": "85;255;85", "93": "255;255;85",
+  "94": "85;85;255", "95": "255;85;255", "96": TC_CYAN.join(";"), "97": "255;255;255",
+};
+function elevateToTrueColor(ansi: string): string {
+  return ansi.replace(
+    /\x1b\[((?:\d+;)*)(30|31|32|33|34|35|36|37|90|91|92|93|94|95|96|97)m/g,
+    (_m, prefix: string, code: string) => `\x1b[${prefix}38;2;${ANSI8_FG_RGB[code]}m`,
+  );
+}
+
+// Serve a copy of the live starship.toml. By default true_color is forced OFF so
+// the dotfiles' 8-color recolor code (36m -> 31m) demonstrably applies. See
+// AGENTS.md §5a. When `trueColor` is requested (TC-01 preview), force it ON and
+// define a palette so cyan renders as truecolor `38;2;...` for the proposed fix.
+function servedConfigPath(trueColor = false): string {
   const { content: live } = readConfig(homePath(".config", "starship.toml"), "starship.toml");
-  const forced =
-    live.replace(/^\s*true_color\s*=.*$/m, "") + "\ntrue_color = false\n";
+  const stripped = live
+    .replace(/^\s*true_color\s*=.*$/m, "")
+    .replace(/^\s*palette\s*=.*$/m, "");
+  const forced = trueColor
+    ? stripped +
+      '\ntrue_color = true\npalette = "tc_preview"\n[palettes.tc_preview]\ncyan = "#2EDEFA"\nred = "#FF665C"\n'
+    : stripped + "\ntrue_color = false\n";
   const tmp = join(tmpdir(), `starship-showcase-served-${process.pid}-${randomUUID()}.toml`);
   writeFileSync(tmp, forced);
   return tmp;
@@ -35,6 +69,8 @@ export interface RenderResult {
   warnings?: string[];
   /** True when this result is the Workers degraded snapshot (no real binary). */
   degraded?: boolean;
+  /** TC-01: true when the render used the truecolor proposed-fix preview. */
+  trueColor?: boolean;
 }
 
 // starship executes custom-module commands through the binary named by
@@ -84,15 +120,18 @@ export function renderDegradedStarship(input: PromptState): RenderResult {
     ssh: !!input.ssh,
     status: input.status ?? 0,
     durationMs: Math.max(0, input.durationMs ?? 0),
+    trueColor: input.trueColor,
   };
   const shell: ShellMode = input.shell === "bash" ? "bash" : "zsh";
+  const trueColor = state.trueColor ? TC_TRUECOLOR : undefined;
 
   // Build a representative ANSI prompt that mirrors the fallback starship.toml
   // layout: directory + git_branch + git_status + custom.git_dirty + git_commit + character.
   // Use 8-color 36m (cyan) escapes so recolor demonstrably applies, per AGENTS.md §5a.
-  const cyan = "\x1b[36m";
-  const dimCyan = "\x1b[2;36m";
-  const boldCyan = "\x1b[1;36m";
+  // In truecolor preview mode, emit the palette cyan as `38;2;46;222;250` instead.
+  const cyan = trueColor ? `\x1b[38;2;${TC_CYAN.join(";")}m` : "\x1b[36m";
+  const dimCyan = trueColor ? `\x1b[2;38;2;${TC_CYAN.join(";")}m` : "\x1b[2;36m";
+  const boldCyan = trueColor ? `\x1b[1;38;2;${TC_CYAN.join(";")}m` : "\x1b[1;36m";
   const reset = "\x1b[0m";
   const dir = state.ssh ? `at hadrian ${cyan}~/dotfiles${reset}` : `${cyan}~/dotfiles${reset}`;
   const branchPart = state.detached
@@ -105,11 +144,11 @@ export function renderDegradedStarship(input: PromptState): RenderResult {
   const char = state.status !== 0 ? `${cyan}❯${reset}` : `${boldCyan}❯${reset}`;
 
   const rawAnsi = `${dir} ${branchPart}${dirtyPart}${aheadPart}${behindPart}${statePart} ${char} `;
-  const recolored = applyFailureColor(rawAnsi, { status: state.status ?? 0, shell });
+  const recolored = applyFailureColor(rawAnsi, { status: state.status ?? 0, shell, trueColor });
   const theme = loadGhosttyTheme();
   const rawHtml = ansiToHtml(rawAnsi, { palette: theme.palette });
   const html = ansiToHtml(recolored, { palette: theme.palette });
-  const spans = state.status !== 0 ? explainRecolor(rawAnsi, shell).spans : [];
+  const spans = state.status !== 0 ? explainRecolor(rawAnsi, shell, trueColor).spans : [];
 
   return {
     ansi: recolored,
@@ -124,6 +163,7 @@ export function renderDegradedStarship(input: PromptState): RenderResult {
       source: theme.source,
     },
     degraded: true,
+    trueColor: !!trueColor,
     warnings: [
       "Starship binary unavailable on this edge runtime — showing a degraded snapshot from fallback/starship.toml with recolor applied. Run `bun run dev` locally for the live binary.",
     ],
@@ -150,6 +190,7 @@ export function renderStarship(input: PromptState): RenderResult {
     ssh: !!input.ssh,
     status: input.status ?? 0,
     durationMs: Math.max(0, input.durationMs ?? 0),
+    trueColor: input.trueColor,
   };
 
   const repo = buildTempRepo(state);
@@ -157,7 +198,7 @@ export function renderStarship(input: PromptState): RenderResult {
   const { exec, warning } = resolveExecShell(shell);
   let configPath: string | undefined;
   try {
-    configPath = servedConfigPath();
+    configPath = servedConfigPath(state.trueColor);
     const env: Record<string, string> = {
       ...(process.env as Record<string, string>),
       STARSHIP_CONFIG: configPath,
@@ -195,21 +236,28 @@ export function renderStarship(input: PromptState): RenderResult {
     }
 
     const ansi = res.stdout ?? "";
-    const recolored = applyFailureColor(ansi, {
+    // Preview: elevate the real binary's 8-color output to `38;2` so the
+    // truecolor recolor has something to transform (the binary can't emit
+    // truecolor without a truecolor TTY; see elevateToTrueColor).
+    const previewAnsi = state.trueColor ? elevateToTrueColor(ansi) : ansi;
+    const trueColor = state.trueColor ? TC_TRUECOLOR : undefined;
+    const recolored = applyFailureColor(previewAnsi, {
       status: state.status ?? 0,
       shell,
+      trueColor,
     });
     const theme = loadGhosttyTheme();
-    const rawHtml = ansiToHtml(ansi, { palette: theme.palette });
+    const rawHtml = ansiToHtml(previewAnsi, { palette: theme.palette });
     const html = ansiToHtml(recolored, { palette: theme.palette });
-    const spans = state.status !== 0 ? explainRecolor(ansi, shell).spans : [];
+    const spans = state.status !== 0 ? explainRecolor(previewAnsi, shell, trueColor).spans : [];
     return {
       ansi: recolored,
       html,
-      rawAnsi: ansi,
+      rawAnsi: previewAnsi,
       rawHtml,
       spans,
       state,
+      trueColor: !!trueColor,
       theme: {
         background: theme.background,
         foreground: theme.foreground,

@@ -17,6 +17,8 @@ export interface PromptState {
   status?: number;
   durationMs?: number;
   shell?: "zsh" | "bash";
+  /** TC-01 opt-in: render with true_color=true and recolor truecolor cyan→red (proposed-fix preview). */
+  trueColor?: boolean;
 }
 
 export interface BuiltRepo {

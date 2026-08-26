@@ -134,6 +134,23 @@ recolor logic demonstrably transforms. The UI MUST surface this as an explicit "
 (matches the dotfiles' recolor code; truecolor TTYs are a known limitation)" note. Do NOT
 pretend the demo reproduces truecolor-TTY behavior.
 
+**TC-01 opt-in (HJ-431):** the dotfiles' `starship_status_prompt` (zsh) and `starship_precmd`
+(bash) now ALSO recolor truecolor cyan (`38;2;r;g;b` matching the palette cyan) → red, preserving
+each wrapper's semantics (zsh: cyan-only; bash: all-foreground→red). The showcase mirrors this
+in `server/lib/recolor.ts` via an opt-in `trueColor` param (default off → byte-exact 8-color
+behavior). The UI exposes a **Truecolor preview (proposed fix)** toggle, which MUST be labeled a
+"proposed-fix preview, not current behavior" while the default path remains 8-color.
+
+**How the preview produces `38;2`:** the real `starship` binary only emits 8-color `36m` when
+spawned without a truecolor TTY (the server uses `spawnSync`, which has no TTY, so even
+`true_color = true` + a hex palette yields `36m`, not `38;2`). To demonstrate the proposed
+truecolor recolor, the server still invokes the real binary for the prompt CONTENT, then elevates
+its 8-color foreground escapes to `38;2` (cyan → the exact TC cyan RGB `46;222;250`) via
+`elevateToTrueColor` and replays the real `recolor` logic. This keeps the no-fake gate intact
+(content is the real binary's output) and is surfaced under the proposed-fix banner. The active
+palette must define `cyan`/`red` as hex for a true truecolor TTY to emit `38;2` in the first
+place (named 8-color styles emit `36m` even under `true_color = true`).
+
 The real `starship` binary is the single source of truth. The server must NOT fabricate,
 template, or statically store prompt output — **except on Workers where the binary is
 unavailable** (see §5b degraded mode).

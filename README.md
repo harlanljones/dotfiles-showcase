@@ -307,9 +307,11 @@ Work items are defined in [ROADMAP.md](./ROADMAP.md) with exclusive file/compone
 
 ## Known Limitations
 
-### Truecolor TTY Mismatch (MVP Demo)
+### Truecolor TTY Recolor
 
-In your real terminal (Ghostty), starship emits `38;2;r;g;b` (truecolor) when `true_color = true`. The dotfiles' recolor logic only handles 8-color `36m` escapes. The MVP demo forces `true_color = false` to demonstrate what the recolor *does* match, but this means the preview may not perfectly reflect your real prompt in a truecolor TTY until the recolor code is updated.
+In your real terminal (Ghostty), starship emits `38;2;r;g;b` (truecolor) when `true_color = true` **and** the active palette defines `cyan`/`red` as hex colors. The dotfiles' recolor wrappers now handle truecolor: `starship_status_prompt` (zsh) and `starship_precmd` (bash) remap the palette-cyan `38;2;r;g;b` → palette-red, preserving each shell's semantics (zsh: cyan-only; bash: all-foreground→red). See **TC-01 / HJ-431**.
+
+The playground forces `true_color = false` by default to demonstrate the shipped 8-color recolor path. An opt-in **Truecolor preview (proposed fix)** toggle lets you see the fix in action. Because the server renders starship via `spawnSync` (no truecolor TTY), the binary only emits 8-color `36m` — so the preview elevates the real binary's output to `38;2` (cyan → `#2EDEFA`) and replays the exact recolor logic. It is clearly labeled as a proposed-fix preview, not current behavior.
 
 ### TUI Tools Are Simulated
 

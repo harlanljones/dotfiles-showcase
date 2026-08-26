@@ -18,6 +18,8 @@ interface State {
   status: number;
   durationMs: number;
   width: number;
+  /** TC-01 opt-in: render with true_color=true and recolor truecolor cyan→red (proposed-fix preview). */
+  trueColor: boolean;
 }
 
 const DEFAULT: State = {
@@ -32,9 +34,10 @@ const DEFAULT: State = {
   status: 0,
   durationMs: 0,
   width: 200,
+  trueColor: false,
 };
 
-type ScenarioState = Omit<State, "width" | "durationMs">;
+type ScenarioState = Omit<State, "width" | "durationMs" | "trueColor">;
 
 interface Scenario {
   key: string;
@@ -188,7 +191,7 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
           </div>
         </div>
 
-        <div className="flex items-start justify-between gap-4"><div><p className="section-eyebrow">shell state</p><h2 className="mt-1 font-semibold">Tune the scene</h2></div><span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 font-mono text-[10px] text-cyan-200">8-COLOR</span></div>
+        <div className="flex items-start justify-between gap-4"><div><p className="section-eyebrow">shell state</p><h2 className="mt-1 font-semibold">Tune the scene</h2></div><span className={`rounded-full border px-2 py-1 font-mono text-[10px] ${s.trueColor ? "border-amber-300/40 bg-amber-300/15 text-amber-200" : "border-cyan-300/20 bg-cyan-300/10 text-cyan-200"}`}>{s.trueColor ? "TRUECOLOR (preview)" : "8-COLOR"}</span></div>
         <p className="text-xs leading-5 text-white/45">Every change renders against an isolated temporary Git repo.</p>
 
         <label className="block text-sm">
@@ -235,6 +238,21 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
             <option value="zsh">zsh — hadrian (cyan→red only)</option>
             <option value="bash">bash — augustus (all fg→red)</option>
           </select>
+        </label>
+
+        <label className="block text-sm">
+          <span className="text-white/60">Truecolor preview (proposed fix)</span>
+          <div className="mt-1">
+            <Toggle
+              label="Render with true_color=true and recolor 38;2 cyan→red"
+              on={s.trueColor}
+              onClick={() => set("trueColor", !s.trueColor)}
+            />
+          </div>
+          <span className="mt-1 block text-xs leading-4 text-white/35">
+            Demonstrates the TC-01 proposed dotfiles fix. Not the current shipped
+            behavior — the live recolor only matches 8-color escapes.
+          </span>
         </label>
 
         <label className="block text-sm">
@@ -358,9 +376,22 @@ export default function StarshipPlayground({ onRenderOutcome }: { onRenderOutcom
             {w}
           </p>
         ))}
+        {s.trueColor && !error && (
+          <p role="status" className="rounded-xl border border-amber-300/50 bg-amber-900/40 p-3 text-xs font-semibold text-amber-100">
+            ⚠ PROPOSED FIX PREVIEW — not current dotfiles behavior. This renders
+            starship with <code>true_color=true</code> and recolors the palette cyan
+            <code> 38;2;r;g;b</code> → red (TC-01). The shipped wrappers still only
+            match 8-color escapes.
+          </p>
+        )}
         <p className="border-l border-cyan-300/30 pl-3 text-xs leading-5 text-white/45">
           {degraded ? (
             <>Degraded mode: reconstructed from <code>fallback/starship.toml</code> (8-color so the recolor code applies). The local app renders with the real binary.</>
+          ) : s.trueColor ? (
+            <>Truecolor preview (proposed fix): the real <code>starship</code> binary
+            renders with <code>true_color=true</code> and the recolor remaps palette-cyan
+            <code> 38;2;r;g;b</code> → red. This demonstrates the proposed dotfiles
+            fix (TC-01), not current shipped behavior.</>
           ) : (
             <>Rendered by the real <code>starship</code> binary (forced to 8-color so
             the dotfiles&apos; recolor code applies). Truecolor TTYs are a known
