@@ -139,7 +139,7 @@ Owned **entirely** by the server. Handles all host-only work:
 
 Browse and interact with your dotfile tools and configurations:
 
-- **Starship:** Prompt configuration viewer (MVP demo includes real-time preview)
+- **Starship:** Full interactive playground inline — drives the real binary from the card (no separate tab)
 - **Recolor:** Shell failure-status color transformation showcase
 - **Git Safety:** Diagram of commit/push guardrails (Cline/Codex/Claude/OpenCode blocks)
 - **Lazygit + Ollama:** Commit message generation flow
@@ -157,7 +157,7 @@ Each card renders live configuration data where available, with bundled fallback
 
 ## MVP Demo: Starship Playground
 
-The **Starship Playground** is an early demo feature that showcases how the app integrates with real host binaries. It drives the actual `starship` binary through a UI with toggles for:
+The **Starship Playground** is the Explorer's Starship card — an early demo feature that showcases how the app integrates with real host binaries. It sits inside the Explorer with the same weight as the other cards and drives the actual `starship` binary through a UI with toggles for:
 
 - **SSH Mode:** Sets `SSH_CONNECTION` environment variable
 - **Git State:** Branch name, detached HEAD, dirty working tree, ahead/behind commits

@@ -64,7 +64,7 @@ export const MANIFEST: ManifestEntry[] = [
   {
     id: "starship",
     title: "Starship Prompt",
-    blurb: "Module layout of the real prompt; drive it in the Playground.",
+    blurb: "The real prompt, rendered inline — drive the shell state and see it respond.",
     kind: "interactive",
     sources: [{ livePath: "~/.config/starship.toml", fallbackFile: "starship.toml" }],
   },

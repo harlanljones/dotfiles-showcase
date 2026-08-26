@@ -12,7 +12,7 @@ import RecolorCard from "./explorer/RecolorCard";
 import RipgrepCard from "./explorer/RipgrepCard";
 import StarshipCard from "./explorer/StarshipCard";
 
-const CARDS: Record<CardId, React.ComponentType<{ onOpenPlayground: () => void }>> = {
+const CARDS: Record<CardId, React.ComponentType> = {
   starship: StarshipCard,
   recolor: RecolorCard,
   "git-safety": GitSafetyCard,
@@ -33,7 +33,7 @@ const KIND_DOT: Record<string, string> = {
   simulated: "bg-violet-400",
 };
 
-export default function Explorer({ onOpenPlayground }: { onOpenPlayground: () => void }) {
+export default function Explorer() {
   const [active, setActive] = useState<CardId>("starship");
   const ActiveCard = CARDS[active];
 
@@ -58,7 +58,7 @@ export default function Explorer({ onOpenPlayground }: { onOpenPlayground: () =>
       </nav>
 
       <div className="explorer-content min-w-0 flex-1">
-        <ActiveCard onOpenPlayground={onOpenPlayground} />
+        <ActiveCard />
       </div>
     </div>
   );

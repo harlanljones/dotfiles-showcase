@@ -1,47 +1,27 @@
-import { CardShell, Notice, Pill } from "./ui";
+import { useState } from "react";
+import StarshipPlayground, { type ApiStatus } from "../StarshipPlayground";
+import { CardShell, SourceBadge, type SourceKind } from "./ui";
 
-const MODULES = [
-  ["username", "bold blue — shown locally too"],
-  ["hostname", "only over SSH (yellow)"],
-  ["directory", "cyan, truncation_length = 2"],
-  ["git_branch", "purple branch name"],
-  ["git_status", "cyan ⇡/⇣/⇕ ahead-behind markers"],
-  ["custom.git_dirty", "cyan dot when the tree is dirty"],
-  ["cmd_duration", "yellow after 2s"],
-  ["character", "green ❯ on success, red ❯ on failure"],
-] as const;
+/** Provenance badge matches the served variant: degraded ⇒ fallback, else live. */
+function sourceKind(status: ApiStatus): SourceKind {
+  return status === "degraded" ? "fallback" : "live";
+}
 
-export default function StarshipCard({ onOpenPlayground }: { onOpenPlayground: () => void }) {
+export default function StarshipCard() {
+  const [status, setStatus] = useState<ApiStatus>("idle");
+
   return (
     <CardShell
       title="Starship Prompt"
-      blurb="The prompt is configured in starship.toml and rendered by the real starship binary."
+      blurb="The prompt is configured in starship.toml and rendered by the real starship binary. Drive the shell state below to watch it respond — including the exact 36m → 31m recolor on failure."
+      badges={
+        <div className="flex gap-1.5">
+          <SourceBadge source={sourceKind(status)} />
+          <span className="rounded border border-cyan-300/20 bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-cyan-200">8-COLOR</span>
+        </div>
+      }
     >
-      <div className="space-y-4">
-        <Notice tone="info">
-          The module layout below approximates the committed starship.toml
-          snapshot — open the Playground for a live render by the real binary.
-        </Notice>
-        <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {MODULES.map(([name, desc]) => (
-            <div key={name} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-              <dt className="font-mono text-xs text-cyan-300">{name}</dt>
-              <dd className="text-xs text-white/50">{desc}</dd>
-            </div>
-          ))}
-        </dl>
-        <button
-          onClick={onOpenPlayground}
-          className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
-        >
-          Open the Playground →
-        </button>
-        <p className="text-xs text-white/40">
-          The Playground builds a throwaway git repo for any state (branch, dirty, ahead/
-          behind, rebase/merge, detached) and renders it with the real binary — including
-          the exact <Pill>36m → 31m</Pill> recolor your shells apply on failure.
-        </p>
-      </div>
+      <StarshipPlayground onRenderOutcome={setStatus} />
     </CardShell>
   );
 }
