@@ -28,9 +28,9 @@ The rice spans two machines (Hadrian / Augustus) and sits on Omarchy / Ghostty /
 
 ## Capabilities and Constraints
 
-First-paint rooms (four): Starship (recolor lab absorbed into this room and deleted as a peer), Ghostty, Hyprland, Git Safety.
+First-paint rooms (four): Starship (recolor lab absorbed into this room and deleted as a peer), Ghostty, Hyprland, Dots CLI.
 
-Annex: a compact leftover directory reached by a quiet chrome word `index` — lazygit, fzf/zoxide/atuin, mise, packages, neovim, ripgrep. Leftovers keep demos as receipts, not peers.
+Annex: a compact leftover directory reached by a quiet chrome word `index` — Git Safety first, then lazygit, fzf/zoxide/atuin, mise, packages, neovim, ripgrep. Leftovers keep demos as receipts, not peers.
 
 Session: empty veil once per tab; first pointer/tap wakes into Starship; after that the visitor stays in rooms. Other rooms are faint names, always. No prescribed walk. No distinct foyer after the first gesture. Phone: all four rooms must work. Desk: linger, inspect, leftovers.
 
@@ -46,7 +46,7 @@ Working title: Dotfiles Showcase. Do not invent a replacement name. Author is no
 
 ## Evidence on Hand
 
-Runnable rooms backed by live-or-fallback configs (`src/manifest.ts`, `fallback/*`). Real Starship renders locally; Workers reconstructs from `fallback/starship.toml` + recolor. Ghostty palette from omarchy theme state. Hyprland dual-monitor layout from `monitors.lua`. Git Safety is a static diagram of agent commit/push blocks. Do not fabricate testimonials, customer counts, or live-binary claims on Workers.
+Runnable rooms backed by live-or-fallback configs (`src/manifest.ts`, `fallback/*`). Real Starship renders locally; Workers reconstructs from `fallback/starship.toml` + recolor. Ghostty palette comes from omarchy theme state. Hyprland uses the served `monitors.lua`. Dots parses the served Bash wrapper into a read-only command map, exact handler source, and explicitly simulated traces; it never executes the wrapper. Git Safety is a static annex diagram of agent commit/push blocks. Do not fabricate testimonials, customer counts, or live-binary claims on Workers.
 
 ## Product Principles
 

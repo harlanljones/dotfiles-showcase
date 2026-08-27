@@ -93,6 +93,9 @@ Owned **entirely** by the server. Handles all host-only work:
 
 2. **Tool Execution:** Runs host binaries safely in isolated contexts where applicable
 
+   The Dots CLI is the deliberate exception: `/api/cards/dots` only reads and parses the
+   Bash source. The app never invokes `dots`, `chezmoi`, `dots-push`, git, or Ollama for that room.
+
 3. **Starship Playground:** Headline feature demonstrating real binary integration:
    - Runs actual `starship` binary with isolated temporary git repository
    - Reflects shell state (branch, dirty files, ahead/behind, rebase/merge/detached)
@@ -149,6 +152,7 @@ Browse and interact with your dotfile tools and configurations:
 - **mise:** Tools and versions table
 - **Brewfile & pacman:** Package manager browser
 - **Hyprland:** Dual-monitor diagram
+- **Dots CLI:** Read-only command map, sanitized workflow simulator, and exact served handler source
 - **Neovim & LazyVim:** Extras and plugins reference
 - **ripgrep:** Flags and options reference
 
@@ -182,7 +186,7 @@ The server forces `true_color = false` in the starship config to emit 8-color `3
 - React 19 + Vite + TypeScript + Tailwind client
 - Hono/Bun API server for host-only work
 - Live config reads with bundled fallback
-- Feature Explorer covering 11+ dotfile tools
+- Feature Explorer covering 12 dotfile tools
 - Starship Playground (live binary integration)
 - Unit tests for recolor, ANSI, and starship integration
 - Full typecheck, zero console errors
@@ -248,6 +252,7 @@ bun run build
 - **Unit tests** for ANSI→HTML conversion (including truecolor `38;2;r;g;b` handling)
 - **Integration tests** for starship invocation (if binary is available; skipped otherwise)
 - **Golden file tests** to ensure temp-repo git-state simulation matches real `starship` output
+- **Parser and fallback tests** for the Dots CLI source map; the suite never executes `dots`
 
 ### Type Safety
 
@@ -290,7 +295,7 @@ This project follows an explicit milestone-based roadmap with measurable exit cr
 
 ### Current Status
 
-**v1 (local-first showcase) — Shipped.** Milestones M1–M6 are complete; integration checkpoints IC-1 through IC-5 all verified. The full app walks through clean: 106/106 unit tests pass, `bun run typecheck` is clean (0 errors), and the production `bun run build` succeeds. The Starship Playground drives the real `starship` binary (v1.26.0, pinned) and the Explorer renders all 11 feature cards (live-or-fallback configs, with fzf/zoxide/atuin as labeled simulated mini-demos).
+**v1 (local-first showcase) — Shipped.** Milestones M1–M6 are complete; integration checkpoints IC-1 through IC-5 remain the historical shipped record. The Starship Playground drives the real `starship` binary (v1.26.0, pinned). Post-v2 work HJ-550 adds Dots as the fourth room: its ten commands come from live-or-fallback Bash source, while every transcript is labeled simulated and remains read-only.
 
 **v2 (Cloudflare Workers public mirror, ADR-001) — Deployed & verified.** `DEPLOY-08` shipped the read-only public mirror to `https://dotfiles-showcase.harlanljones.workers.dev` (version `b835f72f`); health + degraded starship + cards + SPA smoke are green. Latency baselines are recorded in [ROADMAP.md](./ROADMAP.md) §2: local starship render p95 ≈ 73 ms (threshold p95 < 500 ms); live Workers degraded render p50 ≈ 88 ms / p95 ≈ 150 ms. The Workers path serves `dist/` + `/api/*` via Workers assets and returns `{ degraded: true }` for `/api/starship`, with the UI bannering the degraded state (local `bun run dev` remains the canonical high-fidelity path).
 

@@ -29,6 +29,7 @@ const { default: FuzzyToolsCard } = await import("./FuzzyToolsCard");
 const { default: GitSafetyCard } = await import("./GitSafetyCard");
 const { default: RecolorCard } = await import("./RecolorCard");
 const { default: StarshipCard } = await import("./StarshipCard");
+const { default: DotsCliCard } = await import("./DotsCliCard");
 
 type Payload = Record<string, unknown>;
 
@@ -40,6 +41,34 @@ interface FetcherCase {
 }
 
 const FETCHERS: FetcherCase[] = [
+  {
+    name: "dots",
+    component: DotsCliCard,
+    live: {
+      source: "live",
+      commands: [{
+        name: "status",
+        aliases: ["st"],
+        description: "Show state of managed files",
+        effect: "read",
+        handler: "cmd_status",
+        handlerSource: "cmd_status() {\n  chezmoi status\n}",
+      }],
+      warnings: [],
+    },
+    fallback: {
+      source: "fallback",
+      commands: [{
+        name: "status",
+        aliases: ["st"],
+        description: "Show state of managed files",
+        effect: "read",
+        handler: "cmd_status",
+        handlerSource: "cmd_status() {\n  chezmoi status\n}",
+      }],
+      warnings: ["Live dots source was unavailable."],
+    },
+  },
   {
     name: "lazygit",
     component: LazygitCard,

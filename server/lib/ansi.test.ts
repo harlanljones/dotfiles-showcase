@@ -17,11 +17,42 @@ describe("ansiToHtml", () => {
     }
   });
 
-  test("converts truecolor 38;2;r;g;b", () => {
+  test("converts truecolor 38;2;r;g;b to the exact RGB", () => {
     const html = ansiToHtml(`${ESC}38;2;12;34;56mhi`);
     expect(html).toContain("hi");
-    // 24-bit color produces an rgb() style.
-    expect(html.toLowerCase()).toMatch(/rgb\(|#0c2238|color/);
+    expect(html.toLowerCase()).toContain("color:#0c2238");
+  });
+
+  test("truecolor with style attrs keeps both (ansi-to-html cannot parse combined 38;2)", () => {
+    // Regression: ansi-to-html misparses `1;38;2;255;102;92m` — the trailing
+    // `92` leaks through as bright green (palette index 10). The converter must
+    // split extended colors into standalone escapes.
+    const palette = new Array(16).fill("#101010");
+    palette[10] = "#8a9e81"; // bright green: what the bug used to leak
+    const html = ansiToHtml(`${ESC}1;38;2;255;102;92mharlan${ESC}0m`, { palette });
+    expect(html.toLowerCase()).toContain("color:#ff665c");
+    expect(html).toContain("<b>");
+    expect(html.toLowerCase()).not.toContain("#8a9e81");
+  });
+
+  test("truecolor background 48;2;r;g;b renders as background-color", () => {
+    const html = ansiToHtml(`${ESC}48;2;170;0;170mbg`);
+    expect(html.toLowerCase()).toContain("background-color:#aa00aa");
+  });
+
+  test("truecolor recolor result (38;2 red) renders red under the ghostty palette", () => {
+    // End-to-end shape of the TC-01 preview: bash truecolor recolor output.
+    const palette = new Array(16).fill("#101010");
+    const html = ansiToHtml(`${ESC}1;38;2;255;102;92m${ESC}0m@${ESC}1;2;38;2;255;102;92mfix${ESC}0m`, {
+      palette,
+    });
+    expect((html.match(/#ff665c/g) ?? []).length).toBe(2);
+  });
+
+  test("truecolor conversion still escapes markup", () => {
+    const html = ansiToHtml(`${ESC}38;2;12;34;56m<script>alert(1)</script>`);
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
   });
 
   test("escapes HTML/XML so markup cannot be injected", () => {

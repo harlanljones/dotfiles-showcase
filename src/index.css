@@ -375,6 +375,239 @@ html[data-failed="1"] .display {
   border-radius: 0;
 }
 
+.dots-stage {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.dots-loading {
+  margin: 0;
+  color: var(--ash-dim);
+  font-size: 0.76rem;
+}
+
+.dots-workbench {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.3);
+}
+
+.dots-terminal {
+  min-width: 0;
+  min-height: 24rem;
+  display: flex;
+  flex-direction: column;
+  padding: 1.35rem;
+  background: var(--glass-lit);
+}
+
+.dots-terminal-meta,
+.dots-trace header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  color: var(--ash-dim);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+}
+
+.dots-terminal-copy {
+  flex: 1;
+  min-height: 13rem;
+  margin: 2.5rem 0 1.5rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  color: var(--ash);
+  font: inherit;
+  font-size: clamp(0.76rem, 2vw, 0.92rem);
+  line-height: 1.8;
+}
+
+.dots-terminal-copy::first-line {
+  color: var(--phosphor);
+}
+
+.dots-description {
+  max-width: 70ch;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  color: var(--ash-dim);
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.dots-effect {
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+.dots-effect-read {
+  color: var(--phosphor);
+}
+
+.dots-effect-navigate {
+  color: var(--ash);
+}
+
+.dots-effect-write {
+  color: var(--fail);
+}
+
+.dots-command-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--glass);
+}
+
+.dots-command-list button {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  align-content: center;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  color: var(--ash-dim);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.dots-command-list button:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+
+.dots-command-list button[aria-pressed="true"] {
+  background: var(--glass-lit);
+  color: var(--phosphor);
+}
+
+.dots-command-name {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+}
+
+.dots-command-aliases {
+  overflow: hidden;
+  color: var(--ash-dim);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+}
+
+.dots-options {
+  min-height: 2.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.dots-options button,
+.dots-options > p,
+.dots-target {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.72rem 0.9rem;
+  background: var(--glass);
+  color: var(--ash-dim);
+  font-size: 0.68rem;
+}
+
+.dots-options button[aria-pressed="true"] {
+  background: var(--glass-lit);
+  color: var(--phosphor);
+}
+
+.dots-options code {
+  color: currentColor;
+}
+
+.dots-target {
+  flex: 1 1 24rem;
+}
+
+.dots-target span {
+  color: var(--ash-dim);
+}
+
+.dots-target input {
+  min-width: 8rem;
+  flex: 1;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--phosphor);
+  outline: 0;
+}
+
+.dots-target input:focus {
+  border-color: var(--phosphor);
+}
+
+.dots-trace {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--glass-lit);
+}
+
+.dots-trace header {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.dots-trace header code {
+  color: var(--phosphor);
+  text-transform: none;
+}
+
+.dots-trace pre {
+  max-height: 26rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  color: var(--ash);
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+@media (min-width: 900px) {
+  .dots-workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 22rem);
+  }
+
+  .dots-command-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dots-command-list button:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .dots-command-list button:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dots-command-list button:hover,
+  .dots-options button:hover {
+    background: var(--glass-lit);
+    color: var(--ash);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

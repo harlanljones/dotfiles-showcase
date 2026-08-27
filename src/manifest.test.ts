@@ -28,6 +28,7 @@ describe("manifest schema (D4)", () => {
       "mise",
       "packages",
       "hyprland",
+      "dots",
       "neovim",
       "ripgrep",
     ]);

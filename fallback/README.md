@@ -29,6 +29,7 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 | File | Strategy | Live source | Notes |
 | --- | --- | --- | --- |
 | `Brewfile` | SYNTHETIC | none on Linux host | macOS-parity manifest, package names + taps only |
+| `dots` | FULL-COPY | `~/.local/bin/dots` | complete Bash wrapper copied as readable source; the showcase parses it but never executes it |
 | `ghostty-config` | TRIMMED-SAMPLE | `~/.config/ghostty/config` | comments dropped, all effective settings kept (font, window, cursor, shell-integration, keybinds, scroll, async-backend) |
 | `ghostty-theme.conf` | TRIMMED-SAMPLE | `~/.local/state/omarchy/current/theme/ghostty.conf` | generated omarchy state: background/foreground/palette lines only; refresh after theme switch |
 | `hypr-monitors.lua` | FULL-COPY | `~/.config/hypr/monitors.lua` | header replaces the two wiki comment lines; rest verbatim |

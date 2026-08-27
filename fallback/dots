@@ -1,0 +1,317 @@
+# Fallback snapshot: dots.
+# Live source: ~/.local/bin/dots
+
+set -euo pipefail
+
+# ANSI color styling
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[0;33m'
+RED=$'\033[0;31m'
+CYAN=$'\033[0;36m'
+NC=$'\033[0m'
+
+ensure_chezmoi() {
+  if ! command -v chezmoi >/dev/null 2>&1; then
+    echo -e "${RED}error:${NC} chezmoi is not installed or not in PATH." >&2
+    exit 1
+  fi
+}
+
+get_source_dir() {
+  ensure_chezmoi
+  chezmoi source-path 2>/dev/null || echo "$HOME/.local/share/chezmoi"
+}
+
+usage() {
+  cat <<EOF
+${BOLD}dots${NC} - Ergonomic Chezmoi Dotfiles Manager
+
+${BOLD}USAGE:${NC}
+  dots <command> [options] [arguments]
+
+${BOLD}COMMANDS:${NC}
+  ${CYAN}sync, apply${NC}       Apply managed dotfiles to your home directory
+  ${CYAN}diff${NC}              Show clean diff of pending changes (scripts hidden by default)
+  ${CYAN}status, st${NC}        Show state of managed files (modified, added, untracked)
+  ${CYAN}absorb, add${NC}       Re-add / capture live modified files back into chezmoi repo
+  ${CYAN}edit, ed${NC}          Edit the source template for a target managed file
+  ${CYAN}cd${NC}                Open a shell or print the chezmoi source directory path
+  ${CYAN}update, pull${NC}      Pull latest dotfiles from git remote and apply
+  ${CYAN}push, pp${NC}          Commit & push dotfiles repo with an Ollama-generated commit message
+  ${CYAN}doctor${NC}            Run diagnostics on tools, age keys, and agent skill links
+  ${CYAN}help${NC}              Show this help message
+
+${BOLD}OPTIONS FOR SYNC:${NC}
+  -n, --dry-run      Show what changes would be made without applying them
+  -v, --verbose      Show detailed output during sync
+  -f, --force        Force overwrite without interactive prompts
+
+${BOLD}OPTIONS FOR DIFF:${NC}
+  -a, --all          Include generated script contents in the diff output
+
+${BOLD}OPTIONS FOR PUSH:${NC}
+  Delegates to dots-push: re-adds locally modified targets, stages all
+  changes, generates a one-line conventional commit message with local
+  Ollama, commits, and pushes to origin. Falls back to a dated message
+  when Ollama is unavailable.
+  Environment overrides:
+    OLLAMA_COMMIT_MODEL   Model used for message generation
+                          (default: qwen2.5-coder:7b)
+    CHEZMOI_DIR           Chezmoi source directory
+                          (default: ~/.local/share/chezmoi)
+
+${BOLD}EXAMPLES:${NC}
+  dots sync                # Fast apply managed dotfiles
+  dots diff                # View clean config diff without template noise
+  dots diff --all          # View full diff including run_* scripts
+  dots status              # View modified files
+  dots absorb ~/.zshrc     # Capture local changes into chezmoi source
+  dots update              # Pull remote changes and apply
+  dots push                # Stage, commit with AI-generated message, push
+  dots doctor              # Verify encryption keys, toolchains & agent links
+EOF
+}
+
+cmd_sync() {
+  ensure_chezmoi
+  local args=()
+  local dry_run=0
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -n|--dry-run)
+        dry_run=1
+        args+=("--dry-run")
+        ;;
+      -v|--verbose)
+        args+=("--verbose")
+        ;;
+      -f|--force)
+        args+=("--force")
+        ;;
+      *)
+        args+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  if [[ $dry_run -eq 1 ]]; then
+    echo -e "${YELLOW}== Dry Run: Inspecting pending changes ==${NC}"
+    chezmoi apply "${args[@]}"
+    return 0
+  fi
+
+  echo -e "${CYAN}== Synchronizing dotfiles ==${NC}"
+  if chezmoi apply "${args[@]}"; then
+    echo -e "${GREEN}✓ Dotfiles successfully synchronized.${NC}"
+  else
+    local status=$?
+    echo -e "${RED}✗ Dotfiles synchronization failed with exit code $status.${NC}" >&2
+    return $status
+  fi
+}
+
+cmd_diff() {
+  ensure_chezmoi
+  local include_scripts=0
+  local passthrough=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -a|--all)
+        include_scripts=1
+        ;;
+      *)
+        passthrough+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  if [[ $include_scripts -eq 1 ]]; then
+    chezmoi diff "${passthrough[@]}"
+  else
+    # Default: filter out noisy script contents unless requested
+    chezmoi diff --script-contents=false "${passthrough[@]}"
+  fi
+}
+
+cmd_status() {
+  ensure_chezmoi
+  local output
+  output=$(chezmoi status "$@" 2>/dev/null || true)
+
+  if [[ -z "$output" ]]; then
+    echo -e "${GREEN}✓ Working tree clean (all managed files match source).${NC}"
+    return 0
+  fi
+
+  echo -e "${BOLD}Managed Dotfiles Status:${NC}"
+  while IFS= read -r line; do
+    local state="${line:0:2}"
+    local file="${line:3}"
+    case "$state" in
+      " M"|"M ") echo -e "  ${YELLOW}modified:${NC}   $file" ;;
+      " A"|"A ") echo -e "  ${GREEN}added:${NC}      $file" ;;
+      " D"|"D ") echo -e "  ${RED}deleted:${NC}    $file" ;;
+      " ?"|"? ") echo -e "  ${DIM}untracked:${NC}  $file" ;;
+      *)         echo -e "  $state $file" ;;
+    esac
+  done <<< "$output"
+}
+
+cmd_absorb() {
+  ensure_chezmoi
+  if [[ $# -eq 0 ]]; then
+    # If no target file is given, check for omarchy-dotfiles-sync or prompt
+    if command -v omarchy-dotfiles-sync >/dev/null 2>&1; then
+      echo -e "${CYAN}Running omarchy-dotfiles-sync capture...${NC}"
+      omarchy-dotfiles-sync
+      return 0
+    else
+      echo -e "${YELLOW}Usage: dots absorb <file-path ...>${NC}"
+      echo "Re-adds modified file(s) from your home directory back into chezmoi source repo."
+      return 1
+    fi
+  fi
+
+  echo -e "${CYAN}Re-adding target(s) into chezmoi source:${NC} $*"
+  chezmoi re-add "$@"
+  echo -e "${GREEN}✓ Target(s) updated in chezmoi source repo.${NC}"
+}
+
+cmd_edit() {
+  ensure_chezmoi
+  if [[ $# -eq 0 ]]; then
+    echo -e "${YELLOW}Usage: dots edit <file-path>${NC}"
+    return 1
+  fi
+  chezmoi edit "$@"
+}
+
+cmd_cd() {
+  local src
+  src="$(get_source_dir)"
+  if [[ -t 1 && -n "${SHELL:-}" && "${1:-}" != "--print" ]]; then
+    echo -e "${CYAN}Entering chezmoi source directory:${NC} $src"
+    cd "$src" && exec "$SHELL"
+  else
+    echo "$src"
+  fi
+}
+
+cmd_update() {
+  ensure_chezmoi
+  local src
+  src="$(get_source_dir)"
+  echo -e "${CYAN}Pulling latest changes in $src...${NC}"
+  git -C "$src" pull --rebase
+  echo -e "${CYAN}Applying updated dotfiles...${NC}"
+  cmd_sync "$@"
+}
+
+cmd_push() {
+  if ! command -v dots-push >/dev/null 2>&1; then
+    echo -e "${RED}error:${NC} dots-push is not installed or not in PATH." >&2
+    exit 1
+  fi
+  echo -e "${CYAN}== Committing & pushing dotfiles repo (Ollama-generated message) ==${NC}"
+  exec dots-push "$@"
+}
+
+cmd_doctor() {
+  ensure_chezmoi
+  local src
+  src="$(get_source_dir)"
+
+  echo -e "${BOLD}=== Dotfiles Health & Diagnostics ===${NC}"
+
+  # 1. Chezmoi binary
+  local cm_ver
+  cm_ver=$(chezmoi --version 2>/dev/null | head -n 1 || echo "unknown")
+  echo -e " ${GREEN}✓${NC} ${BOLD}chezmoi:${NC} $cm_ver"
+
+  # 2. Source repo git status
+  if [[ -d "$src/.git" ]]; then
+    local branch dirty
+    branch=$(git -C "$src" branch --show-current 2>/dev/null || echo "detached")
+    dirty=$(git -C "$src" status --porcelain 2>/dev/null | wc -l)
+    if [[ "$dirty" -eq 0 ]]; then
+      echo -e " ${GREEN}✓${NC} ${BOLD}source repo:${NC} $src (branch: ${CYAN}$branch${NC}, clean)"
+    else
+      echo -e " ${YELLOW}!${NC} ${BOLD}source repo:${NC} $src (branch: ${CYAN}$branch${NC}, ${YELLOW}$dirty uncommitted changes${NC})"
+    fi
+  else
+    echo -e " ${RED}✗${NC} ${BOLD}source repo:${NC} $src is not a git repository"
+  fi
+
+  # 3. Age encryption key
+  local age_key="${HOME}/.config/chezmoi/key.txt"
+  if [[ -f "$age_key" ]]; then
+    echo -e " ${GREEN}✓${NC} ${BOLD}age key:${NC} found at $age_key"
+  elif command -v age >/dev/null 2>&1; then
+    echo -e " ${DIM}–${NC} ${BOLD}age:${NC} installed (custom key path or unencrypted config)"
+  else
+    echo -e " ${YELLOW}!${NC} ${BOLD}age:${NC} age binary not found in PATH"
+  fi
+
+  # 4. Runtime managers (Mise / Bun)
+  if command -v mise >/dev/null 2>&1; then
+    local mise_ver
+    mise_ver=$(mise --version 2>/dev/null | head -n 1)
+    echo -e " ${GREEN}✓${NC} ${BOLD}mise:${NC} $mise_ver"
+  fi
+  if command -v bun >/dev/null 2>&1; then
+    local bun_ver
+    bun_ver=$(bun --version 2>/dev/null | head -n 1)
+    echo -e " ${GREEN}✓${NC} ${BOLD}bun:${NC} v$bun_ver"
+  fi
+
+  # 5. Agent skills catalog
+  local shared_skills="$HOME/.agents/skills"
+  if [[ -d "$shared_skills" ]]; then
+    local skill_count
+    skill_count=$(find "$shared_skills" -maxdepth 2 -name "SKILL.md" 2>/dev/null | wc -l)
+    echo -e " ${GREEN}✓${NC} ${BOLD}agent skills:${NC} $skill_count skill(s) linked in $shared_skills"
+  else
+    echo -e " ${DIM}–${NC} ${BOLD}agent skills:${NC} $shared_skills not initialized yet"
+  fi
+
+  # 6. Live vs baseline drift check on Claude Code settings
+  local claude_settings="$HOME/.claude/settings.json"
+  if [[ -f "$claude_settings" ]]; then
+    echo -e " ${GREEN}✓${NC} ${BOLD}claude settings:${NC} present at $claude_settings (dynamic drift auto-merged)"
+  fi
+
+  echo
+  echo -e "${GREEN}Diagnostics complete.${NC}"
+}
+
+# Subcommand dispatch
+main() {
+  local cmd="${1:-help}"
+  shift || true
+
+  case "$cmd" in
+    sync|apply)     cmd_sync "$@" ;;
+    diff)           cmd_diff "$@" ;;
+    status|st)      cmd_status "$@" ;;
+    absorb|add)     cmd_absorb "$@" ;;
+    edit|ed)        cmd_edit "$@" ;;
+    cd)             cmd_cd "$@" ;;
+    update|pull)    cmd_update "$@" ;;
+    push|pp)        cmd_push "$@" ;;
+    doctor)         cmd_doctor "$@" ;;
+    help|-h|--help) usage ;;
+    *)
+      echo -e "${RED}error:${NC} Unknown command '$cmd'." >&2
+      echo "Run 'dots help' for usage instructions." >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

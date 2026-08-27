@@ -4,6 +4,7 @@
 
 1password
 1password-cli
+7zip
 aether
 age
 alsa-utils
@@ -50,7 +51,9 @@ fcitx5-gtk
 fcitx5-qt
 fd
 ffmpegthumbnailer
+firefox
 flatpak
+flite
 fontconfig
 foot
 freetoken-desktop
@@ -92,6 +95,7 @@ less
 lib32-nvidia-utils
 lib32-vulkan-intel
 libappindicator
+libbacktrace
 libpulse
 libqalculate
 libreoffice-fresh
@@ -113,7 +117,7 @@ luarocks
 man-db
 mariadb-libs
 minecraft-launcher
-mise
+mise-bin
 moonlight-qt
 mpv
 mpv-mpris
@@ -157,8 +161,9 @@ python-poetry-core
 qemu-user-static-binfmt
 qrencode
 qt5-wayland
+qt6-imageformats
 qt6-wayland
-quickshell-git
+quickshell
 ripgrep
 rsync
 ruby
@@ -196,6 +201,7 @@ usage
 uwsm
 vpl-gpu-rt
 vulkan-intel
+webkitgtk-6.0
 whois
 wireless-regdb
 wireplumber

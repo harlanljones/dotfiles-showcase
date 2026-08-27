@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { readConfig, userHome, type ConfigResult } from "./configs";
 import { getManifestEntry, type CardId, type ConfigSource, type FallbackFile } from "../../src/manifest";
 import { isWorkerd } from "./runtime";
+import { parseDotsScript } from "./dots";
+import type { DotsCardPayload } from "../../src/lib/dotsCli";
 
 // ---------------------------------------------------------------------------
 // Pure parsers (unit-tested without filesystem access)
@@ -244,6 +246,25 @@ function hyprlandCard() {
   return { source: cfg.source, ...parseHyprMonitors(cfg.content) };
 }
 
+function dotsCard(): DotsCardPayload {
+  const src = manifestSource("dots", "dots");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
+  let source = cfg.source;
+  let parsed = parseDotsScript(cfg.content);
+  const warnings: string[] = [];
+
+  if (source === "live" && parsed.missing.length > 0) {
+    parsed = parseDotsScript(readConfig([], src.fallbackFile).content);
+    source = "fallback";
+    warnings.push("Live dots source was incomplete; showing the bundled fallback snapshot.");
+  }
+  if (parsed.missing.length > 0) {
+    warnings.push(`Dots source is missing canonical commands: ${parsed.missing.join(", ")}.`);
+  }
+
+  return { source, commands: parsed.commands, warnings };
+}
+
 function neovimCard() {
   const extrasSrc = manifestSource("neovim", "lazyvim.json");
   const lockSrc = manifestSource("neovim", "lazy-lock.json");
@@ -274,6 +295,7 @@ const CARDS: Record<string, () => unknown> = {
   mise: miseCard,
   packages: packagesCard,
   hyprland: hyprlandCard,
+  dots: dotsCard,
   neovim: neovimCard,
   ripgrep: ripgrepCard,
   lazygit: lazygitCard,

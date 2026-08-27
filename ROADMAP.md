@@ -16,8 +16,8 @@ when sync happens.
 **Current state:** Shipped local-first showcase; Cloudflare Workers public mirror already
 deployed (ADR-001). Submodule already registered at
 `/home/harlan/.local/share/chezmoi/dotfiles-showcase/`. v1 (M1–M6) and v2
-(DEPLOY-01..08, TC-01, FB-01) are complete; see §6 integration checkpoints. It will become a git submodule of
-`/home/harlan/.local/share/chezmoi` at `dotfiles-showcase/`.
+(DEPLOY-01..08, TC-01, FB-01) are complete; see §6 integration checkpoints. HJ-550 adds
+the read-only Dots CLI room without changing the deployed runtime contract.
 
 **Objective:** Ship a local-first web app that visualizes chezmoi-managed dotfile
 functionality, headlined by a Starship Playground that drives the real `starship` binary via
@@ -41,6 +41,13 @@ recolor) for a chosen shell state.
   `{ degraded: true }` snapshot from `fallback/starship.toml` + recolor; every config read
   degrades to `fallback/*`; UI banners the degraded state.
 - CI/CD via `wrangler deploy` (GitHub Actions, `workers.dev` previews).
+
+**Scope (post-v2 — HJ-550):**
+- Dots CLI is the fourth primary room; Git Safety moves intact to the first index receipt.
+- `GET /api/cards/dots` reads `~/.local/bin/dots` locally and `fallback/dots` on Workers,
+  parsing ten commands, aliases, effects, handler names, and exact handler source.
+- Browser transcripts are sanitized simulations. Neither runtime executes `dots` or any
+  command named by its source.
 
 **Non-goals (v1 + v2):** editing/syncing dotfiles from the app (read-only showcase in both modes).
 
@@ -306,6 +313,22 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   chezmoiignore + no-secret checks.
   Validation: all M1–M5 exit criteria reconfirmed.
   Exit: project meets v1 objective; ready for Linear issue closure.
+
+### Post-v2 — Dots CLI room (HJ-550)
+- **DOTS-01** — Source parser + fallback/API contract. Deps: CFG-01, FB-01.
+  Ownership: `server/lib/dots.ts`, `server/lib/cardsData.ts`, `src/lib/dotsCli.ts`,
+  `src/manifest.ts`, `fallback/dots`, parser/card/fallback tests.
+  Deliverable: all ten help-documented commands are parsed from live or bundled Bash with
+  exact handler source; incomplete live content retries the fallback without throwing.
+  Validation: focused parser/API/fallback tests and Workers bundle parity.
+  Exit: `/api/cards/dots` returns source provenance, commands, and warnings without spawning.
+- **DOTS-02** — Terminal + trace room. Deps: DOTS-01.
+  Ownership: `src/components/explorer/DotsCliCard.tsx`, `src/components/Explorer.tsx`,
+  Dots styles and render tests.
+  Deliverable: fourth-room navigation, all ten verbs, command-specific preview controls,
+  explicitly simulated sanitized transcript, and the exact served handler source.
+  Validation: desktop/mobile browser walkthrough, render parity, typecheck, production build.
+  Exit: Dots is usable at both breakpoints; Git Safety is the first index receipt.
 
 ---
 

@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -78,6 +78,24 @@ describe("fallback coverage: builders render without any live config", () => {
     const data = buildCard("packages") as { pacmanSource: string; pacman: string[] };
     expect(data.pacmanSource).toBe("fallback");
     expect(data.pacman.length).toBeGreaterThan(0);
+  });
+
+  it("dots fallback preserves all ten parsed commands", () => {
+    const data = buildCard("dots") as { source: string; commands: unknown[]; warnings: string[] };
+    expect(data.source).toBe("fallback");
+    expect(data.commands).toHaveLength(10);
+    expect(data.warnings).toEqual([]);
+  });
+
+  it("dots retries the fallback when a live script is incomplete", () => {
+    const liveDir = join(sandboxHome, ".local", "bin");
+    mkdirSync(liveDir, { recursive: true });
+    writeFileSync(join(liveDir, "dots"), "#!/usr/bin/env bash\necho incomplete\n");
+
+    const data = buildCard("dots") as { source: string; commands: unknown[]; warnings: string[] };
+    expect(data.source).toBe("fallback");
+    expect(data.commands).toHaveLength(10);
+    expect(data.warnings[0]).toContain("Live dots source was incomplete");
   });
 });
 

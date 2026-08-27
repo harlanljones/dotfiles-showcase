@@ -15,6 +15,7 @@ export type CardId =
   | "mise"
   | "packages"
   | "hyprland"
+  | "dots"
   | "neovim"
   | "ripgrep";
 
@@ -23,6 +24,7 @@ export type CardKind = "live" | "static" | "interactive" | "simulated";
 /** Every bundled fallback file that exists under `/fallback`. */
 export const FALLBACK_FILES = [
   "Brewfile",
+  "dots",
   "ghostty-config",
   "ghostty-theme.conf",
   "hypr-monitors.lua",
@@ -129,6 +131,13 @@ export const MANIFEST: ManifestEntry[] = [
     blurb: "The dual-monitor layout from monitors.lua, drawn to scale.",
     kind: "live",
     sources: [{ livePath: "~/.config/hypr/monitors.lua", fallbackFile: "hypr-monitors.lua" }],
+  },
+  {
+    id: "dots",
+    title: "Dots CLI",
+    blurb: "A read-only trace of the ergonomic chezmoi wrapper: choose a command, inspect its handler, and preview a sanitized workflow.",
+    kind: "live",
+    sources: [{ livePath: "~/.local/bin/dots", fallbackFile: "dots" }],
   },
   {
     id: "neovim",

@@ -192,6 +192,7 @@ describe("cards: manifest-driven builders", () => {
       mise: ["source", "tools"],
       packages: ["brewSource", "formulae", "casks", "pacmanSource", "pacman"],
       hyprland: ["source", "gdkScale", "monitors"],
+      dots: ["source", "commands", "warnings"],
       neovim: ["extrasSource", "lockSource", "extras", "plugins"],
       ripgrep: ["source", "flags"],
       lazygit: ["source", "content"],

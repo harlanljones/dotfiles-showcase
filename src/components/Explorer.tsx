@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MANIFEST, type CardId } from "../manifest";
 import FuzzyToolsCard from "./explorer/FuzzyToolsCard";
+import DotsCliCard from "./explorer/DotsCliCard";
 import GhosttyPaletteCard from "./explorer/GhosttyPaletteCard";
 import GitSafetyCard from "./explorer/GitSafetyCard";
 import HyprlandCard from "./explorer/HyprlandCard";
@@ -11,8 +12,8 @@ import PackagesCard from "./explorer/PackagesCard";
 import RipgrepCard from "./explorer/RipgrepCard";
 import StarshipCard from "./explorer/StarshipCard";
 
-const ROOMS = ["starship", "ghostty", "hyprland", "git-safety"] as const;
-const LEFTOVERS = ["lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep"] as const;
+const ROOMS = ["starship", "ghostty", "hyprland", "dots"] as const;
+const LEFTOVERS = ["git-safety", "lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep"] as const;
 
 const CARDS: Record<CardId, React.ComponentType> = {
   starship: StarshipCard,
@@ -24,6 +25,7 @@ const CARDS: Record<CardId, React.ComponentType> = {
   mise: MiseCard,
   packages: PackagesCard,
   hyprland: HyprlandCard,
+  dots: DotsCliCard,
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
 };
@@ -32,7 +34,7 @@ const ROOM_WORD = {
   starship: "prompt",
   ghostty: "palette",
   hyprland: "desk",
-  "git-safety": "safety",
+  dots: "dots",
 } as const;
 
 export default function Explorer() {

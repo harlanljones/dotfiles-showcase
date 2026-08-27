@@ -54,7 +54,7 @@ components:
 
 ## Overview
 
-The Sleeping Display. First paint is unlit glass and a block cursor. A pointer or key wakes the visitor into Starship occupying the field. Four rooms (prompt, palette, desk, safety) are faint names. Leftovers live behind the word `index`. The prize is the word `source`. No sidebar, no kickers, no byline, no dashboard cards.
+The Sleeping Display. First paint is unlit glass and a block cursor. A pointer or key wakes the visitor into Starship occupying the field. Four rooms (prompt, palette, desk, dots) are faint names. Git Safety and the remaining receipts live behind the word `index`. The prize is the word `source`. No sidebar, no kickers, no byline, no dashboard cards.
 
 ## Colors
 
@@ -82,10 +82,11 @@ Square. Radius is refused except where a native control (range input) cannot com
 - **Room names** — opacity 0.38 idle, 0.82 current in phosphor. Hover (fine pointer only) lifts opacity.
 - **Inspect** — a `details` disclosure holding title, provenance badges, and blurb. Closed by default.
 - **Terminal** — the Starship prompt occupies the field; controls sit below as text, not a sidebar panel.
+- **Dots trace** — a large simulated terminal leads, ten source-derived verbs select the workflow, controls alter only the local preview, and the exact served Bash handler remains visible below. LIVE/FALLBACK names the source; SIMULATED names the transcript.
 - **Index receipts** — leftover demos inside `details` rows. Same CardShell inspect grammar, quieter door.
 
 ## Do's and Don'ts
 
 **Do** let the artifact lead. **Do** disclose live/fallback/simulated on inspect. **Do** banner Starship degraded mode. **Do** keep `source` as a single unmarked word to the chezmoi repo.
 
-**Don't** add a sidebar, hero, kicker, or section numbers. **Don't** announce the author. **Don't** restore eleven peer cards. **Don't** treat leftovers as first-paint rooms. **Don't** fake a live starship on Workers.
+**Don't** add a sidebar, hero, kicker, or section numbers. **Don't** announce the author. **Don't** restore every feature as a peer room. **Don't** treat leftovers as first-paint rooms. **Don't** execute `dots` from the showcase. **Don't** fake a live starship on Workers.
