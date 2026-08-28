@@ -56,6 +56,8 @@ export default function HyprlandCard() {
   const [disabled, setDisabled] = useState<Record<string, boolean>>({});
   const [swapped, setSwapped] = useState(false);
   const [scaleOverrides, setScaleOverrides] = useState<Record<string, number>>({});
+  const [showPhysical, setShowPhysical] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const baseMonitors = data?.monitors ?? [];
   const parsed: ParsedMonitor[] = baseMonitors.map((m) => {
@@ -93,6 +95,55 @@ export default function HyprlandCard() {
         h: e.h * scaleFit,
         drawX: (mirrorX - minX) * scaleFit,
         drawY: (e.y - minY) * scaleFit,
+      };
+    });
+  }
+
+  // Logical footprint (scale-adjusted) for the toggle preview. Physical
+  // geometry stays canonical for the mandatory "bounding box … physical"
+  // text (render.test parity); the diagram itself switches between the two.
+  const logical = visible.map((p) => ({
+    p,
+    x: p.x,
+    y: p.y,
+    w: p.w / p.scale,
+    h: p.h / p.scale,
+  }));
+
+  let logicalBoxW = 0;
+  let logicalBoxH = 0;
+  let logicalScaleFit = 1;
+  if (logical.length > 0) {
+    const minX = logical.reduce((mn, e) => Math.min(mn, e.x), 0);
+    const minY = logical.reduce((mn, e) => Math.min(mn, e.y), 0);
+    const maxX = logical.reduce((mx, e) => Math.max(mx, e.x + e.w), 0);
+    const maxY = logical.reduce((mx, e) => Math.max(mx, e.y + e.h), 0);
+    logicalBoxW = Math.max(maxX - minX, 1);
+    logicalBoxH = Math.max(maxY - minY, 1);
+    logicalScaleFit = Math.min(DIAGRAM_W / logicalBoxW, DIAGRAM_H / logicalBoxH);
+  }
+
+  // Active geometry shown in the diagram — toggled without mutating the
+  // canonical physical bounding-box values that the physics test asserts.
+  let activeDrawList = drawList;
+  let activeBoxW = boxW;
+  let activeBoxH = boxH;
+  let activeScaleFit = scaleFit;
+  if (!showPhysical && logical.length > 0) {
+    const minX = logical.reduce((mn, e) => Math.min(mn, e.x), 0);
+    const minY = logical.reduce((mn, e) => Math.min(mn, e.y), 0);
+    const maxX = logical.reduce((mx, e) => Math.max(mx, e.x + e.w), 0);
+    activeBoxW = logicalBoxW;
+    activeBoxH = logicalBoxH;
+    activeScaleFit = logicalScaleFit;
+    activeDrawList = logical.map((e) => {
+      const mirrorX = swapped ? minX + maxX - e.x - e.w : e.x;
+      return {
+        p: e.p,
+        w: e.w * activeScaleFit,
+        h: e.h * activeScaleFit,
+        drawX: (mirrorX - minX) * activeScaleFit,
+        drawY: (e.y - minY) * activeScaleFit,
       };
     });
   }
@@ -142,10 +193,17 @@ export default function HyprlandCard() {
                       all monitors off — toggle one on
                     </div>
                   )}
-                  {drawList.map((d) => (
-                    <div
+                  {activeDrawList.map((d) => (
+                    <button
                       key={d.p.output}
-                      className="absolute flex flex-col justify-between overflow-hidden border border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] p-1.5"
+                      type="button"
+                      onClick={() => setSelected((cur) => (cur === d.p.output ? null : d.p.output))}
+                      aria-pressed={selected === d.p.output}
+                      className={`absolute flex flex-col justify-between overflow-hidden border p-1.5 text-left transition-colors ${
+                        selected === d.p.output
+                          ? "border-[#6fa3a0] bg-[#6fa3a0]/[0.18]"
+                          : "border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] hover:border-[#6fa3a0]/60"
+                      }`}
                       style={{ left: d.drawX, top: d.drawY, width: d.w, height: d.h }}
                     >
                       {d.p.output === PRIMARY_OUTPUT && (
@@ -162,7 +220,7 @@ export default function HyprlandCard() {
                         {Math.round(d.p.w / d.p.scale)}×
                         {Math.round(d.p.h / d.p.scale)} logical
                       </span>
-                    </div>
+                    </button>
                   ))}
                   <span className="absolute left-1 top-1 font-mono text-[9px] text-white/25">
                     0,0
@@ -170,8 +228,8 @@ export default function HyprlandCard() {
                 </div>
               </div>
               <div className="mt-2 font-mono text-[10px] text-white/40">
-                bounding box {Math.round(boxW)}×{Math.round(boxH)} physical · fit{" "}
-                {scaleFit.toFixed(3)}
+                bounding box {Math.round(activeBoxW)}×{Math.round(activeBoxH)}{" "}
+                {showPhysical ? "physical" : "logical"} · fit {activeScaleFit.toFixed(3)}
                 {swapped ? " · mirrored" : ""}
               </div>
             </div>
@@ -184,6 +242,14 @@ export default function HyprlandCard() {
                   className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
                 >
                   Swap L/R{swapped ? " (on)" : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPhysical((v) => !v)}
+                  aria-pressed={showPhysical}
+                  className={`py-1 font-mono text-xs tracking-wide ${showPhysical ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                >
+                  Physical footprint{showPhysical ? " (on)" : ""}
                 </button>
                 {parsed.map((p) => (
                   <button

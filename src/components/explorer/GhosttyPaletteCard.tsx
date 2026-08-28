@@ -82,6 +82,33 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
+function exportPaletteJson(data: GhosttyData): string {
+  const entries = Object.entries(data.theme.palette)
+    .map(([k, v]) => [Number(k), v] as [number, string])
+    .sort((a, b) => a[0] - b[0]);
+  const obj: Record<string, string> = {};
+  for (const [k, v] of entries) obj[String(k)] = v;
+  return JSON.stringify(
+    {
+      background: data.theme.background,
+      foreground: data.theme.foreground,
+      palette: obj,
+    },
+    null,
+    2,
+  );
+}
+
+function exportPaletteList(data: GhosttyData): string {
+  const lines = Object.entries(data.theme.palette)
+    .map(([k, v]) => [Number(k), v] as [number, string])
+    .sort((a, b) => a[0] - b[0])
+    .map(([k, v]) => `${k} ${v}`);
+  if (data.theme.background) lines.unshift(`background ${data.theme.background}`);
+  if (data.theme.foreground) lines.push(`foreground ${data.theme.foreground}`);
+  return lines.join("\n");
+}
+
 export default function GhosttyPaletteCard() {
   const { data, error } = useJson<GhosttyData>("/api/cards/ghostty");
   const [selected, setSelected] = useState<number>(0);
@@ -193,6 +220,28 @@ export default function GhosttyPaletteCard() {
             )}
             {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
           </div>
+
+          {palette.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+              <span className="text-[#5f656e]">export:</span>
+              <button
+                type="button"
+                onClick={() => handleCopy(exportPaletteJson(data))}
+                title="copy palette as JSON"
+                className="py-1 text-[#5f656e] underline-offset-4 hover:text-[#959aa4] hover:underline"
+              >
+                JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopy(exportPaletteList(data))}
+                title="copy palette as ghostty-style list"
+                className="py-1 text-[#5f656e] underline-offset-4 hover:text-[#959aa4] hover:underline"
+              >
+                hex list
+              </button>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <div className="font-mono text-xs text-white/50">

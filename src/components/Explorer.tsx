@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { MANIFEST, type CardId } from "../manifest";
+import { useRouter, type RoomId } from "../lib/router";
 import FuzzyToolsCard from "./explorer/FuzzyToolsCard";
 import DotsCliCard from "./explorer/DotsCliCard";
 import GhosttyPaletteCard from "./explorer/GhosttyPaletteCard";
@@ -30,21 +31,32 @@ const CARDS: Record<CardId, React.ComponentType> = {
   ripgrep: RipgrepCard,
 };
 
-const ROOM_WORD = {
+const ROOM_WORD: Record<RoomId, string> = {
   starship: "prompt",
   ghostty: "palette",
   hyprland: "desk",
   dots: "dots",
-} as const;
+};
 
 export default function Explorer() {
-  const [active, setActive] = useState<CardId>("starship");
-  const [indexOpen, setIndexOpen] = useState(false);
+  const { route, navigate } = useRouter();
+  const active = route.room;
+  const indexOpen = route.indexOpen;
   const ActiveCard = CARDS[active];
 
-  const openRoom = (id: CardId) => {
-    setIndexOpen(false);
-    setActive(id);
+  // If landing on root "/", normalize URL to canonical path without adding a history entry
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "")) {
+      navigate({ room: "starship", indexOpen: false }, true);
+    }
+  }, [navigate]);
+
+  const openRoom = (id: RoomId) => {
+    navigate({ room: id, indexOpen: false });
+  };
+
+  const toggleIndex = () => {
+    navigate({ indexOpen: !indexOpen });
   };
 
   return (
@@ -66,7 +78,7 @@ export default function Explorer() {
           <button
             type="button"
             aria-pressed={indexOpen}
-            onClick={() => setIndexOpen((v) => !v)}
+            onClick={toggleIndex}
           >
             index
           </button>

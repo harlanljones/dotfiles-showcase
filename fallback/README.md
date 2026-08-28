@@ -85,3 +85,23 @@ After refreshing, re-run the secret scan:
 ```bash
 grep -rniE 'ghp_|github_pat_|api[_-]?key|token|password|secret|AGE-SECRET|BEGIN (OPENSSH|RSA|PGP)' fallback/
 ```
+
+## Fonts (PERF-01)
+
+`public/fonts/` carries self-hosted JetBrainsMono Nerd Font in two variants:
+
+- `*.ttf` — original full builds (~2.5 MB each), source of truth for subsetting.
+- `*.woff2` — pyftsubset output actually served via `@font-face`
+  (`src/index.css`), preloaded from `index.html`. Subset keeps ASCII,
+  Latin-1, punctuation, arrows, box-drawing, misc-symbol, and the full Nerd
+  Font PUA plane (U+E000-F8FF) — ~524 KB each vs 2.5 MB TTF.
+
+Regenerate after a font upgrade:
+
+```bash
+pyftsubset public/fonts/JetBrainsMonoNerdFont-Regular.ttf \
+  --output-file=public/fonts/JetBrainsMonoNerdFont-Regular.woff2 --flavor=woff2 \
+  --unicodes='U+0020-007E,U+00A0-00FF,U+2000-206F,U+2190-21FF,U+2500-25FF,U+2600-26FF,U+2700-27BF,U+2B00-2BFF,U+E000-F8FF,U+FB00-FB4F,U+1F300-1F9FF' \
+  --layout-features='*' --no-hinting
+# repeat for JetBrainsMonoNerdFont-Bold.ttf
+```

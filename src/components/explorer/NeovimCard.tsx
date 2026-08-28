@@ -157,8 +157,18 @@ export default function NeovimCard() {
               </span>
               <span className="text-white/20">·</span>
               <span className="font-mono text-white/60">
-                <span className="text-cyan-300">{visiblePlugins.length}</span>
-                /{data.plugins.length} plugins
+                {visiblePlugins.length !== data.plugins.length ? (
+                  <>
+                    <span className="text-cyan-300">
+                      filtered {visiblePlugins.length}/{data.plugins.length}
+                    </span>{" "}
+                    plugins
+                  </>
+                ) : (
+                  <>
+                    <span className="text-cyan-300">{data.plugins.length}</span> plugins
+                  </>
+                )}
               </span>
             </div>
 
@@ -247,6 +257,7 @@ export default function NeovimCard() {
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <input
+                        aria-label="Search plugins"
                         type="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}

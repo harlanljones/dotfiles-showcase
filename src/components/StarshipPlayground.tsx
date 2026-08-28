@@ -1,40 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  decodePromptState,
+  encodePromptState,
+  DEFAULT_PROMPT_STATE,
+  type PromptState,
+  type ShellMode,
+  type GitState,
+} from "../lib/urlParams";
 
 export type ApiStatus = "idle" | "live" | "degraded" | "error";
 
-type ShellMode = "zsh" | "bash";
-type GitState = "none" | "rebase" | "merge";
-
-interface State {
-  branch: string;
-  dirty: boolean;
-  ahead: number;
-  behind: number;
-  detached: boolean;
-  state: GitState;
-  ssh: boolean;
-  shell: ShellMode;
-  status: number;
-  durationMs: number;
-  width: number;
-  /** TC-01 opt-in: render with true_color=true and recolor truecolor cyan→red (proposed-fix preview). */
-  trueColor: boolean;
-}
-
-const DEFAULT: State = {
-  branch: "main",
-  dirty: false,
-  ahead: 0,
-  behind: 0,
-  detached: false,
-  state: "none",
-  ssh: false,
-  shell: "zsh",
-  status: 0,
-  durationMs: 0,
-  width: 200,
-  trueColor: false,
-};
+type State = PromptState;
+const DEFAULT: State = DEFAULT_PROMPT_STATE;
 
 type ScenarioState = Omit<State, "width" | "durationMs" | "trueColor">;
 
@@ -52,6 +29,26 @@ const SCENARIOS: Scenario[] = [
   { key: "diverged", label: "diverged", state: { branch: "main", dirty: false, ahead: 3, behind: 5, detached: false, state: "none", ssh: false, shell: "zsh", status: 1 } },
   { key: "ssh-hotfix", label: "SSH detached hotfix", state: { branch: "hotfix/ssh", dirty: false, ahead: 0, behind: 0, detached: true, state: "none", ssh: true, shell: "zsh", status: 1 } },
 ];
+
+function findScenarioKey(state: PromptState): string {
+  for (const sc of SCENARIOS) {
+    const a = sc.state;
+    if (
+      state.branch === a.branch &&
+      state.dirty === a.dirty &&
+      state.ahead === a.ahead &&
+      state.behind === a.behind &&
+      state.detached === a.detached &&
+      state.state === a.state &&
+      state.ssh === a.ssh &&
+      state.shell === a.shell &&
+      state.status === a.status
+    ) {
+      return sc.key;
+    }
+  }
+  return "";
+}
 
 type RenderResponse = {
   error?: string;
@@ -72,7 +69,12 @@ export default function StarshipPlayground({
   onRenderOutcome?: (status: ApiStatus) => void;
   onNotes?: (notes: string[]) => void;
 }) {
-  const [s, setS] = useState<State>(DEFAULT);
+  const [s, setS] = useState<State>(() => {
+    if (typeof window !== "undefined" && window.location.search) {
+      return decodePromptState(window.location.search);
+    }
+    return DEFAULT;
+  });
   const [html, setHtml] = useState("");
   const [rawHtml, setRawHtml] = useState("");
   const [ansi, setAnsi] = useState("");
@@ -85,12 +87,36 @@ export default function StarshipPlayground({
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [view, setView] = useState<"after" | "before">("after");
   const [copied, setCopied] = useState(false);
-  const [scenarioKey, setScenarioKey] = useState("clean-main");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [scenarioKey, setScenarioKey] = useState(() => findScenarioKey(s));
 
   const onRenderOutcomeRef = useRef(onRenderOutcome);
   onRenderOutcomeRef.current = onRenderOutcome;
   const onNotesRef = useRef(onNotes);
   onNotesRef.current = onNotes;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.history) return;
+    const timer = window.setTimeout(() => {
+      const qs = encodePromptState(s);
+      const currentQs = window.location.search;
+      if (qs !== currentQs) {
+        const newUrl = `${window.location.pathname}${qs}${window.location.hash}`;
+        window.history.replaceState(window.history.state, "", newUrl);
+      }
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [s]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const next = decodePromptState(window.location.search);
+      setS(next);
+      setScenarioKey(findScenarioKey(next));
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,6 +203,19 @@ export default function StarshipPlayground({
       } catch {
         /* clipboard unavailable — ignore */
       }
+    }
+  };
+
+  const copyLink = async () => {
+    if (typeof window === "undefined" || !navigator.clipboard?.writeText) return;
+    try {
+      const qs = encodePromptState(s);
+      const url = `${window.location.origin}${window.location.pathname}${qs}${window.location.hash}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 1500);
+    } catch {
+      /* clipboard unavailable — ignore */
     }
   };
 
@@ -386,6 +425,16 @@ export default function StarshipPlayground({
               onChange={(e) => set("durationMs", Number(e.target.value))}
             />
           </label>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={copyLink}
+              className="text-xs tracking-wide text-[#5f656e] hover:text-[#959aa4] underline underline-offset-4"
+              aria-label="Copy share link"
+            >
+              {copiedLink ? "link copied" : "copy link"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

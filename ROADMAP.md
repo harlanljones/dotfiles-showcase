@@ -145,6 +145,10 @@ by the early tasks noted. Do not treat TBD as zero.
   styling consistent; no console errors in manual run.
 - **M6 (Verification):** `bun test` + `bun run typecheck` green; manual `bun run dev` walkthrough
   of Playground + Explorer succeeds; chezmoiignore + no-secret checks confirmed.
+- **M7 (Deep Linking & State URLs — HJ-567..569):** direct room routes (`/prompt`, `/palette`,
+  `/desk`, `/dots`, `/index` / `/annex`) load targeted room upon wake; Starship state reflects
+  query params (`?branch=...&dirty=1&status=1&state=...&trueColor=1`); history push/replace
+  preserves client state and works seamlessly across local dev and Cloudflare Workers SPA routing.
 
 **Requirement → critique → work traceability:**
 
@@ -329,6 +333,26 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   explicitly simulated sanitized transcript, and the exact served handler source.
   Validation: desktop/mobile browser walkthrough, render parity, typecheck, production build.
   Exit: Dots is usable at both breakpoints; Git Safety is the first index receipt.
+
+### M7 — Deep Linking & State URLs (HJ-567..569)
+- **NAV-01** — Client routing & deep-link resolution (HJ-567). Deps: DOTS-02. Role: client agent.
+  Ownership: `src/lib/router.ts`, `src/App.tsx`, `src/components/Explorer.tsx`.
+  Deliverable: lightweight route parser and listener supporting canonical room paths (`/prompt`,
+  `/palette`, `/desk`, `/dots`, `/index` / `/annex`) and alias normalization; waking from the veil
+  preserves the targeted room.
+  Validation: direct navigation to paths activates corresponding room; browser back/forward works.
+  Exit: visiting any room path or index directly mounts targeted view without page reload.
+- **NAV-02** — Starship query param serialization & share links (HJ-568). Deps: NAV-01. Role: client agent.
+  Ownership: `src/lib/urlParams.ts`, `src/components/StarshipPlayground.tsx`.
+  Deliverable: bi-directional sync between Starship playground state and URL search params;
+  compact non-default param encoding; debounced `history.replaceState`; copy share link button.
+  Validation: changing controls updates search query; loading query params hydrates state correctly.
+  Exit: prompt state round-trips through URL parameters.
+- **NAV-03** — Router test suite & verification (HJ-569). Deps: NAV-01, NAV-02. Role: QA agent.
+  Ownership: `src/lib/router.test.ts`, `src/components/explorer/render.test.tsx`.
+  Deliverable: unit tests for route matching, query string parsing/formatting, and component render.
+  Validation: `bun test` includes router test suite; `bun run typecheck` and `bun run build` succeed.
+  Exit: zero test failures and full coverage of routing utilities.
 
 ---
 
