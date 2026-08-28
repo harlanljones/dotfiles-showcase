@@ -15,9 +15,10 @@ when sync happens.
 
 **Current state:** Shipped local-first showcase; Cloudflare Workers public mirror already
 deployed (ADR-001). Submodule already registered at
-`/home/harlan/.local/share/chezmoi/dotfiles-showcase/`. v1 (M1–M6) and v2
-(DEPLOY-01..08, TC-01, FB-01) are complete; see §6 integration checkpoints. HJ-550 adds
-the read-only Dots CLI room without changing the deployed runtime contract.
+`/home/harlan/.local/share/chezmoi/dotfiles-showcase/`. v1 (M1–M6), v2
+(DEPLOY-01..08, TC-01, FB-01), the Dots CLI room (HJ-550), M7 deep linking
+(HJ-567..569, ADR-002), and M8/M9 annex+perf (HJ-570..574) are complete; see §6
+integration checkpoints.
 
 **Objective:** Ship a local-first web app that visualizes chezmoi-managed dotfile
 functionality, headlined by a Starship Playground that drives the real `starship` binary via
@@ -49,7 +50,20 @@ recolor) for a chosen shell state.
 - Browser transcripts are sanitized simulations. Neither runtime executes `dots` or any
   command named by its source.
 
-**Non-goals (v1 + v2):** editing/syncing dotfiles from the app (read-only showcase in both modes).
+**Scope (v3 — verification, polish, telemetry; planned via grilling pass, NOT started):**
+- **Deployed verification (M10):** manual live-mirror smoke plus a permanent CI post-deploy
+  smoke job (full assertions: route 200s incl. state URLs, degraded JSON, exact cache
+  headers, SPA fallback); `fallbacks:check` hard-fails the deploy.
+- **Bundle splitting (M11):** per-card lazy chunks — Starship eager, 11 cards lazy, Vite
+  default chunking; CI bundle budget pinned from measured post-split numbers, hard-fail.
+- **A11y + telemetry (M12):** axe-core (strict, all rules incl. contrast — muted chrome
+  brightening accepted) over every card × live/fallback; Workers Analytics Engine telemetry
+  (`/api/t`), full control inventory with sliders emitting on release, aggregate values
+  only, local dev emits nothing.
+- **Product doc (PROD-01):** PRODUCT.md — room URLs Open→Locked (ADR-002), analytics
+  privacy line. Product name + visual world remain Open (owner-gated).
+
+**Non-goals (v1 + v2 + v3):** editing/syncing dotfiles from the app (read-only showcase in all modes).
 
 **Assumptions:**
 - A `starship` binary is available on the host where the API runs (the app is local-first).
@@ -71,6 +85,15 @@ recolor) for a chosen shell state.
   remains canonical; Cloudflare Workers (workerd, assets) is a read-only public mirror with
   degraded starship (`degraded: true` + fallback toml + recolor) and fallback-only config reads.
   See `docs/adr/001-workers-deployment.md` and `AGENTS.md §5b`.
+- D7 (grill, v3): deployed verification = manual smoke now + permanent CI post-deploy job
+  with FULL assertions (status + payload + exact headers); `fallbacks:check` hard-fails deploy.
+- D8 (grill, v3): splitting = per-card lazy, **Starship eager**, Vite default chunks; budget
+  pinned from post-split measurement, hard-fail CI (~+5% growth).
+- D9 (grill, v3): a11y = axe-core + happy-dom dep, strict ALL rules incl. color-contrast;
+  intentionally dim chrome gets brightened (visible styling change accepted).
+- D10 (grill, v3): telemetry = Workers Analytics Engine (first-party, $0), full control
+  inventory, continuous controls emit on release, aggregate values only (no state payloads,
+  no branch names), local dev emits nothing. `docs/adr/003-telemetry.md` to follow at execution.
 
 **Unresolved decisions (open — see §8 decision gates):**
 - D5 (BLOCKER for SUB-02): Submodule hosting / remote URL. `git submodule add <url>
@@ -106,6 +129,7 @@ by the early tasks noted. Do not treat TBD as zero.
 | Build/install success on fresh clone | established M1 | `bun install` + `bun run build` succeed | fresh-clone CI run | M1 owner | per merge |
 | Typecheck clean | clean (M1–M5) | `tsc --noEmit` exits 0 | `bun run typecheck` | M1 owner | per merge |
 | Unit test pass rate | 53/53 (M4) | 100% of recolor/ansi/starship/configs tests pass | `bun test` | M2/M3 owners | per merge |
+| Client font transfer | 2.5 MB TTF per weight (M1) | **524 KB WOFF2 per weight** subset + preloaded (PERF-01, HJ-573) | `du -h public/fonts/*.woff2` | PERF-01 owner | per font upgrade |
 | Starship render latency (server) | p50 ≈ 61 ms, p95 ≈ 73 ms (10 renders, incl. temp-repo build; re-measured DEPLOY-08) | **p95 < 500 ms** (proposed, accepted DG-4) | server timing via curl wall-clock | M3 owner | per merge |
 | Workers degraded render latency (edge) | local workerd: p50 ≈ 6 ms, p95 ≈ 15 ms; **live deploy**: p50 ≈ 88 ms, p95 ≈ 150 ms incl. network RTT (8 renders, DEPLOY-08) | informational — no binary on edge | curl wall-clock vs `wrangler dev` + deployed workers.dev URL | DEPLOY-08 owner | per merge |
 | Workers deployment | `https://dotfiles-showcase.harlanljones.workers.dev` (version b835f72f) | health + degraded starship + cards + SPA smoke green | curl against deployed URL | DEPLOY-08 owner | per deploy |
@@ -115,6 +139,11 @@ by the early tasks noted. Do not treat TBD as zero.
 | chezmoiignore covers submodule | verified SUB-01 | `dotfiles-showcase/` in `.chezmoiignore.tmpl` | grep check | M1 owner | once, + per merge |
 | Secrets committed | 0 | 0 | repo scan / review | all | per merge |
 | No-fake-starship compliance | upheld (real binary only) | real binary invoked, no canned output | code review + test | M3 owner | per merge |
+| Cards API cache headers | fallback=`public, max-age=3600, stale-while-revalidate=86400`; live=`public, max-age=60` (PERF-02, HJ-574) | header matches payload provenance | curl `-I /api/cards/:key` | PERF-02 owner | per merge |
+| Client bundle (JS) | 277 KB raw / 83.9 KB gzip (post-M9) | no unexplained growth; measured per build | `bun run build` output | M9 owner | per merge |
+| Initial JS after split | TBD — pinned at PERF-03 exit | CI hard-fails above pinned + ~5% | `bun run build` + CI budget step | PERF-03 owner | per merge |
+| Deployed mirror smoke | TBD at DEPLOY-09 (first live run) | all route/degraded/header assertions green post-deploy | CI smoke job | DEPLOY-10 owner | per deploy |
+| Telemetry spend | n/a pre-ANALYTICS-01 | Workers AE free tier, $0 observed (report at execution) | CF dashboard | ANALYTICS-01 owner | per deploy |
 
 **Why the TBDs matter / early tasks to establish them:**
 - **Starship render latency baseline (TBD):** needed to set a real threshold; until measured
@@ -145,10 +174,22 @@ by the early tasks noted. Do not treat TBD as zero.
   styling consistent; no console errors in manual run.
 - **M6 (Verification):** `bun test` + `bun run typecheck` green; manual `bun run dev` walkthrough
   of Playground + Explorer succeeds; chezmoiignore + no-secret checks confirmed.
-- **M7 (Deep Linking & State URLs — HJ-567..569):** direct room routes (`/prompt`, `/palette`,
-  `/desk`, `/dots`, `/index` / `/annex`) load targeted room upon wake; Starship state reflects
-  query params (`?branch=...&dirty=1&status=1&state=...&trueColor=1`); history push/replace
-  preserves client state and works seamlessly across local dev and Cloudflare Workers SPA routing.
+- **M7 (Deep Linking & State URLs — HJ-567..569):** ✅ shipped — direct room routes
+  (`/prompt`, `/palette`, `/desk`, `/dots`, `/index`) load the targeted room upon wake
+  (`src/lib/router.ts`); Starship state round-trips through query params
+  (`src/lib/urlParams.ts`) with debounced `replaceState` + share link; decision recorded
+  in `docs/adr/002-deep-linking.md`.
+- **M10 (Deployed verification — DEPLOY-09/10):** live-mirror smoke asserts every room route
+  + a state-URL returns 200 with SPA fallback HTML; `/api/starship` parses with
+  `degraded:true` on Workers; `/api/cards/*` carry the exact PERF-02 cache headers;
+  `fallbacks:check` hard-fails CI before deploy; smoke job runs after every `wrangler deploy`.
+- **M11 (Bundle split — PERF-03):** per-card lazy chunks (Starship eager, 11 lazy);
+  initial JS measured and budget pinned in CI (hard-fail > pinned + ~5%); wake path has no
+  chunk hop; all tests/typecheck green.
+- **M12 (A11y + telemetry — A11Y-01, ANALYTICS-01):** axe strict (all rules) passes on
+  every card × live/fallback; contrast fixes shipped; keyboard-only walkthrough documented;
+  AE telemetry emits the full inventory on the mirror, emits nothing on localhost, values
+  aggregate-only; ADR-003 records the telemetry decision.
 
 **Requirement → critique → work traceability:**
 
@@ -190,6 +231,12 @@ float but must finish before M5).
 Note: FE components (FE-01..FE-10) and manifest (MAN-01) and configs (CFG-01) are mostly
 independent of each other file-wise and can be heavily parallelized once M1/M2 foundations
 exist; coordinate ownership via the table in §5 to avoid file collisions.
+
+**v3 waves (verify-first per grill D7–D10):**
+- **Wave 1:** DEPLOY-09 (manual smoke) → DEPLOY-10 (CI smoke + fallbacks:check gate).
+- **Wave 2:** PERF-03 (split) → DEPLOY-10 budget step pinned from measured numbers.
+- **Wave 3:** A11Y-01 ∥ ANALYTICS-01 (independent files; parallel).
+- **Wave 4:** PROD-01 (PRODUCT.md) + VER-02 (IC-7 closeout, all gates revalidated).
 
 ---
 
@@ -353,6 +400,87 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   Deliverable: unit tests for route matching, query string parsing/formatting, and component render.
   Validation: `bun test` includes router test suite; `bun run typecheck` and `bun run build` succeed.
   Exit: zero test failures and full coverage of routing utilities.
+  ✅ Shipped — 23 router/urlParams tests; round-trip encode/decode covered.
+
+### M8 — Annex & receipt refinement (HJ-570..572)
+- **ANNEX-01** (HJ-570) — Neovim plugin search/inspector. ✅ Shipped — search input
+  `aria-label="Search plugins"`, `filtered X/Y` count, extras chips, pinned-rev copy
+  (`NeovimCard.tsx`); audit confirmed scope already covered, a11y labels added.
+- **ANNEX-02** (HJ-571) — Hyprland interactive layout. ✅ Shipped — physical/logical
+  footprint toggle, click-to-select monitor highlight, per-monitor scale sliders,
+  swap L/R (`HyprlandCard.tsx`); canonical `bounding box … physical` text preserved
+  for render parity.
+- **ANNEX-03** (HJ-572) — Ghostty palette exporter. ✅ Shipped — copy palette as JSON
+  or ghostty-style hex list (`GhosttyPaletteCard.tsx` exportPaletteJson/exportPaletteList).
+
+### M9 — Edge performance & asset hardening (HJ-573..574)
+- **PERF-01** (HJ-573) — Nerd Font subset + preload. ✅ Shipped — WOFF2 subset
+  (ASCII+Latin-1+punctuation+arrows+box-drawing+symbols+full PUA U+E000-F8FF):
+  2.5 MB → **524 KB per weight**; preloaded in `index.html`; regen procedure in
+  `fallback/README.md` (Fonts section). Original TTFs retained as subset source.
+- **PERF-02** (HJ-574) — Cards API caching. ✅ Shipped — fallback payloads
+  `public, max-age=3600, stale-while-revalidate=86400`; live payloads
+  `public, max-age=60`; header chosen per payload provenance
+  (`server/routes/cards.ts` isFallbackPayload).
+
+### Follow-ups (post-M9 polish)
+- **ADR-002** (HJ-575) — Deep-linking decision record. ✅ Shipped — `docs/adr/002-deep-linking.md`;
+  resolves PRODUCT.md's open "whether room URLs exist" question.
+- **UX-01** (HJ-576) — Keyboard nav for index overlay. ✅ Shipped — ESC closes the annex
+  and restores focus to the `index` toggle (`Explorer.tsx`).
+
+### v3 — Verification, polish, telemetry (M10–M12; planned, NOT started)
+- **DEPLOY-09** — Manual live-mirror smoke. Deps: none. Role: QA agent.
+  Ownership: no source changes (curl session + results recorded here).
+  Deliverable: curl `https://dotfiles-showcase.harlanljones.workers.dev` — room routes,
+  a state URL (`?dirty=1&status=1`), `/api/starship` (degraded JSON), `/api/cards/*`
+  (exact cache headers per PERF-02).
+  Validation: every assertion observed live and recorded in IC-7.
+  Exit: first live baseline recorded; surprises surfaced before CI codifies them.
+- **DEPLOY-10** — CI post-deploy smoke + staleness/budget gates. Deps: DEPLOY-09.
+  Ownership: `.github/workflows/deploy.yml`.
+  Deliverable: post-deploy job (main only) running the DEPLOY-09 assertions against the
+  deployed URL; `bun run fallbacks:check` hard-fails pre-deploy; bundle-budget step added
+  after PERF-03 pins numbers (hard-fail > pinned + ~5%).
+  Validation: workflow fails on stale fallbacks / broken route / budget breach; green otherwise.
+  Exit: deployed drift caught on every push.
+- **PERF-03** — Per-card code splitting. Deps: DEPLOY-10 (budget step sequencing).
+  Ownership: `src/components/Explorer.tsx`, `vite.config.ts` (if needed), card import map.
+  Deliverable: React.lazy per card — Starship eager (wake path), 11 cards lazy; Vite
+  default chunking; Suspense fallback reuses the veil block-cursor.
+  Validation: `bun test` + `typecheck` + build green; initial JS measured; chunks verified
+  in build output.
+  Exit: budget numbers handed to DEPLOY-10; wake path unchanged perceptually.
+- **A11Y-01** — Axe audit + contrast fixes. Deps: none (parallel with ANALYTICS-01).
+  Ownership: `src/components/explorer/*` (contrast fixes), new test file, `package.json`
+  (axe-core + happy-dom deps).
+  Deliverable: axe strict (ALL rules incl. color-contrast) over every card × live/fallback
+  variant; brighten muted chrome to pass; keyboard-only walkthrough documented as exit gate.
+  Validation: automated axe suite green; manual walkthrough recorded.
+  Exit: zero violations, zero disabled rules.
+- **ANALYTICS-01** — Workers AE telemetry. Deps: none (parallel with A11Y-01); ADR-003.
+  Ownership: `server/worker.ts`/`server/app.ts` (`POST /api/t`), `wrangler.jsonc` (AE
+  binding), `src/lib/telemetry.ts`, playground/explorer call sites, ADR-003.
+  Deliverable: AE binding + endpoint; client beacon (fetch keepalive) with full inventory —
+  room_switch, annex_opened, preset_applied, recolor_toggled, shell_changed, status_changed,
+  width/ahead/behind/duration (emit on release), copy_ansi, copy_link, share_copied;
+  aggregate values only; disabled on localhost/dev; AE namespace creation is a user
+  wizard step before deploy.
+  Validation: workerd dev shows events written; local dev shows zero emits; payload
+  contains no state strings.
+  Exit: ADR-003 shipped; tier reported ($0 expected).
+- **PROD-01** — PRODUCT.md revision. Deps: Wave 3 landing. Role: content agent.
+  Ownership: `PRODUCT.md`.
+  Deliverable: room URLs Open→Locked (ADR-002); analytics privacy line (first-party AE,
+  aggregate counts, no cookies, no state payloads, local emits nothing); product name and
+  visual world remain Open.
+  Validation: diff reviewed against ADR-002/003.
+  Exit: doc matches shipped reality; open questions remain owner-gated.
+- **VER-02** — IC-7 closeout. Deps: all v3 items. Role: QA agent.
+  Ownership: repo-wide (runs gates; records metrics).
+  Deliverable: `bun test` + `typecheck` + build green; deployed smoke green; budget pinned;
+  axe green; telemetry observed $0; metrics table baselines filled (split size, smoke).
+  Exit: v3 exit gates M10–M12 all confirmed.
 
 ---
 
@@ -372,6 +500,23 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   ("Git main ❯" with dirty state toggled), then all 11 Explorer cards — zero
   console/page errors. Gates revalidated: 106/106 tests, typecheck 0 errors,
   production build clean.
+- **IC-6 (after M7–M9):** deep linking + perf wave.
+  ✅ Automated: 267/267 tests (`bun test`), typecheck 0 errors, production build
+  clean (JS 277 KB / 83.9 KB gzip; fonts 524 KB WOFF2 per weight, preloaded).
+  Cards API cache headers verified by unit suite; router + urlParams round-trip
+  suites green; Hyprland render parity (physical bounding box text) preserved.
+- **IC-7 (after M10–M12, v3):** deployed verification + split + a11y + telemetry.
+  ⏳ DEPLOY-09 smoke results (2026-08-28, live mirror):
+  ✅ `/`, `/prompt`, `/palette`, `/desk`, `/dots`, `/annex`, `/nonexistent-route`,
+  `/prompt?dirty=1&status=1&state=rebase` → 200 `text/html` with SPA root div;
+  ✅ `POST /api/starship` → `degraded:true` + warning banner payload + recolor verified
+  live (`rawAnsi` 36m → `ansi` 31m on `status=1`);
+  ✅ `/api/cards` + ghostty/mise/dots/packages → exact `public, max-age=3600,
+  stale-while-revalidate=86400` (PERF-02 contract holds in production);
+  ❗ **Found:** `/index` is special-cased by Workers assets (307 → `/`) — refreshing on the
+  annex dropped the visitor into Starship. **Fixed:** canonical annex path is now `/annex`
+  (`getRoutePath`), `/index` kept as an accepted alias; router tests updated.
+  ⏳ Pending: PERF-03 budget, A11Y-01, ANALYTICS-01, VER-02 closeout.
 
 After each IC, re-run `bun test` and `bun run typecheck` (once available) before proceeding.
 

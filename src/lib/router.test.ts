@@ -51,17 +51,22 @@ describe("getRoutePath", () => {
     expect(getRoutePath({ room: "dots", indexOpen: false })).toBe("/dots");
   });
 
-  it("returns /index when indexOpen", () => {
-    expect(getRoutePath({ room: "starship", indexOpen: true })).toBe("/index");
+  it("canonicalizes the annex to /annex (Workers 307s /index to /)", () => {
+    expect(getRoutePath({ room: "starship", indexOpen: true })).toBe("/annex");
   });
 });
 
 describe("route round-trip", () => {
-  it("parse -> getRoutePath is stable for rooms", () => {
-    for (const path of ["/prompt", "/palette", "/desk", "/dots", "/index"]) {
+  it("parse -> getRoutePath is stable for rooms and the annex", () => {
+    for (const path of ["/prompt", "/palette", "/desk", "/dots", "/annex"]) {
       const parsed = parseRoute(path, "");
       const out = getRoutePath(parsed);
       expect(out).toBe(path);
     }
+  });
+
+  it("/index is an accepted alias resolving to the annex state", () => {
+    expect(parseRoute("/index", "")).toMatchObject({ indexOpen: true });
+    expect(getRoutePath(parseRoute("/index", ""))).toBe("/annex");
   });
 });

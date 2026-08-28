@@ -60,10 +60,12 @@ export function parseRoute(pathname = "/", hash = ""): RouteState {
 
 /**
  * Returns canonical URL path for a given RouteState.
+ * The annex canonicalizes to /annex — Workers assets 307-redirects /index to /,
+ * which would drop a refreshed visitor out of the annex (DEPLOY-09 finding).
  */
 export function getRoutePath(state: RouteState): string {
   if (state.indexOpen) {
-    return state.targetReceipt ? `/index#${state.targetReceipt}` : "/index";
+    return state.targetReceipt ? `/annex#${state.targetReceipt}` : "/annex";
   }
   return ROOM_PATHS[state.room] ?? "/prompt";
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MANIFEST, type CardId } from "../manifest";
 import { useRouter, type RoomId } from "../lib/router";
 import FuzzyToolsCard from "./explorer/FuzzyToolsCard";
@@ -59,6 +59,21 @@ export default function Explorer() {
     navigate({ indexOpen: !indexOpen });
   };
 
+  // UX-01: ESC closes the index overlay and returns focus to the toggle so the
+  // keyboard never strands inside the annex.
+  const indexToggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!indexOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        navigate({ indexOpen: false });
+        indexToggleRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [indexOpen, navigate]);
+
   return (
     <>
       <header className="chrome">
@@ -76,6 +91,7 @@ export default function Explorer() {
         </nav>
         <div className="chrome-words">
           <button
+            ref={indexToggleRef}
             type="button"
             aria-pressed={indexOpen}
             onClick={toggleIndex}

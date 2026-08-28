@@ -24,8 +24,19 @@ jobs:
       - name: Test
         run: bun test
 
+      # DEPLOY-10: snapshot integrity gate (hard-fail). On CI there are no live
+      # ~/.config sources, so this verifies (a) every manifest entry in
+      # fallback/README.md has a committed snapshot and (b) the embedded
+      # Workers bundle (server/lib/fallbacks.ts) is in sync with fallback/*.
+      # Live-source freshness remains a host-side concern (run locally).
+      - name: Fallback integrity
+        run: bun run fallbacks:check
+
       - name: Build
         run: bun run build
+
+      # DEPLOY-10: bundle-budget step lands here once PERF-03 pins the
+      # post-split numbers (hard-fail > pinned + ~5%).
 
       # PRs: validate the Worker bundles and assets without deploying.
       - name: Wrangler dry-run (PR)
@@ -37,6 +48,7 @@ jobs:
       #   CLOUDFLARE_ACCOUNT_ID
       # Skips gracefully when secrets are absent so pushes stay green.
       - name: Wrangler deploy (main)
+        id: deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -44,6 +56,32 @@ jobs:
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "::warning::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set; skipping deploy"
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           bunx wrangler deploy
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      # DEPLOY-10: post-deploy smoke — the DEPLOY-09 manual assertions, codified.
+      # Runs only after a real deploy. Fails the push if the mirror drifts.
+      - name: Post-deploy smoke
+        if: steps.deploy.outputs.deployed == 'true'
+        run: |
+          BASE="https://dotfiles-showcase.harlanljones.workers.dev"
+          fail() { echo "::error::$1"; exit 1; }
+          sleep 5  # version swap is atomic; small settle delay
+          for p in / /prompt /palette /desk /dots /annex "/prompt?dirty=1&status=1&state=rebase"; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$p")
+            [ "$code" = "200" ] || fail "route $p -> $code (expected 200)"
+          done
+          curl -sf "$BASE/dots" | grep -q '<div id="root"></div>' \
+            || fail "SPA fallback body missing root div"
+          curl -sf -X POST "$BASE/api/starship" -H 'Content-Type: application/json' \
+            -d '{"branch":"main","dirty":true,"status":1,"shell":"zsh"}' | grep -q '"degraded":true' \
+            || fail "degraded:true missing from /api/starship"
+          for k in ghostty mise dots; do
+            cc=$(curl -sI "$BASE/api/cards/$k" | tr -d '\r' | grep -i '^cache-control:' | awk '{print tolower($2)}')
+            [ "$cc" = "public, max-age=3600, stale-while-revalidate=86400" ] \
+              || fail "cards/$k cache-control: '$cc' (expected fallback header)"
+          done
+          echo "post-deploy smoke: all assertions green"
