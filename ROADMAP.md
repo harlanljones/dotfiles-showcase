@@ -141,7 +141,7 @@ by the early tasks noted. Do not treat TBD as zero.
 | No-fake-starship compliance | upheld (real binary only) | real binary invoked, no canned output | code review + test | M3 owner | per merge |
 | Cards API cache headers | fallback=`public, max-age=3600, stale-while-revalidate=86400`; live=`public, max-age=60` (PERF-02, HJ-574) | header matches payload provenance | curl `-I /api/cards/:key` | PERF-02 owner | per merge |
 | Client bundle (JS) | 277 KB raw / 83.9 KB gzip (post-M9) | no unexplained growth; measured per build | `bun run build` output | M9 owner | per merge |
-| Initial JS after split | TBD — pinned at PERF-03 exit | CI hard-fails above pinned + ~5% | `bun run build` + CI budget step | PERF-03 owner | per merge |
+| Initial JS after split | **216.9 KB raw / 68.2 KB gzip** (entry, post-PERF-03; was 277.3/83.9 pre-split) | CI hard-fails above pinned 71,500 B gzip (+5%) | `bun run build` + CI budget step | PERF-03 owner | per merge |
 | Deployed mirror smoke | TBD at DEPLOY-09 (first live run) | all route/degraded/header assertions green post-deploy | CI smoke job | DEPLOY-10 owner | per deploy |
 | Telemetry spend | n/a pre-ANALYTICS-01 | Workers AE free tier, $0 observed (report at execution) | CF dashboard | ANALYTICS-01 owner | per deploy |
 
@@ -183,9 +183,10 @@ by the early tasks noted. Do not treat TBD as zero.
   + a state-URL returns 200 with SPA fallback HTML; `/api/starship` parses with
   `degraded:true` on Workers; `/api/cards/*` carry the exact PERF-02 cache headers;
   `fallbacks:check` hard-fails CI before deploy; smoke job runs after every `wrangler deploy`.
-- **M11 (Bundle split — PERF-03):** per-card lazy chunks (Starship eager, 11 lazy);
-  initial JS measured and budget pinned in CI (hard-fail > pinned + ~5%); wake path has no
-  chunk hop; all tests/typecheck green.
+- **M11 (Bundle split — PERF-03):** ✅ shipped — per-card lazy chunks (Starship eager,
+  10 lazy card components + shared `useApi` chunk, Vite default chunking, Suspense
+  block-cursor fallback); initial JS **216.9 KB raw / 68.2 KB gzip** (−18.7% vs pre-split);
+  CI budget pinned at 71,500 B gzip hard-fail (deploy.yml Bundle budget step).
 - **M12 (A11y + telemetry — A11Y-01, ANALYTICS-01):** axe strict (all rules) passes on
   every card × live/fallback; contrast fixes shipped; keyboard-only walkthrough documented;
   AE telemetry emits the full inventory on the mirror, emits nothing on localhost, values

@@ -1,34 +1,40 @@
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { MANIFEST, type CardId } from "../manifest";
 import { useRouter, type RoomId } from "../lib/router";
-import FuzzyToolsCard from "./explorer/FuzzyToolsCard";
-import DotsCliCard from "./explorer/DotsCliCard";
-import GhosttyPaletteCard from "./explorer/GhosttyPaletteCard";
-import GitSafetyCard from "./explorer/GitSafetyCard";
-import HyprlandCard from "./explorer/HyprlandCard";
-import LazygitCard from "./explorer/LazygitCard";
-import MiseCard from "./explorer/MiseCard";
-import NeovimCard from "./explorer/NeovimCard";
-import PackagesCard from "./explorer/PackagesCard";
-import RipgrepCard from "./explorer/RipgrepCard";
 import StarshipCard from "./explorer/StarshipCard";
 
 const ROOMS = ["starship", "ghostty", "hyprland", "dots"] as const;
 const LEFTOVERS = ["git-safety", "lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep"] as const;
 
+const LazyGitSafetyCard = lazy(() => import("./explorer/GitSafetyCard"));
+const LazyLazygitCard = lazy(() => import("./explorer/LazygitCard"));
+const LazyFuzzyToolsCard = lazy(() => import("./explorer/FuzzyToolsCard"));
+const LazyGhosttyPaletteCard = lazy(() => import("./explorer/GhosttyPaletteCard"));
+const LazyMiseCard = lazy(() => import("./explorer/MiseCard"));
+const LazyPackagesCard = lazy(() => import("./explorer/PackagesCard"));
+const LazyHyprlandCard = lazy(() => import("./explorer/HyprlandCard"));
+const LazyDotsCliCard = lazy(() => import("./explorer/DotsCliCard"));
+const LazyNeovimCard = lazy(() => import("./explorer/NeovimCard"));
+const LazyRipgrepCard = lazy(() => import("./explorer/RipgrepCard"));
+
+/**
+ * PERF-03 chunk map (D8): the wake room (StarshipCard, which also serves the
+ * `recolor` id) stays in the initial bundle; the other 10 card components split
+ * into on-demand chunks via React.lazy with Vite default chunking.
+ */
 const CARDS: Record<CardId, React.ComponentType> = {
   starship: StarshipCard,
   recolor: StarshipCard,
-  "git-safety": GitSafetyCard,
-  lazygit: LazygitCard,
-  fuzzy: FuzzyToolsCard,
-  ghostty: GhosttyPaletteCard,
-  mise: MiseCard,
-  packages: PackagesCard,
-  hyprland: HyprlandCard,
-  dots: DotsCliCard,
-  neovim: NeovimCard,
-  ripgrep: RipgrepCard,
+  "git-safety": LazyGitSafetyCard,
+  lazygit: LazyLazygitCard,
+  fuzzy: LazyFuzzyToolsCard,
+  ghostty: LazyGhosttyPaletteCard,
+  mise: LazyMiseCard,
+  packages: LazyPackagesCard,
+  hyprland: LazyHyprlandCard,
+  dots: LazyDotsCliCard,
+  neovim: LazyNeovimCard,
+  ripgrep: LazyRipgrepCard,
 };
 
 const ROOM_WORD: Record<RoomId, string> = {
@@ -37,6 +43,24 @@ const ROOM_WORD: Record<RoomId, string> = {
   hyprland: "desk",
   dots: "dots",
 };
+
+function ChunkWait() {
+  return (
+    <div className="flex items-center gap-2 py-6" role="status" aria-label="Loading card">
+      <span className="block-cursor" aria-hidden="true" />
+      <span className="font-mono text-xs text-[#5f656e]">loading…</span>
+    </div>
+  );
+}
+
+function CardWithSuspense({ id }: { id: CardId }) {
+  const Card = CARDS[id];
+  return (
+    <Suspense fallback={<ChunkWait />}>
+      <Card />
+    </Suspense>
+  );
+}
 
 export default function Explorer() {
   const { route, navigate } = useRouter();
@@ -106,13 +130,12 @@ export default function Explorer() {
         <div className="index-overlay">
           <div className="index-list">
             {LEFTOVERS.map((id) => {
-              const Card = CARDS[id];
               const entry = MANIFEST.find((e) => e.id === id);
               return (
                 <details key={id}>
                   <summary>{entry?.title ?? id}</summary>
                   <div className="annex-body">
-                    <Card />
+                    <CardWithSuspense id={id} />
                   </div>
                 </details>
               );
@@ -122,7 +145,7 @@ export default function Explorer() {
       ) : (
         <main className="field">
           <div className="room-field">
-            <ActiveCard />
+            <CardWithSuspense id={active} />
           </div>
         </main>
       )}

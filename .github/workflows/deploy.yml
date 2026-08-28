@@ -35,8 +35,20 @@ jobs:
       - name: Build
         run: bun run build
 
-      # DEPLOY-10: bundle-budget step lands here once PERF-03 pins the
-      # post-split numbers (hard-fail > pinned + ~5%).
+      # DEPLOY-10 / PERF-03: bundle budget (hard-fail). Pinned at PERF-03 exit:
+      # initial (entry) JS measured 68,112 bytes gzip after the per-card split;
+      # limit = measured + 5% (rounded up to 71,500). To re-pin after an
+      # intentional change: measure `gzip -c dist/<entry> | wc -c`, update LIMIT.
+      - name: Bundle budget
+        run: |
+          entry=$(grep -o 'assets/index-[^"]*\.js' dist/index.html | head -1)
+          bytes=$(gzip -c "dist/$entry" | wc -c)
+          LIMIT=71500
+          echo "initial JS (gzip): $bytes bytes — limit $LIMIT"
+          [ "$bytes" -le "$LIMIT" ] || {
+            echo "::error::bundle budget exceeded: $bytes > $LIMIT bytes gzip. If intentional, re-pin LIMIT after measuring \`gzip -c dist/<entry> | wc -c\`."
+            exit 1
+          }
 
       # PRs: validate the Worker bundles and assets without deploying.
       - name: Wrangler dry-run (PR)
