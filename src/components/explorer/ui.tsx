@@ -6,7 +6,7 @@ const SOURCE_STYLES: Record<SourceKind, string> = {
   live: "text-[#6fa3a0]",
   fallback: "text-[#b16371]",
   simulated: "text-[#959aa4]",
-  static: "text-[#5f656e]",
+  static: "text-[#868b93]",
 };
 
 const SOURCE_LABEL: Record<SourceKind, string> = {
@@ -41,7 +41,7 @@ export function ToggleGroup({
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`px-0 py-1 font-mono text-xs tracking-wide ${value === o.value ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+          className={`px-0 py-1 font-mono text-xs tracking-wide ${value === o.value ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
         >
           {o.label}
         </button>
@@ -117,6 +117,6 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
 
 export function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-xs tracking-wide text-[#5f656e]">{children}</span>
+    <span className="font-mono text-xs tracking-wide text-[#868b93]">{children}</span>
   );
 }

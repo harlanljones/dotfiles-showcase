@@ -50,7 +50,7 @@ const HISTORY: HistEntry[] = [
 ];
 
 const inputCls =
-  "mb-2 w-full rounded border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-xs text-white outline-none placeholder:text-white/25 focus:border-emerald-500/50";
+  "mb-2 w-full rounded border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-xs text-white outline-none placeholder:text-white/50 focus:border-emerald-500/50";
 
 function Pane({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -225,11 +225,11 @@ function FzfPane({ items }: { items: string[] }) {
             <span className="min-w-0 flex-1 truncate">
               <Highlighted text={m.item} positions={m.positions} />
             </span>
-            <span className="shrink-0 text-white/30">{m.score}</span>
+            <span className="shrink-0 text-white/50">{m.score}</span>
           </li>
         ))}
         {scored.length === 0 && (
-          <li className="px-2 py-0.5 font-mono text-[11px] text-white/30">no match</li>
+          <li className="px-2 py-0.5 font-mono text-[11px] text-white/50">no match</li>
         )}
       </ul>
       <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
@@ -240,11 +240,11 @@ function FzfPane({ items }: { items: string[] }) {
         ) : (
           <>
             <span className="text-emerald-300/80">would open:</span>{" "}
-            {preview || <span className="text-white/30">—</span>}
+            {preview || <span className="text-white/50">—</span>}
           </>
         )}
       </div>
-      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/35">
+      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/55">
         <div>
           <span className="text-white/50">FZF_DEFAULT_COMMAND</span>={" "}
           <span className="text-white/60">'fd --type f --hidden --follow --exclude .git'</span>
@@ -345,12 +345,12 @@ function ZoxidePane({ initial }: { initial: DirEntry[] }) {
               <span className="min-w-0 flex-1 truncate">
                 <Highlighted text={d.path} positions={positions} />
               </span>
-              <span className="shrink-0 text-white/35">{d.score.toFixed(2)}</span>
+              <span className="shrink-0 text-white/55">{d.score.toFixed(2)}</span>
             </li>
           );
         })}
         {candidates.length === 0 && (
-          <li className="px-2 py-0.5 font-mono text-[11px] text-white/30">no match</li>
+          <li className="px-2 py-0.5 font-mono text-[11px] text-white/50">no match</li>
         )}
       </ul>
       <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
@@ -360,7 +360,7 @@ function ZoxidePane({ initial }: { initial: DirEntry[] }) {
             {target ? target.path : <span className="text-red-300/70">no match</span>}
           </>
         ) : (
-          <span className="text-white/40">click a dir to bump frecency</span>
+          <span className="text-white/55">click a dir to bump frecency</span>
         )}
       </div>
     </Pane>
@@ -434,7 +434,7 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
             {f === "all" ? "all" : f === "ok" ? "exit 0" : "exit ≠ 0"}
           </button>
         ))}
-        <span className="ml-auto font-mono text-[10px] text-white/35">
+        <span className="ml-auto font-mono text-[10px] text-white/55">
           {syncedCount}/{items.length} synced
         </span>
       </div>
@@ -453,7 +453,7 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
                 i === safeSel ? "bg-emerald-500/15 text-white" : "bg-white/[0.04] text-white/70"
               }`}
             >
-              <span className="shrink-0 text-white/30">{h.ts.slice(5)}</span>
+              <span className="shrink-0 text-white/50">{h.ts.slice(5)}</span>
               <span className="min-w-0 flex-1 truncate">
                 <Highlighted text={h.cmd} positions={m?.positions ?? []} />
               </span>
@@ -475,7 +475,7 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
           );
         })}
         {results.length === 0 && (
-          <li className="px-2 py-0.5 font-mono text-[11px] text-white/30">no match</li>
+          <li className="px-2 py-0.5 font-mono text-[11px] text-white/50">no match</li>
         )}
       </ul>
       <div className="mt-2 rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/60">
@@ -484,10 +484,10 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
             <span className="text-emerald-300/80">✓ would run</span> {ran}
           </>
         ) : (
-          <span className="text-white/40">Enter would run the selected command</span>
+          <span className="text-white/55">Enter would run the selected command</span>
         )}
       </div>
-      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/35">
+      <div className="mt-2 space-y-0.5 border-t border-white/10 pt-2 font-mono text-[10px] leading-relaxed text-white/55">
         <div>
           <span className="text-white/50">↑</span> scoped to this directory ·{" "}
           <span className="text-white/50">Ctrl+R</span> global
@@ -522,7 +522,7 @@ export default function FuzzyToolsCard() {
         <AtuinPane items={HISTORY} />
       </div>
 
-      <p className="mt-3 text-xs text-white/40">
+      <p className="mt-3 text-xs text-white/55">
         Simulated rankings: fzf scores ordered subsequence matches with contiguous
         and word-boundary bonuses; zoxide ranks by frequency × recency decay
         (0.85^age); atuin fuzzy-matches full-text history by exit code and sync

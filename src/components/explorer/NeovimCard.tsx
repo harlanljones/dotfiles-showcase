@@ -146,7 +146,7 @@ export default function NeovimCard() {
       <div className="space-y-4">
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
         {!data && !error && (
-          <p className="font-mono text-xs text-white/40">loading neovim config…</p>
+          <p className="font-mono text-xs text-white/55">loading neovim config…</p>
         )}
         {data && (
           <>
@@ -155,7 +155,7 @@ export default function NeovimCard() {
                 <span className="text-emerald-300">{enabledCount}</span>
                 /{data.extras.length} extras enabled
               </span>
-              <span className="text-white/20">·</span>
+              <span className="text-white/50">·</span>
               <span className="font-mono text-white/60">
                 {visiblePlugins.length !== data.plugins.length ? (
                   <>
@@ -226,12 +226,12 @@ export default function NeovimCard() {
                                 className={`rounded-lg border px-2.5 py-1 font-mono text-[11px] transition-colors ${
                                   on
                                     ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
-                                    : "border-white/10 bg-white/[0.02] text-white/35"
+                                    : "border-white/10 bg-white/[0.02] text-white/55"
                                 }`}
                               >
                                 {normalizeExtra(ex)}
                                 {cnt > 0 && (
-                                  <span className="ml-1.5 text-white/40">
+                                  <span className="ml-1.5 text-white/55">
                                     +{cnt}
                                   </span>
                                 )}
@@ -241,7 +241,7 @@ export default function NeovimCard() {
                         </div>
                       </div>
                     ))}
-                    <p className="font-mono text-[10px] leading-relaxed text-white/35">
+                    <p className="font-mono text-[10px] leading-relaxed text-white/55">
                       Plugin association is a curated snapshot mapped to the repos
                       pinned here (e.g.{" "}
                       <span className="text-white/50">lang.typescript</span> →{" "}
@@ -262,7 +262,7 @@ export default function NeovimCard() {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="filter plugins…"
-                        className="min-w-40 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 font-mono text-xs text-white outline-none placeholder:text-white/30 focus:border-cyan-300/50"
+                        className="min-w-40 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 font-mono text-xs text-white outline-none placeholder:text-white/50 focus:border-cyan-300/50"
                       />
                       <button
                         type="button"
@@ -304,7 +304,7 @@ export default function NeovimCard() {
                                     type="button"
                                     onClick={() => copyCommit(name, commit)}
                                     title={`copy ${shortHash(commit)} → ${commit}`}
-                                    className="font-mono text-white/40 underline-offset-2 transition-colors hover:text-cyan-300 hover:underline"
+                                    className="font-mono text-white/55 underline-offset-2 transition-colors hover:text-cyan-300 hover:underline"
                                   >
                                     {copiedCommit === name ? (
                                       <span className="text-emerald-300">
@@ -325,7 +325,7 @@ export default function NeovimCard() {
                                       ))}
                                     </div>
                                   ) : (
-                                    <span className="text-white/25">—</span>
+                                    <span className="text-white/50">—</span>
                                   )}
                                 </td>
                               </tr>
@@ -335,14 +335,14 @@ export default function NeovimCard() {
                       </table>
                     </div>
                     {visiblePlugins.length === 0 && (
-                      <p className="font-mono text-xs text-white/35">
+                      <p className="font-mono text-xs text-white/55">
                         No plugins match the current filter.
                       </p>
                     )}
                   </div>
                 ) : (
                   data.extras.length > 0 && (
-                    <p className="font-mono text-xs text-white/35">
+                    <p className="font-mono text-xs text-white/55">
                       No lazy-lock.json pins available.
                     </p>
                   )

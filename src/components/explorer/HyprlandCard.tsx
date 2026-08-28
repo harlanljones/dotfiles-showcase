@@ -166,10 +166,10 @@ export default function HyprlandCard() {
       <div className="space-y-4">
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
         {!data && !error && (
-          <p className="font-mono text-xs text-[#5f656e]">loading monitors…</p>
+          <p className="font-mono text-xs text-[#868b93]">loading monitors…</p>
         )}
         {data && !hasMonitors && (
-          <p className="font-mono text-xs text-white/40">
+          <p className="font-mono text-xs text-white/55">
             no monitors reported (fallback) — nothing to draw.
           </p>
         )}
@@ -181,15 +181,16 @@ export default function HyprlandCard() {
               </div>
             )}
             <div className="hypr-desk p-3 sm:p-5">
+              {/* A11Y-01: no role="img" here — the diagram contains interactive
+                  monitor tiles; the summary is exposed as sr-only text instead. */}
+              <span className="sr-only">{layoutSummary}</span>
               <div className="hypr-fit">
                 <div
                   className="relative"
                   style={{ width: DIAGRAM_W, height: DIAGRAM_H }}
-                  aria-label={layoutSummary}
-                  role="img"
                 >
                   {allOff && (
-                    <div className="absolute inset-0 flex items-center justify-center font-mono text-xs text-white/40">
+                    <div className="absolute inset-0 flex items-center justify-center font-mono text-xs text-white/55">
                       all monitors off — toggle one on
                     </div>
                   )}
@@ -222,12 +223,12 @@ export default function HyprlandCard() {
                       </span>
                     </button>
                   ))}
-                  <span className="absolute left-1 top-1 font-mono text-[9px] text-white/25">
+                  <span className="absolute left-1 top-1 font-mono text-[9px] text-white/50">
                     0,0
                   </span>
                 </div>
               </div>
-              <div className="mt-2 font-mono text-[10px] text-white/40">
+              <div className="mt-2 font-mono text-[10px] text-white/55">
                 bounding box {Math.round(activeBoxW)}×{Math.round(activeBoxH)}{" "}
                 {showPhysical ? "physical" : "logical"} · fit {activeScaleFit.toFixed(3)}
                 {swapped ? " · mirrored" : ""}
@@ -239,7 +240,7 @@ export default function HyprlandCard() {
                   type="button"
                   onClick={() => setSwapped((v) => !v)}
                   aria-pressed={swapped}
-                  className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                  className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
                 >
                   Swap L/R{swapped ? " (on)" : ""}
                 </button>
@@ -247,7 +248,7 @@ export default function HyprlandCard() {
                   type="button"
                   onClick={() => setShowPhysical((v) => !v)}
                   aria-pressed={showPhysical}
-                  className={`py-1 font-mono text-xs tracking-wide ${showPhysical ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                  className={`py-1 font-mono text-xs tracking-wide ${showPhysical ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
                 >
                   Physical footprint{showPhysical ? " (on)" : ""}
                 </button>
@@ -259,7 +260,7 @@ export default function HyprlandCard() {
                       setDisabled((s) => ({ ...s, [p.output]: !s[p.output] }))
                     }
                     aria-pressed={!disabled[p.output]}
-                    className={`py-1 font-mono text-xs tracking-wide ${disabled[p.output] ? "text-[#5f656e]" : "text-[#6fa3a0]"}`}
+                    className={`py-1 font-mono text-xs tracking-wide ${disabled[p.output] ? "text-[#868b93]" : "text-[#6fa3a0]"}`}
                   >
                     {p.output} {disabled[p.output] ? "off" : "on"}
                   </button>

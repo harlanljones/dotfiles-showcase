@@ -144,6 +144,7 @@ by the early tasks noted. Do not treat TBD as zero.
 | Initial JS after split | **216.9 KB raw / 68.2 KB gzip** (entry, post-PERF-03; was 277.3/83.9 pre-split) | CI hard-fails above pinned 71,500 B gzip (+5%) | `bun run build` + CI budget step | PERF-03 owner | per merge |
 | Deployed mirror smoke | TBD at DEPLOY-09 (first live run) | all route/degraded/header assertions green post-deploy | CI smoke job | DEPLOY-10 owner | per deploy |
 | Telemetry spend | n/a pre-ANALYTICS-01 | Workers AE free tier, $0 observed (report at execution) | CF dashboard | ANALYTICS-01 owner | per deploy |
+| Axe a11y | 0 violations, 0 disabled rules (28 audits: 8 fetcher cards × live/fallback/error + 4 static) | strict all-rules green incl. color-contrast | `bun test tests/axe.test.tsx` | A11Y-01 owner | per merge |
 
 **Why the TBDs matter / early tasks to establish them:**
 - **Starship render latency baseline (TBD):** needed to set a real threshold; until measured
@@ -187,10 +188,14 @@ by the early tasks noted. Do not treat TBD as zero.
   10 lazy card components + shared `useApi` chunk, Vite default chunking, Suspense
   block-cursor fallback); initial JS **216.9 KB raw / 68.2 KB gzip** (−18.7% vs pre-split);
   CI budget pinned at 71,500 B gzip hard-fail (deploy.yml Bundle budget step).
-- **M12 (A11y + telemetry — A11Y-01, ANALYTICS-01):** axe strict (all rules) passes on
-  every card × live/fallback; contrast fixes shipped; keyboard-only walkthrough documented;
-  AE telemetry emits the full inventory on the mirror, emits nothing on localhost, values
-  aggregate-only; ADR-003 records the telemetry decision.
+- **M12 (A11y + telemetry — A11Y-01, ANALYTICS-01):** ✅ shipped — axe strict (ALL rules
+  incl. color-contrast) passes on every card × live/fallback/error (`tests/axe.test.tsx`,
+  happy-dom, 28 audits); contrast sweep brightened muted chrome (`#5f656e`→`#868b93`,
+  `white/20-45`→`/50-55`); `prefers-reduced-motion` honored; aria fixes (Hyprland diagram
+  de-imaged, Playground `pre` caption via sr-only). Telemetry: AE binding + Workers-only
+  `POST /api/t` (`server/routes/telemetry.ts`), client beacon (`src/lib/telemetry.ts`)
+  silent on localhost, full inventory with sliders emitting on release, aggregate-only
+  enforcement server-side; ADR-003 records the decision.
 
 **Requirement → critique → work traceability:**
 
@@ -517,7 +522,11 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   ❗ **Found:** `/index` is special-cased by Workers assets (307 → `/`) — refreshing on the
   annex dropped the visitor into Starship. **Fixed:** canonical annex path is now `/annex`
   (`getRoutePath`), `/index` kept as an accepted alias; router tests updated.
-  ⏳ Pending: PERF-03 budget, A11Y-01, ANALYTICS-01, VER-02 closeout.
+  ✅ Wave 2+3 recorded: initial JS 216.9→218.4 KB raw / 68.2→68.5 KB gzip after telemetry
+  wiring (budget 68,545 ≤ 71,500 pinned gzip); axe strict green (28 audits, zero disabled
+  rules); /api/t + client guard tests green (309/309 total).
+  ⏳ Pending: Wave 4 (PROD-01 PRODUCT.md revision, VER-02 closeout); AE dataset creation
+  (user dashboard step) before telemetry events flow.
 
 After each IC, re-run `bun test` and `bun run typecheck` (once available) before proceeding.
 

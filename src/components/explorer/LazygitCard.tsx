@@ -194,22 +194,22 @@ export default function LazygitCard() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           <span className="rounded bg-white/10 px-2 py-1">Ctrl+G (files panel)</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-white/10 px-2 py-1">lazygit-ollama-commit.sh</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-white/10 px-2 py-1">ollama (local LLM)</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-emerald-500/15 px-2 py-1 text-emerald-300">
             draft
           </span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-white/10 px-2 py-1">$EDITOR review</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-white/10 px-2 py-1">git commit</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/50">→</span>
           <span className="rounded bg-white/10 px-2 py-1">git push*</span>
         </div>
-        <p className="font-mono text-[10px] text-white/35">
+        <p className="font-mono text-[10px] text-white/55">
           * auto-push after the editor closes — set{" "}
           <span className="text-white/55">LAZYGIT_OLLAMA_NO_PUSH=1</span> to commit only
         </p>
@@ -247,7 +247,7 @@ export default function LazygitCard() {
                 disabled={phase === "loading"}
                 className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${
                   phase === "loading"
-                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/40"
+                    ? "cursor-not-allowed border-white/10 bg-white/5 text-white/55"
                     : "border-emerald-500/30 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25"
                 }`}
               >
@@ -256,14 +256,14 @@ export default function LazygitCard() {
             </div>
           </div>
 
-          <div className="font-mono text-[10px] text-white/35">
+          <div className="font-mono text-[10px] text-white/55">
             model=<span className="text-white/60">qwen2.5-coder:7b</span> · host=
             <span className="text-white/60">localhost:11434</span> · output=
             <span className="text-white/60">terminal</span>
           </div>
 
           <div className="space-y-1">
-            <div className="font-mono text-[11px] text-white/45">
+            <div className="font-mono text-[11px] text-white/55">
               sample staged diff (hardcoded fixture)
             </div>
             <DiffPreview diff={SAMPLE_DIFF} />
@@ -272,7 +272,7 @@ export default function LazygitCard() {
           <div aria-live="polite" className="space-y-1">
             {phase === "loading" && (
               <div>
-                <div className="font-mono text-[11px] text-white/45">
+                <div className="font-mono text-[11px] text-white/55">
                   calling ollama…
                 </div>
                 <pre className="animate-pulse rounded-lg border border-violet-500/20 bg-violet-500/[0.07] p-3 font-mono text-xs text-violet-100">
@@ -282,12 +282,12 @@ export default function LazygitCard() {
             )}
             {currentMessage !== null && (
               <div className="space-y-1">
-                <div className="font-mono text-[11px] text-white/45">
+                <div className="font-mono text-[11px] text-white/55">
                   generated commit message · candidate{" "}
                   {(candidateIdx % CANDIDATES.length) + 1} / {CANDIDATES.length}
                 </div>
                 <div className="overflow-hidden rounded-lg border border-emerald-500/20">
-                  <div className="border-b border-white/10 bg-white/[0.05] px-3 py-1 font-mono text-[10px] text-white/45">
+                  <div className="border-b border-white/10 bg-white/[0.05] px-3 py-1 font-mono text-[10px] text-white/55">
                     -- EDIT DRAFT -- save:y abort:n --
                   </div>
                   <pre className="overflow-x-auto bg-emerald-500/[0.07] p-3 font-mono text-xs text-emerald-100">
@@ -327,14 +327,14 @@ export default function LazygitCard() {
           <div className="flex items-center justify-between gap-2">
             <div className="font-mono text-xs text-white/60">lazygit config</div>
             {data && (
-              <span className="font-mono text-[11px] text-white/40">
+              <span className="font-mono text-[11px] text-white/55">
                 from {data.source} source
               </span>
             )}
           </div>
           {error && <p className="font-mono text-xs text-red-400">{error}</p>}
           {!data && !error && (
-            <p className="font-mono text-xs text-white/40">loading config…</p>
+            <p className="font-mono text-xs text-white/55">loading config…</p>
           )}
           {data && (
             <HighlightedConfig
@@ -344,7 +344,7 @@ export default function LazygitCard() {
           )}
         </div>
 
-        <p className="text-xs leading-5 text-white/35">
+        <p className="text-xs leading-5 text-white/55">
           Real ollama runs are out of scope for v1; this is a client-side simulation
           that mimics the message shape the dotfiles' script would produce.
         </p>

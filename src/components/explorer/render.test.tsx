@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
 import { renderToString } from "react-dom/server";
+import { FETCHERS, type Payload } from "./fixtures";
 
 /**
  * Render-parity suite (IC-4 evidence): every Explorer card renders without
@@ -31,121 +32,16 @@ const { default: RecolorCard } = await import("./RecolorCard");
 const { default: StarshipCard } = await import("./StarshipCard");
 const { default: DotsCliCard } = await import("./DotsCliCard");
 
-type Payload = Record<string, unknown>;
-
-interface FetcherCase {
-  name: string;
-  component: React.ComponentType<{ onOpenPlayground?: () => void }>;
-  live: Payload;
-  fallback: Payload;
-}
-
-const FETCHERS: FetcherCase[] = [
-  {
-    name: "dots",
-    component: DotsCliCard,
-    live: {
-      source: "live",
-      commands: [{
-        name: "status",
-        aliases: ["st"],
-        description: "Show state of managed files",
-        effect: "read",
-        handler: "cmd_status",
-        handlerSource: "cmd_status() {\n  chezmoi status\n}",
-      }],
-      warnings: [],
-    },
-    fallback: {
-      source: "fallback",
-      commands: [{
-        name: "status",
-        aliases: ["st"],
-        description: "Show state of managed files",
-        effect: "read",
-        handler: "cmd_status",
-        handlerSource: "cmd_status() {\n  chezmoi status\n}",
-      }],
-      warnings: ["Live dots source was unavailable."],
-    },
-  },
-  {
-    name: "lazygit",
-    component: LazygitCard,
-    live: { source: "live", content: "customCommands:\n  - key: '<c-g>'\n" },
-    fallback: { source: "fallback", content: "customCommands:\n" },
-  },
-  {
-    name: "ghostty",
-    component: GhosttyPaletteCard,
-    live: {
-      mainSource: "live",
-      themeSource: "live",
-      fontFamily: "JetBrainsMono Nerd Font",
-      fontSize: 9,
-      keybinds: ["shift+insert=paste_from_clipboard"],
-      theme: { background: "#060912", foreground: "#959aa4", palette: { "0": "#0d0f16" } },
-    },
-    fallback: {
-      mainSource: "fallback",
-      themeSource: "fallback",
-      fontFamily: "JetBrainsMono Nerd Font",
-      fontSize: 9,
-      keybinds: [],
-      theme: { background: "#060912", foreground: "#959aa4", palette: {} },
-    },
-  },
-  {
-    name: "mise",
-    component: MiseCard,
-    live: { source: "live", tools: [["bun", "latest"]] },
-    fallback: { source: "fallback", tools: [["node", "22"]] },
-  },
-  {
-    name: "packages",
-    component: PackagesCard,
-    live: { brewSource: "live", formulae: ["age"], casks: [], pacmanSource: "live", pacman: ["age"] },
-    fallback: {
-      brewSource: "fallback",
-      formulae: ["age"],
-      casks: [],
-      pacmanSource: "fallback",
-      pacman: ["age"],
-    },
-  },
-  {
-    name: "hyprland",
-    component: HyprlandCard,
-    live: {
-      source: "live",
-      gdkScale: 1,
-      monitors: [{ output: "DP-1", mode: "3440x1440", position: "0x0", scale: 1 }],
-    },
-    fallback: { source: "fallback", gdkScale: null, monitors: [] },
-  },
-  {
-    name: "neovim",
-    component: NeovimCard,
-    live: {
-      extrasSource: "live",
-      lockSource: "live",
-      extras: ["lang.typescript"],
-      plugins: [["blink.cmp", "abc1234"]],
-    },
-    fallback: {
-      extrasSource: "fallback",
-      lockSource: "fallback",
-      extras: [],
-      plugins: [],
-    },
-  },
-  {
-    name: "ripgrep",
-    component: RipgrepCard,
-    live: { source: "live", flags: ["--smart-case"] },
-    fallback: { source: "fallback", flags: ["--smart-case"] },
-  },
-];
+const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?: () => void }>> = {
+  dots: DotsCliCard,
+  lazygit: LazygitCard,
+  ghostty: GhosttyPaletteCard,
+  mise: MiseCard,
+  packages: PackagesCard,
+  hyprland: HyprlandCard,
+  neovim: NeovimCard,
+  ripgrep: RipgrepCard,
+};
 
 /** Distinct provenance values declared by a payload's top-level source fields. */
 function expectedBadges(payload: Payload): string[] {
@@ -163,7 +59,8 @@ function render(Card: React.ElementType): string {
 }
 
 describe("explorer card render parity", () => {
-  for (const { name, component, live, fallback } of FETCHERS) {
+  for (const { name, live, fallback } of FETCHERS) {
+    const component = FETCHER_COMPONENTS[name];
     it(`${name}: renders the live variant with matching badges`, () => {
       current = { data: live, error: null };
       const html = render(component);

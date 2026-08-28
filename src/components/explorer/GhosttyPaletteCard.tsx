@@ -162,11 +162,11 @@ export default function GhosttyPaletteCard() {
         data ? (
           <div className="flex gap-1.5">
             <span className="flex items-center gap-1">
-              <span className="font-mono text-[10px] text-white/40">config:</span>
+              <span className="font-mono text-[10px] text-white/55">config:</span>
               <SourceBadge source={data.mainSource} />
             </span>
             <span className="flex items-center gap-1">
-              <span className="font-mono text-[10px] text-white/40">theme:</span>
+              <span className="font-mono text-[10px] text-white/55">theme:</span>
               <SourceBadge source={data.themeSource} />
             </span>
           </div>
@@ -175,11 +175,11 @@ export default function GhosttyPaletteCard() {
     >
       {error && <p className="font-mono text-xs text-red-400">{error}</p>}
       {!data && !error && (
-        <p className="font-mono text-xs text-white/40">loading ghostty config…</p>
+        <p className="font-mono text-xs text-white/55">loading ghostty config…</p>
       )}
       {data && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-[#5f656e]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-[#868b93]">
             <span>
               font: <span className="text-[#959aa4]">{data.fontFamily ?? "?"}</span>{" "}
               {data.fontSize && <span>@ {data.fontSize}px</span>}
@@ -208,7 +208,7 @@ export default function GhosttyPaletteCard() {
                   type="button"
                   onClick={() => handleCopy(data.theme[k] ?? "")}
                   title="copy hex"
-                  className="flex items-center gap-1.5 py-1 text-[#5f656e] hover:text-[#959aa4]"
+                  className="flex items-center gap-1.5 py-1 text-[#868b93] hover:text-[#959aa4]"
                 >
                   <span
                     className="inline-block h-3 w-3 rounded-sm border border-black/40"
@@ -223,12 +223,12 @@ export default function GhosttyPaletteCard() {
 
           {palette.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-              <span className="text-[#5f656e]">export:</span>
+              <span className="text-[#868b93]">export:</span>
               <button
                 type="button"
                 onClick={() => handleCopy(exportPaletteJson(data))}
                 title="copy palette as JSON"
-                className="py-1 text-[#5f656e] underline-offset-4 hover:text-[#959aa4] hover:underline"
+                className="py-1 text-[#868b93] underline-offset-4 hover:text-[#959aa4] hover:underline"
               >
                 JSON
               </button>
@@ -236,7 +236,7 @@ export default function GhosttyPaletteCard() {
                 type="button"
                 onClick={() => handleCopy(exportPaletteList(data))}
                 title="copy palette as ghostty-style list"
-                className="py-1 text-[#5f656e] underline-offset-4 hover:text-[#959aa4] hover:underline"
+                className="py-1 text-[#868b93] underline-offset-4 hover:text-[#959aa4] hover:underline"
               >
                 hex list
               </button>
@@ -284,7 +284,7 @@ export default function GhosttyPaletteCard() {
             {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
             </div>
             {palette.length === 0 ? (
-              <p className="font-mono text-xs text-white/35">
+              <p className="font-mono text-xs text-white/55">
                 No palette entries in this payload (fallback).
               </p>
             ) : (
@@ -313,8 +313,8 @@ export default function GhosttyPaletteCard() {
                         style={{ background: hex }}
                       />
                       <div className="mt-1 flex items-baseline justify-between font-mono text-[9px]">
-                        <span className={isSelected ? "text-[#6fa3a0]" : "text-[#5f656e]"}>{n}</span>
-                        <span className="text-white/35">{isBright ? "bright" : "reg"}</span>
+                        <span className={isSelected ? "text-[#6fa3a0]" : "text-[#868b93]"}>{n}</span>
+                        <span className="text-white/55">{isBright ? "bright" : "reg"}</span>
                       </div>
                     </button>
                   );

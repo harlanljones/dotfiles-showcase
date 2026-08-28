@@ -7,6 +7,7 @@ import {
   type ShellMode,
   type GitState,
 } from "../lib/urlParams";
+import { emit } from "../lib/telemetry";
 
 export type ApiStatus = "idle" | "live" | "degraded" | "error";
 
@@ -184,6 +185,7 @@ export default function StarshipPlayground({
 
   const applyScenario = (sc: Scenario) => {
     setScenarioKey(sc.key);
+    emit("preset_applied", { scenario: sc.key });
     setS((prev) => ({
       ...prev,
       ...sc.state,
@@ -198,6 +200,7 @@ export default function StarshipPlayground({
     if (target && navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(target);
+        emit("copy_ansi", { view });
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1500);
       } catch {
@@ -212,6 +215,7 @@ export default function StarshipPlayground({
       const qs = encodePromptState(s);
       const url = `${window.location.origin}${window.location.pathname}${qs}${window.location.hash}`;
       await navigator.clipboard.writeText(url);
+      emit("copy_link");
       setCopiedLink(true);
       window.setTimeout(() => setCopiedLink(false), 1500);
     } catch {
@@ -245,7 +249,7 @@ export default function StarshipPlayground({
         </div>
 
         {hasRecolor && (
-          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-[#5f656e]">
+          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-[#868b93]">
             <span>
               {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
             </span>
@@ -273,9 +277,10 @@ export default function StarshipPlayground({
           </div>
         )}
 
+        {/* A11Y-01: pre is a generic role — no aria-label/aria-busy; caption
+            is exposed as visually-hidden text instead. */}
+        <span className="sr-only">Rendered Starship prompt</span>
         <pre
-          aria-label="Rendered Starship prompt"
-          aria-busy={loading}
           className={`font-mono-nerd min-h-8 text-[1.05rem] leading-relaxed sm:text-lg ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
           style={{ color: theme.foreground }}
           dangerouslySetInnerHTML={{ __html: view === "before" ? rawHtml : html }}
@@ -286,7 +291,7 @@ export default function StarshipPlayground({
         <div role="alert" className="border border-[#b16371]/35 bg-[#b16371]/10 p-3 text-sm text-[#d38290]">
           <div className="flex items-start justify-between gap-3">
             <p>{error}</p>
-            <span className="shrink-0 text-[10px] tracking-wider text-[#5f656e]">stale</span>
+            <span className="shrink-0 text-[10px] tracking-wider text-[#868b93]">stale</span>
           </div>
           <button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>
             Retry render
@@ -312,14 +317,14 @@ export default function StarshipPlayground({
                 type="button"
                 aria-pressed={scenarioKey === sc.key}
                 onClick={() => applyScenario(sc)}
-                className={`py-1 font-mono text-[11px] tracking-wide ${scenarioKey === sc.key ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                className={`py-1 font-mono text-[11px] tracking-wide ${scenarioKey === sc.key ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
               >
                 {sc.label}
               </button>
             ))}
           </div>
 
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Branch
             <input
               aria-label="Git branch"
@@ -331,19 +336,50 @@ export default function StarshipPlayground({
 
           <fieldset className="flex flex-wrap gap-3 text-sm">
             <legend className="sr-only">Session flags</legend>
-            <Toggle label="Dirty" on={s.dirty} onClick={() => set("dirty", !s.dirty)} />
-            <Toggle label="Detached HEAD" on={s.detached} onClick={() => set("detached", !s.detached)} />
-            <Toggle label="SSH session" on={s.ssh} onClick={() => set("ssh", !s.ssh)} />
+            <Toggle
+              label="Dirty"
+              on={s.dirty}
+              onClick={() => {
+                emit("flag_toggled", { flag: "dirty", to: s.dirty ? 0 : 1 });
+                set("dirty", !s.dirty);
+              }}
+            />
+            <Toggle
+              label="Detached HEAD"
+              on={s.detached}
+              onClick={() => {
+                emit("flag_toggled", { flag: "detached", to: s.detached ? 0 : 1 });
+                set("detached", !s.detached);
+              }}
+            />
+            <Toggle
+              label="SSH session"
+              on={s.ssh}
+              onClick={() => {
+                emit("flag_toggled", { flag: "ssh", to: s.ssh ? 0 : 1 });
+                set("ssh", !s.ssh);
+              }}
+            />
           </fieldset>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <NumberField label="Ahead" value={s.ahead} onChange={(v) => set("ahead", v)} />
-            <NumberField label="Behind" value={s.behind} onChange={(v) => set("behind", v)} />
+            <NumberField
+              label="Ahead"
+              value={s.ahead}
+              onChange={(v) => set("ahead", v)}
+              onCommit={(v) => emit("range_committed", { field: "ahead", value: v })}
+            />
+            <NumberField
+              label="Behind"
+              value={s.behind}
+              onChange={(v) => set("behind", v)}
+              onCommit={(v) => emit("range_committed", { field: "behind", value: v })}
+            />
           </div>
         </div>
 
         <div className="space-y-3">
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Git state
             <select
               className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
@@ -356,30 +392,37 @@ export default function StarshipPlayground({
             </select>
           </label>
 
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Shell recolor
             <select
               className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
               value={s.shell}
-              onChange={(e) => set("shell", e.target.value as ShellMode)}
+              onChange={(e) => {
+                const shell = e.target.value as ShellMode;
+                emit("shell_changed", { shell });
+                set("shell", shell);
+              }}
             >
               <option value="zsh">zsh — cyan only</option>
               <option value="bash">bash — all foreground → red</option>
             </select>
           </label>
 
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Truecolor preview (proposed fix)
             <div className="mt-1">
               <Toggle
                 label="true_color + 38;2 cyan→red"
                 on={s.trueColor}
-                onClick={() => set("trueColor", !s.trueColor)}
+                onClick={() => {
+                  emit("recolor_toggled", { trueColor: s.trueColor ? 0 : 1 });
+                  set("trueColor", !s.trueColor);
+                }}
               />
             </div>
           </label>
 
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Terminal width
             <input
               type="range"
@@ -389,33 +432,42 @@ export default function StarshipPlayground({
               aria-label="Terminal width"
               value={s.width}
               onChange={(e) => set("width", Number(e.target.value))}
+              onPointerUp={() => emit("range_committed", { field: "width", value: s.width })}
+              onKeyUp={() => emit("range_committed", { field: "width", value: s.width })}
+              onBlur={() => emit("range_committed", { field: "width", value: s.width })}
               className="mt-2 w-full accent-[#6fa3a0]"
             />
           </label>
 
           <fieldset className="text-sm">
-            <legend className="mb-2 text-[#5f656e]">Last command</legend>
+            <legend className="mb-2 text-[#868b93]">Last command</legend>
             <div className="flex gap-4">
               <button
-                className={`py-1 ${s.status === 0 ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                className={`py-1 ${s.status === 0 ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
                 type="button"
                 aria-pressed={s.status === 0}
-                onClick={() => set("status", 0)}
+                onClick={() => {
+                  emit("status_changed", { status: 0 });
+                  set("status", 0);
+                }}
               >
                 Success
               </button>
               <button
-                className={`py-1 ${s.status === 1 ? "text-[#b16371]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+                className={`py-1 ${s.status === 1 ? "text-[#b16371]" : "text-[#868b93] hover:text-[#959aa4]"}`}
                 type="button"
                 aria-pressed={s.status === 1}
-                onClick={() => set("status", 1)}
+                onClick={() => {
+                  emit("status_changed", { status: 1 });
+                  set("status", 1);
+                }}
               >
                 Error
               </button>
             </div>
           </fieldset>
 
-          <label className="block text-sm text-[#5f656e]">
+          <label className="block text-sm text-[#868b93]">
             Duration (ms)
             <input
               type="number"
@@ -423,13 +475,14 @@ export default function StarshipPlayground({
               className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
               value={s.durationMs}
               onChange={(e) => set("durationMs", Number(e.target.value))}
+              onBlur={(e) => emit("range_committed", { field: "durationMs", value: Number(e.target.value) })}
             />
           </label>
           <div className="pt-2">
             <button
               type="button"
               onClick={copyLink}
-              className="text-xs tracking-wide text-[#5f656e] hover:text-[#959aa4] underline underline-offset-4"
+              className="text-xs tracking-wide text-[#868b93] hover:text-[#959aa4] underline underline-offset-4"
               aria-label="Copy share link"
             >
               {copiedLink ? "link copied" : "copy link"}
@@ -455,7 +508,7 @@ function Toggle({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`py-1 text-xs tracking-wide ${on ? "text-[#6fa3a0]" : "text-[#5f656e] hover:text-[#959aa4]"}`}
+      className={`py-1 text-xs tracking-wide ${on ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
     >
       {label}
     </button>
@@ -466,13 +519,15 @@ function NumberField({
   label,
   value,
   onChange,
+  onCommit,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
+  onCommit?: (v: number) => void;
 }) {
   return (
-    <label className="block text-sm text-[#5f656e]">
+    <label className="block text-sm text-[#868b93]">
       {label}
       <input
         type="number"
@@ -481,6 +536,7 @@ function NumberField({
         className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
         value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
+        onBlur={onCommit ? () => onCommit(value) : undefined}
       />
     </label>
   );

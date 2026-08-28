@@ -154,7 +154,7 @@ export default function MiseCard() {
                               <>
                                 {alts.length > 0 ? (
                                   <>
-                                    <span className="font-mono text-[10px] text-white/40">
+                                    <span className="font-mono text-[10px] text-white/55">
                                       nearby versions (illustrative)
                                     </span>
                                     {alts.map((v) => (
@@ -169,7 +169,7 @@ export default function MiseCard() {
                                     ))}
                                   </>
                                 ) : (
-                                  <span className="font-mono text-[10px] text-white/40">
+                                  <span className="font-mono text-[10px] text-white/55">
                                     no pinned version recorded
                                   </span>
                                 )}
@@ -189,7 +189,7 @@ export default function MiseCard() {
                   })}
                   {filtered.length === 0 && (
                     <tr>
-                      <td className="px-3 py-3 text-white/40" colSpan={4}>
+                      <td className="px-3 py-3 text-white/55" colSpan={4}>
                         {tools.length === 0
                           ? "no tools configured"
                           : `no tools match "${search}"`}
@@ -200,7 +200,7 @@ export default function MiseCard() {
               </table>
             </div>
 
-            <p className="text-xs leading-5 text-white/35">
+            <p className="text-xs leading-5 text-white/55">
               Pin simulation is client-side only — the real config lives in{" "}
               <span className="font-mono">~/.config/mise/config.toml</span>. The
               card never claims a version mise would resolve; nearby-versions chips

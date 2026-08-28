@@ -44,7 +44,7 @@ export default function RipgrepCard() {
     >
       {error && <p className="font-mono text-xs text-red-400">{error}</p>}
       {!data && !error && (
-        <p className="font-mono text-xs text-white/40">loading flags…</p>
+        <p className="font-mono text-xs text-white/55">loading flags…</p>
       )}
       {data && (
         <div className="space-y-4">
@@ -76,7 +76,7 @@ export default function RipgrepCard() {
               );
             })}
             {data.flags.length === 0 && (
-              <p className="font-mono text-xs text-white/40">no flags configured</p>
+              <p className="font-mono text-xs text-white/55">no flags configured</p>
             )}
           </div>
           <p className="text-xs leading-relaxed text-white/50">

@@ -19,7 +19,7 @@
   --glass-lit: #060912;
   --phosphor: #6fa3a0;
   --ash: #959aa4;
-  --ash-dim: #5f656e;
+  --ash-dim: #868b93;
   --fail: #b16371;
   --line: rgba(149, 154, 164, 0.16);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -208,6 +208,18 @@ html[data-failed="1"] .display {
   50%,
   100% {
     opacity: 0;
+  }
+}
+
+/* A11Y-01: honor prefers-reduced-motion — no blinking cursors, no transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .block-cursor,
+  .veil {
+    animation: none;
+  }
+  .display,
+  .veil {
+    transition: none;
   }
 }
 

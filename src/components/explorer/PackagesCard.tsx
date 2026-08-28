@@ -136,11 +136,11 @@ export default function PackagesCard() {
         data ? (
           <div className="flex gap-3">
             <div className="flex items-center gap-1">
-              <span className="font-mono text-[9px] text-white/40">brew ·</span>
+              <span className="font-mono text-[9px] text-white/55">brew ·</span>
               <SourceBadge source={data.brewSource} />
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-mono text-[9px] text-white/40">pacman ·</span>
+              <span className="font-mono text-[9px] text-white/55">pacman ·</span>
               <SourceBadge source={data.pacmanSource} />
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function PackagesCard() {
       }
     >
       {error && <p className="font-mono text-xs text-red-400">{error}</p>}
-      {!data && !error && <p className="font-mono text-xs text-white/40">loading packages…</p>}
+      {!data && !error && <p className="font-mono text-xs text-white/55">loading packages…</p>}
       {data && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -163,7 +163,7 @@ export default function PackagesCard() {
                     className={`px-3 py-1.5 font-mono text-xs transition-colors ${active ? "bg-white/15 text-white" : "text-white/50 hover:bg-white/5"}`}
                   >
                     {v.label}
-                    <span className={`ml-1.5 ${active ? "text-white/60" : "text-white/30"}`}>{countFor(v.key)}</span>
+                    <span className={`ml-1.5 ${active ? "text-white/60" : "text-white/50"}`}>{countFor(v.key)}</span>
                   </button>
                 );
               })}
@@ -172,9 +172,9 @@ export default function PackagesCard() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="search packages…"
-              className="w-44 rounded border border-white/15 bg-black/40 px-2 py-1 font-mono text-xs text-white outline-none placeholder:text-white/25 focus:border-emerald-500/50"
+              className="w-44 rounded border border-white/15 bg-black/40 px-2 py-1 font-mono text-xs text-white outline-none placeholder:text-white/50 focus:border-emerald-500/50"
             />
-            <span className="font-mono text-xs text-white/40">
+            <span className="font-mono text-xs text-white/55">
               {filtered.length} shown · {counts.total} total
             </span>
           </div>
@@ -193,19 +193,19 @@ export default function PackagesCard() {
               ))}
             </div>
           ) : (
-            <p className="font-mono text-xs text-white/40">
+            <p className="font-mono text-xs text-white/55">
               {q.trim() ? `no packages match "${q.trim()}"` : "no packages in this view"}
             </p>
           )}
 
           {view === "both" && (
-            <p className="text-xs leading-5 text-white/40">
+            <p className="text-xs leading-5 text-white/55">
               {bothNames.size} package{bothNames.size === 1 ? "" : "s"} restored on both
               macOS (Homebrew) and Arch (pacman) — your portable core.
             </p>
           )}
 
-          <p className="text-xs leading-5 text-white/35">
+          <p className="text-xs leading-5 text-white/55">
             Combined view merges the Brewfile (formulae + casks) with the pacman explicit set. Switch tabs to isolate one source; the search filters across whichever tab is active.
           </p>
         </div>

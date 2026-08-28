@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef } from "react";
 import { MANIFEST, type CardId } from "../manifest";
 import { useRouter, type RoomId } from "../lib/router";
+import { emit } from "../lib/telemetry";
 import StarshipCard from "./explorer/StarshipCard";
 
 const ROOMS = ["starship", "ghostty", "hyprland", "dots"] as const;
@@ -48,7 +49,7 @@ function ChunkWait() {
   return (
     <div className="flex items-center gap-2 py-6" role="status" aria-label="Loading card">
       <span className="block-cursor" aria-hidden="true" />
-      <span className="font-mono text-xs text-[#5f656e]">loading…</span>
+      <span className="font-mono text-xs text-[#868b93]">loading…</span>
     </div>
   );
 }
@@ -76,10 +77,13 @@ export default function Explorer() {
   }, [navigate]);
 
   const openRoom = (id: RoomId) => {
+    if (id !== active) emit("room_switch", { from: active, to: id });
     navigate({ room: id, indexOpen: false });
   };
 
   const toggleIndex = () => {
+    if (indexOpen) emit("annex_closed");
+    else emit("annex_opened");
     navigate({ indexOpen: !indexOpen });
   };
 
@@ -90,6 +94,7 @@ export default function Explorer() {
     if (!indexOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        emit("annex_closed");
         navigate({ indexOpen: false });
         indexToggleRef.current?.focus();
       }

@@ -47,13 +47,13 @@ function reasonLabel(r: SgrSpan["reason"]): { text: string; tone: string } {
     case "bash:fg-to-red": return { text: "bash fg → red", tone: "text-emerald-300" };
     case "bash:tail-256": return { text: "bash tails 256-color → red", tone: "text-amber-300" };
     case "bash:tail-truecolor": return { text: "bash tails truecolor → red", tone: "text-amber-300" };
-    case "untouched:not-cyan": return { text: "not cyan (zsh×)", tone: "text-white/40" };
-    case "untouched:prefix-not-in-zsh-list": return { text: "prefix not in zsh 8 (zsh×)", tone: "text-white/40" };
-    case "untouched:truecolor-tail": return { text: "truecolor — known gap (×)", tone: "text-white/35" };
-    case "untouched:256color-tail": return { text: "256-color — not recolored", tone: "text-white/35" };
-    case "untouched:no-fg-code": return { text: "no fg code", tone: "text-white/30" };
-    case "untouched:non-sgr": return { text: "non-SGR", tone: "text-white/30" };
-    default: return { text: r, tone: "text-white/40" };
+    case "untouched:not-cyan": return { text: "not cyan (zsh×)", tone: "text-white/55" };
+    case "untouched:prefix-not-in-zsh-list": return { text: "prefix not in zsh 8 (zsh×)", tone: "text-white/55" };
+    case "untouched:truecolor-tail": return { text: "truecolor — known gap (×)", tone: "text-white/55" };
+    case "untouched:256color-tail": return { text: "256-color — not recolored", tone: "text-white/55" };
+    case "untouched:no-fg-code": return { text: "no fg code", tone: "text-white/50" };
+    case "untouched:non-sgr": return { text: "non-SGR", tone: "text-white/50" };
+    default: return { text: r, tone: "text-white/55" };
   }
 }
 
@@ -273,7 +273,7 @@ export default function RecolorCard() {
                 placeholder="e.g. \x1b[36mhello\x1b[0m"
               />
             </label>
-            <p className="font-mono text-[11px] text-white/35">Raw bytes: {rawBytes.slice(0, 120)}{rawBytes.length > 120 ? "…" : ""} · {customInput.length} chars</p>
+            <p className="font-mono text-[11px] text-white/55">Raw bytes: {rawBytes.slice(0, 120)}{rawBytes.length > 120 ? "…" : ""} · {customInput.length} chars</p>
           </div>
         )}
 
@@ -300,7 +300,7 @@ export default function RecolorCard() {
                 {htmlBefore ? (
                   <pre className={preClass} style={preStyle} dangerouslySetInnerHTML={{ __html: htmlBefore }} />
                 ) : (
-                  <pre className={preClass} style={preStyle}><span className="text-white/30">empty</span></pre>
+                  <pre className={preClass} style={preStyle}><span className="text-white/50">empty</span></pre>
                 )}
               </div>
               <div className="space-y-1.5">
@@ -308,11 +308,11 @@ export default function RecolorCard() {
                 {htmlAfter ? (
                   <pre className={preClass} style={preStyle} dangerouslySetInnerHTML={{ __html: htmlAfter }} />
                 ) : (
-                  <pre className={preClass} style={preStyle}><span className="text-white/30">empty</span></pre>
+                  <pre className={preClass} style={preStyle}><span className="text-white/50">empty</span></pre>
                 )}
               </div>
             </div>
-            <p className="font-mono text-[11px] text-white/35">
+            <p className="font-mono text-[11px] text-white/55">
               {themeSource === "fallback" ? "theme from bundled snapshot" : "theme from live host"}
             </p>
           </>
@@ -339,7 +339,7 @@ export default function RecolorCard() {
                     const lbl = reasonLabel(s.reason);
                     return (
                       <tr key={`${s.offset}-${i}`} className="border-b border-white/5 last:border-0">
-                        <td className="px-2 py-1 text-white/40">{i + 1}</td>
+                        <td className="px-2 py-1 text-white/55">{i + 1}</td>
                         <td className="px-2 py-1 text-white/80">{escapeLabel(s.raw)}</td>
                         <td className="px-2 py-1 text-white/60">{s.recolored ? escapeLabel(s.after) : "—"}</td>
                         <td className={`px-2 py-1 ${lbl.tone}`}>{s.recolored ? "● " : "○ "}{lbl.text}</td>
@@ -353,10 +353,10 @@ export default function RecolorCard() {
         )}
 
         {active && spans.length === 0 && status !== 0 && (
-          <p className="font-mono text-xs text-white/35">No SGR escapes matched in this input — try a preset with color codes.</p>
+          <p className="font-mono text-xs text-white/55">No SGR escapes matched in this input — try a preset with color codes.</p>
         )}
 
-        <p className="text-xs leading-5 text-white/35">
+        <p className="text-xs leading-5 text-white/55">
           {mode === "prompt" && promptResult?.degraded ? (
             <>Degraded mode: reconstructed from <code>fallback/starship.toml</code> in 8-color so the recolor code demonstrably applies. The local app renders with the real binary.</>
           ) : (
