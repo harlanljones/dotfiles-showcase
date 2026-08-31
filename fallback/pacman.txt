@@ -8,6 +8,7 @@
 aether
 age
 alsa-utils
+appimagelauncher
 asdcontrol
 atuin
 avahi
@@ -62,12 +63,14 @@ fzf
 ghostty
 git
 github-cli
+github-copilot-bin
 gnome-disk-utility
 gnome-keyring
 gnome-themes-extra
 google-chrome
 gpu-screen-recorder
 grim
+grok-bot
 gst-plugin-pipewire
 gum
 gvfs-mtp
@@ -144,6 +147,8 @@ omarchy-keyring
 omarchy-nvim
 omarchy-settings
 omawrite
+openai-codex
+openai-codex-desktop
 pacman-contrib
 pamixer
 pinta

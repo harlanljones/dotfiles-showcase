@@ -36,9 +36,11 @@ Session: empty veil once per tab; first pointer/tap wakes into Starship; after t
 
 Honesty: live / fallback / simulated / degraded disclosed on inspect, except the required Starship degraded banner. Quiet status, great degraded — public is designed to be excellent on snapshots.
 
-Locked: read-only (no editing or syncing dotfiles); no-fake local starship; bannered Workers degraded mode; no secrets; chezmoiignore covers the submodule; live→fallback; JetBrainsMono Nerd Font for prompt glyphs.
+Telemetry: first-party aggregate counts only, via Cloudflare Workers Analytics Engine (ADR-003). Event names and clamped aggregate tokens; no cookies, no fingerprinting, no free-text state (branch names, repo contents are never transmitted); nothing is emitted from local dev. The endpoint validates and discards silently when the dataset is unprovisioned.
 
-Open (do not invent): product name; visual world; whether room URLs exist; leftover receipt density.
+Locked: read-only (no editing or syncing dotfiles); no-fake local starship; bannered Workers degraded mode; no secrets; chezmoiignore covers the submodule; live→fallback; JetBrainsMono Nerd Font for prompt glyphs; room URLs exist (`/prompt`, `/palette`, `/desk`, `/dots`, `/annex` — ADR-002).
+
+Open (do not invent): product name; visual world; leftover receipt density.
 
 ## Brand Commitments
 

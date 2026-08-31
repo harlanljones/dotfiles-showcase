@@ -512,21 +512,20 @@ IDs are stable. "Ownership" = EXCLUSIVE file/component; no concurrent edit by an
   Cards API cache headers verified by unit suite; router + urlParams round-trip
   suites green; Hyprland render parity (physical bounding box text) preserved.
 - **IC-7 (after M10–M12, v3):** deployed verification + split + a11y + telemetry.
-  ⏳ DEPLOY-09 smoke results (2026-08-28, live mirror):
-  ✅ `/`, `/prompt`, `/palette`, `/desk`, `/dots`, `/annex`, `/nonexistent-route`,
-  `/prompt?dirty=1&status=1&state=rebase` → 200 `text/html` with SPA root div;
-  ✅ `POST /api/starship` → `degraded:true` + warning banner payload + recolor verified
-  live (`rawAnsi` 36m → `ansi` 31m on `status=1`);
-  ✅ `/api/cards` + ghostty/mise/dots/packages → exact `public, max-age=3600,
-  stale-while-revalidate=86400` (PERF-02 contract holds in production);
-  ❗ **Found:** `/index` is special-cased by Workers assets (307 → `/`) — refreshing on the
-  annex dropped the visitor into Starship. **Fixed:** canonical annex path is now `/annex`
-  (`getRoutePath`), `/index` kept as an accepted alias; router tests updated.
-  ✅ Wave 2+3 recorded: initial JS 216.9→218.4 KB raw / 68.2→68.5 KB gzip after telemetry
-  wiring (budget 68,545 ≤ 71,500 pinned gzip); axe strict green (28 audits, zero disabled
-  rules); /api/t + client guard tests green (309/309 total).
-  ⏳ Pending: Wave 4 (PROD-01 PRODUCT.md revision, VER-02 closeout); AE dataset creation
-  (user dashboard step) before telemetry events flow.
+  ✅ CLOSED (VER-02, 2026-08-28) — all v3 exit gates confirmed:
+  - **DEPLOY-09:** live-mirror smoke recorded (routes 200, SPA fallback, degraded:true,
+    exact cache headers; `/index` 307 finding fixed via `/annex` canonicalization).
+  - **DEPLOY-10:** `fallbacks:check` hard gate + post-deploy smoke + bundle budget in
+    `deploy.yml` (validated on first CI push after deploy).
+  - **PERF-03:** initial JS 218.4 KB raw / 68.5 KB gzip; budget pinned 71,500 B gzip hard-fail.
+  - **A11Y-01:** axe strict green — 28 audits, 0 violations, 0 disabled rules (incl.
+    color-contrast); reduced-motion honored; aria fixes shipped.
+  - **ANALYTICS-01:** `/api/t` + beacon green (13 telemetry tests); local dev emits
+    nothing; ADR-003 records the decision. AE dataset `dotfiles_showcase_events` must be
+    created in the CF dashboard before telemetry events flow (user step).
+  - **Revalidation:** `bun test` 309/309, `tsc --noEmit` 0 errors, production build clean,
+    `bun run fallbacks:check` green after refresh (4 snapshots refreshed: lazy-lock.json,
+    lazyvim.json, mise.toml, pacman.txt + bundle).
 
 After each IC, re-run `bun test` and `bun run typecheck` (once available) before proceeding.
 
