@@ -92,7 +92,7 @@ jobs:
             -d '{"branch":"main","dirty":true,"status":1,"shell":"zsh"}' | grep -q '"degraded":true' \
             || fail "degraded:true missing from /api/starship"
           for k in ghostty mise dots; do
-            cc=$(curl -sI "$BASE/api/cards/$k" | tr -d '\r' | grep -i '^cache-control:' | awk '{print tolower($2)}')
+            cc=$(curl -sI "$BASE/api/cards/$k" | tr -d '\r' | sed -n 's/^cache-control:[[:space:]]*//Ip' | tr '[:upper:]' '[:lower:]')
             [ "$cc" = "public, max-age=3600, stale-while-revalidate=86400" ] \
               || fail "cards/$k cache-control: '$cc' (expected fallback header)"
           done
