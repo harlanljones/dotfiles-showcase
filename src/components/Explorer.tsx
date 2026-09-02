@@ -1,49 +1,43 @@
-import { Suspense, lazy, useEffect, useRef } from "react";
-import { MANIFEST, type CardId } from "../manifest";
-import { useRouter, type RoomId } from "../lib/router";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { getManifestEntry, type CardId } from "../manifest";
+import { useRouter } from "../lib/router";
+import { CATALOGUE, annexInOrder, roomsInOrder, type RoomId } from "../lib/catalogue";
 import { emit } from "../lib/telemetry";
 import StarshipCard from "./explorer/StarshipCard";
 
-const ROOMS = ["starship", "ghostty", "hyprland", "dots"] as const;
-const LEFTOVERS = ["git-safety", "lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep"] as const;
-
-const LazyGitSafetyCard = lazy(() => import("./explorer/GitSafetyCard"));
-const LazyLazygitCard = lazy(() => import("./explorer/LazygitCard"));
-const LazyFuzzyToolsCard = lazy(() => import("./explorer/FuzzyToolsCard"));
-const LazyGhosttyPaletteCard = lazy(() => import("./explorer/GhosttyPaletteCard"));
-const LazyMiseCard = lazy(() => import("./explorer/MiseCard"));
-const LazyPackagesCard = lazy(() => import("./explorer/PackagesCard"));
-const LazyHyprlandCard = lazy(() => import("./explorer/HyprlandCard"));
-const LazyDotsCliCard = lazy(() => import("./explorer/DotsCliCard"));
-const LazyNeovimCard = lazy(() => import("./explorer/NeovimCard"));
-const LazyRipgrepCard = lazy(() => import("./explorer/RipgrepCard"));
-
 /**
  * PERF-03 chunk map (D8): the wake room (StarshipCard, which also serves the
- * `recolor` id) stays in the initial bundle; the other 10 card components split
- * into on-demand chunks via React.lazy with Vite default chunking.
+ * `recolor` id) stays in the initial bundle; the other card components split
+ * into on-demand chunks via React.lazy with Vite default chunking. Which demo
+ * is lazy is declared once in the catalogue (HJ-678) and applied here.
  */
-const CARDS: Record<CardId, React.ComponentType> = {
+const EAGER: Partial<Record<CardId, React.ComponentType>> = {
   starship: StarshipCard,
   recolor: StarshipCard,
-  "git-safety": LazyGitSafetyCard,
-  lazygit: LazyLazygitCard,
-  fuzzy: LazyFuzzyToolsCard,
-  ghostty: LazyGhosttyPaletteCard,
-  mise: LazyMiseCard,
-  packages: LazyPackagesCard,
-  hyprland: LazyHyprlandCard,
-  dots: LazyDotsCliCard,
-  neovim: LazyNeovimCard,
-  ripgrep: LazyRipgrepCard,
 };
 
-const ROOM_WORD: Record<RoomId, string> = {
-  starship: "prompt",
-  ghostty: "palette",
-  hyprland: "desk",
-  dots: "dots",
+const LOADERS: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+  "git-safety": () => import("./explorer/GitSafetyCard"),
+  lazygit: () => import("./explorer/LazygitCard"),
+  fuzzy: () => import("./explorer/FuzzyToolsCard"),
+  ghostty: () => import("./explorer/GhosttyPaletteCard"),
+  mise: () => import("./explorer/MiseCard"),
+  packages: () => import("./explorer/PackagesCard"),
+  hyprland: () => import("./explorer/HyprlandCard"),
+  dots: () => import("./explorer/DotsCliCard"),
+  neovim: () => import("./explorer/NeovimCard"),
+  ripgrep: () => import("./explorer/RipgrepCard"),
 };
+
+const CARDS = {} as Record<CardId, React.ComponentType>;
+for (const entry of CATALOGUE) {
+  if (entry.lazy) {
+    CARDS[entry.id] = lazy(LOADERS[entry.id]);
+  } else {
+    CARDS[entry.id] = EAGER[entry.id]!;
+  }
+}
+CARDS.recolor = StarshipCard;
 
 function ChunkWait() {
   return (
@@ -68,6 +62,25 @@ export default function Explorer() {
   const active = route.room;
   const indexOpen = route.indexOpen;
   const ActiveCard = CARDS[active];
+
+  // Focused receipt arrival (HJ-678): a receipt URL like /annex#lazygit both
+  // selects and exposes that exact demo when the annex wakes. The set keeps
+  // native details toggling under the visitor's control afterwards.
+  const [openReceipts, setOpenReceipts] = useState<Set<CardId>>(
+    () => new Set<CardId>(route.targetReceipt ? [route.targetReceipt] : []),
+  );
+  const targetRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (!indexOpen || !route.targetReceipt) return;
+    const receipt: CardId = route.targetReceipt;
+    setOpenReceipts((current) => new Set(current).add(receipt));
+    // Defer the scroll until the receipt content mounts and paints.
+    const timer = window.setTimeout(() => {
+      targetRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [indexOpen, route.targetReceipt]);
 
   // If landing on root "/", normalize URL to canonical path without adding a history entry
   useEffect(() => {
@@ -107,14 +120,14 @@ export default function Explorer() {
     <>
       <header className="chrome">
         <nav className="room-names" aria-label="Rooms">
-          {ROOMS.map((id) => (
+          {roomsInOrder().map((entry) => (
             <button
-              key={id}
+              key={entry.id}
               type="button"
-              aria-current={!indexOpen && active === id ? "page" : undefined}
-              onClick={() => openRoom(id)}
+              aria-current={!indexOpen && active === entry.id ? "page" : undefined}
+              onClick={() => openRoom(entry.id as RoomId)}
             >
-              {ROOM_WORD[id]}
+              {entry.word}
             </button>
           ))}
         </nav>
@@ -134,13 +147,28 @@ export default function Explorer() {
       {indexOpen ? (
         <div className="index-overlay">
           <div className="index-list">
-            {LEFTOVERS.map((id) => {
-              const entry = MANIFEST.find((e) => e.id === id);
+            {annexInOrder().map((entry) => {
+              const manifest = getManifestEntry(entry.id);
+              const focused = route.targetReceipt === entry.id;
               return (
-                <details key={id}>
-                  <summary>{entry?.title ?? id}</summary>
+                <details
+                  key={entry.id}
+                  ref={focused ? targetRef : undefined}
+                  className={focused ? "receipt-focused" : undefined}
+                  open={openReceipts.has(entry.id)}
+                  onToggle={() => {
+                    setOpenReceipts((current) => {
+                      const next = new Set(current);
+                      if (next.has(entry.id)) next.delete(entry.id);
+                      else next.add(entry.id);
+                      return next;
+                    });
+                  }}
+                  data-receipt={entry.id}
+                >
+                  <summary>{manifest?.title ?? entry.word}</summary>
                   <div className="annex-body">
-                    <CardWithSuspense id={id} />
+                    <CardWithSuspense id={entry.id} />
                   </div>
                 </details>
               );

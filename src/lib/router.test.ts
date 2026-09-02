@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { annexInOrder, receiptPath } from "./catalogue";
 import { parseRoute, getRoutePath } from "./router";
 
 describe("parseRoute", () => {
@@ -68,5 +69,38 @@ describe("route round-trip", () => {
   it("/index is an accepted alias resolving to the annex state", () => {
     expect(parseRoute("/index", "")).toMatchObject({ indexOpen: true });
     expect(getRoutePath(parseRoute("/index", ""))).toBe("/annex");
+  });
+});
+
+describe("annex receipt URLs (catalogue-driven)", () => {
+  it("parses /annex#<receipt> into a targeted annex state", () => {
+    expect(parseRoute("/annex", "#git-safety")).toMatchObject({
+      indexOpen: true,
+      targetReceipt: "git-safety",
+    });
+  });
+
+  it("round-trips every annex receipt path", () => {
+    for (const entry of annexInOrder()) {
+      const parsed = parseRoute("/annex", `#${entry.id}`);
+      expect(parsed.targetReceipt).toBe(entry.id);
+      expect(getRoutePath(parsed)).toBe(receiptPath(entry.id));
+    }
+  });
+
+  it("exposes the target receipt via the canonical route", () => {
+    const route = parseRoute("/annex", "#lazygit");
+    expect(getRoutePath(route)).toBe("/annex#lazygit");
+    // From a browser URL "/annex#lazygit" the pathname is /annex, hash is #lazygit
+    expect(parseRoute("/annex", "#lazygit")).toMatchObject({
+      indexOpen: true,
+      targetReceipt: "lazygit",
+    });
+  });
+
+  it("rejects absorbed or unknown ids as receipts (no unreachable targets)", () => {
+    expect(parseRoute("/annex", "#recolor").targetReceipt).toBeUndefined();
+    expect(parseRoute("/annex", "#nonexistent").targetReceipt).toBeUndefined();
+    expect(getRoutePath(parseRoute("/annex", "#nonexistent"))).toBe("/annex");
   });
 });

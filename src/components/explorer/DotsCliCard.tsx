@@ -1,122 +1,13 @@
 import { useMemo, useState } from "react";
 import { useJson } from "../../lib/useApi";
 import type { DotsCardPayload, DotsCommand } from "../../lib/dotsCli";
+import {
+  projectDotsWorkflow,
+  UNSUPPORTED_DISCLOSURE,
+  type DotsControl,
+  type DotsControlValue,
+} from "../../lib/dotsWorkflow";
 import { CardShell, Notice, SourceBadge } from "./ui";
-
-const DEFAULT_TARGET = "~/.config/starship.toml";
-
-const OPTION_LABELS = [
-  ["--dry-run", "dry run"],
-  ["--verbose", "verbose"],
-  ["--force", "force"],
-] as const;
-
-function invocation(
-  command: DotsCommand,
-  syncOptions: Record<string, boolean>,
-  includeScripts: boolean,
-  printPath: boolean,
-  target: string,
-): string {
-  const args: string[] = [];
-  if (command.name === "sync" || command.name === "update") {
-    for (const [flag] of OPTION_LABELS) {
-      if (syncOptions[flag]) args.push(flag);
-    }
-  } else if (command.name === "diff" && includeScripts) {
-    args.push("--all");
-  } else if (command.name === "absorb" || command.name === "edit") {
-    args.push(target.trim() || DEFAULT_TARGET);
-  } else if (command.name === "cd" && printPath) {
-    args.push("--print");
-  }
-  return ["dots", command.name, ...args].join(" ");
-}
-
-function transcript(command: DotsCommand, commandLine: string): string {
-  const lines: string[] = ["$ " + commandLine];
-  switch (command.name) {
-    case "sync":
-      lines.push(
-        commandLine.includes("--dry-run")
-          ? "== Dry Run: Inspecting pending changes =="
-          : "== Synchronizing dotfiles ==",
-        "  inspect  ~/.config/starship.toml",
-        commandLine.includes("--dry-run")
-          ? "No files changed."
-          : "✓ Simulated apply complete. No files changed by this showcase.",
-      );
-      break;
-    case "diff":
-      lines.push(
-        commandLine.includes("--all")
-          ? "diff -- generated scripts included"
-          : "diff -- script contents hidden",
-        "--- source/starship.toml",
-        "+++ ~/.config/starship.toml",
-        "@@ pending local drift (sanitized) @@",
-      );
-      break;
-    case "status":
-      lines.push(
-        "Managed Dotfiles Status:",
-        "  modified:   ~/.config/starship.toml",
-        "  modified:   ~/.config/ghostty/config",
-      );
-      break;
-    case "absorb":
-      lines.push(
-        "Re-adding target into chezmoi source:",
-        "  " + (commandLine.split(" ").slice(2).join(" ") || DEFAULT_TARGET),
-        "✓ Simulated capture trace. Source remains untouched.",
-      );
-      break;
-    case "edit":
-      lines.push(
-        "Would open the source template for:",
-        "  " + (commandLine.split(" ").slice(2).join(" ") || DEFAULT_TARGET),
-        "Editor launch suppressed in this read-only showcase.",
-      );
-      break;
-    case "cd":
-      lines.push(
-        commandLine.includes("--print")
-          ? "~/.local/share/chezmoi"
-          : "Would enter ~/.local/share/chezmoi in an interactive shell.",
-      );
-      break;
-    case "update":
-      lines.push(
-        "Pulling latest changes in ~/.local/share/chezmoi…",
-        "git pull --rebase",
-        "handoff → cmd_sync",
-        "Network and apply steps suppressed.",
-      );
-      break;
-    case "push":
-      lines.push(
-        "handoff → dots-push",
-        "documented stages: re-add → stage → local Ollama message → commit → origin",
-        "Commit, model, and network steps suppressed.",
-      );
-      break;
-    case "doctor":
-      lines.push(
-        "=== Dotfiles Health & Diagnostics ===",
-        " ✓ chezmoi: available",
-        " ✓ source repo: clean",
-        " – age key: path redacted",
-        "Diagnostics shown as a sanitized simulation.",
-      );
-      break;
-    default:
-      lines.push(
-        "dots <command> [options] [arguments]",
-        "Ten workflows are documented by the served Bash source.",
-      );
-  }
-  return lines.join("\n");
-}
 
 function EffectMark({ effect }: { effect: DotsCommand["effect"] }) {
   return <span className={"dots-effect dots-effect-" + effect}>{effect}</span>;
@@ -125,23 +16,18 @@ function EffectMark({ effect }: { effect: DotsCommand["effect"] }) {
 export default function DotsCliCard() {
   const { data, error } = useJson<DotsCardPayload>("/api/cards/dots");
   const [selectedName, setSelectedName] = useState("status");
-  const [syncOptions, setSyncOptions] = useState<Record<string, boolean>>({});
-  const [includeScripts, setIncludeScripts] = useState(false);
-  const [printPath, setPrintPath] = useState(true);
-  const [target, setTarget] = useState(DEFAULT_TARGET);
+  const [controlValues, setControlValues] = useState<Record<string, DotsControlValue>>({});
 
   const selected = data?.commands.find((command) => command.name === selectedName)
     ?? data?.commands[0];
-  const commandLine = selected
-    ? invocation(selected, syncOptions, includeScripts, printPath, target)
-    : "dots status";
-  const terminal = useMemo(
-    () => selected ? transcript(selected, commandLine) : "",
-    [selected, commandLine],
+
+  const view = useMemo(
+    () => (selected ? projectDotsWorkflow(selected, controlValues) : null),
+    [selected, controlValues],
   );
 
-  const toggleSyncOption = (flag: string) => {
-    setSyncOptions((current) => ({ ...current, [flag]: !current[flag] }));
+  const setControl = (control: DotsControl, value: DotsControlValue) => {
+    setControlValues((current) => ({ ...current, [control.id]: value }));
   };
 
   return (
@@ -154,7 +40,7 @@ export default function DotsCliCard() {
           <SourceBadge source="simulated" />
         </span>
       ) : undefined}
-      notes={<p>LIVE/FALLBACK identifies the source file. SIMULATED identifies every transcript.</p>}
+      notes={<p>LIVE/FALLBACK identifies the source file. SIMULATED identifies every transcript. Parsed handler evidence is shown apart from the simulated trace.</p>}
     >
       {error && (
         <Notice tone="error">
@@ -162,7 +48,7 @@ export default function DotsCliCard() {
         </Notice>
       )}
       {!data && !error && <p className="dots-loading">reading the dots command map…</p>}
-      {data && (
+      {data && selected && view && (
         <div className="dots-stage">
           {data.warnings.map((warning) => (
             <Notice key={warning} tone="warning">{warning}</Notice>
@@ -174,7 +60,11 @@ export default function DotsCliCard() {
                 <span><i className="terminal-dot" />simulated trace</span>
                 <span>no subprocess · no writes</span>
               </div>
-              <pre className="dots-terminal-copy">{terminal}</pre>
+              <pre className="dots-terminal-copy">
+                {view.scenario.trace.map((line, index) => (
+                  <span key={index} className={`dots-line dots-line-${line.kind}`}>{line.text}{"\n"}</span>
+                ))}
+              </pre>
               {selected && (
                 <p className="dots-description">
                   <EffectMark effect={selected.effect} />
@@ -200,64 +90,54 @@ export default function DotsCliCard() {
             </nav>
           </div>
 
-          {selected && (
-            <>
-              <div className="dots-options" aria-label={"Options for dots " + selected.name}>
-                {(selected.name === "sync" || selected.name === "update") && OPTION_LABELS.map(([flag, label]) => (
-                  <button
-                    key={flag}
-                    type="button"
-                    aria-pressed={Boolean(syncOptions[flag])}
-                    onClick={() => toggleSyncOption(flag)}
-                  >
-                    <code>{flag}</code>
-                    <span>{label}</span>
-                  </button>
-                ))}
-                {selected.name === "diff" && (
-                  <button
-                    type="button"
-                    aria-pressed={includeScripts}
-                    onClick={() => setIncludeScripts((value) => !value)}
-                  >
-                    <code>--all</code>
-                    <span>include generated scripts</span>
-                  </button>
-                )}
-                {selected.name === "cd" && (
-                  <button
-                    type="button"
-                    aria-pressed={printPath}
-                    onClick={() => setPrintPath((value) => !value)}
-                  >
-                    <code>--print</code>
-                    <span>print instead of entering a shell</span>
-                  </button>
-                )}
-                {(selected.name === "absorb" || selected.name === "edit") && (
-                  <label className="dots-target">
-                    <span>target</span>
-                    <input
-                      value={target}
-                      onChange={(event) => setTarget(event.target.value)}
-                      spellCheck={false}
-                    />
-                  </label>
-                )}
-                {!["sync", "update", "diff", "cd", "absorb", "edit"].includes(selected.name) && (
-                  <p>no preview options for this command</p>
-                )}
-              </div>
-
-              <section className="dots-trace" aria-label="Exact served handler source">
-                <header>
-                  <span>exact served handler</span>
-                  <code>{selected.handler}()</code>
-                </header>
-                <pre>{selected.handlerSource}</pre>
-              </section>
-            </>
+          {!view.supported && (
+            <Notice tone="warning">
+              This parsed command has no authored safe scenario — shown as unsupported evidence only.
+            </Notice>
           )}
+
+          <div className="dots-options" aria-label={"Options for dots " + selected!.name}>
+            {view.controls.length > 0 ? view.controls.map((control) => {
+              if (control.kind === "toggle") {
+                const active = Boolean(view.values[control.id]);
+                return (
+                  <button
+                    key={control.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setControl(control, !active)}
+                  >
+                    <code>{control.flag}</code>
+                    <span>{control.label}</span>
+                  </button>
+                );
+              }
+              return (
+                <label key={control.id} className="dots-target">
+                  <span>{control.label}</span>
+                  <input
+                    value={String(view.values[control.id] ?? control.defaultValue)}
+                    onChange={(event) => setControl(control, event.target.value)}
+                    spellCheck={false}
+                  />
+                </label>
+              );
+            }) : (
+              <p>no preview options for this command</p>
+            )}
+          </div>
+
+          <p className="dots-disclosure">
+            {view.supported ? view.scenario.disclosure : UNSUPPORTED_DISCLOSURE}
+          </p>
+
+          <section className="dots-trace" aria-label="Exact served handler source">
+            <header>
+              <span>exact served handler</span>
+              <code>{selected!.handler}()</code>
+            </header>
+            <pre>{selected!.handlerSource}</pre>
+          </section>
         </div>
       )}
     </CardShell>

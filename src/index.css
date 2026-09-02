@@ -263,6 +263,14 @@ html[data-failed="1"] .display {
 .index-list .annex-body {
   padding: 0 0 1.4rem;
 }
+.index-list details.receipt-focused summary {
+  color: var(--phosphor);
+  opacity: 1;
+}
+.index-list details.receipt-focused {
+  border-left: 1px solid var(--phosphor);
+  padding-left: 0.75rem;
+}
 
 .content-panel {
   max-width: none;
@@ -451,8 +459,35 @@ html[data-failed="1"] .display {
   line-height: 1.8;
 }
 
-.dots-terminal-copy::first-line {
+.dots-line {
+  display: block;
+}
+
+/* The simulated command line is the trace's lead line (was ::first-line). */
+.dots-line-command {
   color: var(--phosphor);
+}
+
+/* Parsed handler evidence (handler, effect, aliases, handoffs) is styled
+ * apart from the authored simulated output so a visitor never mistakes a
+ * preview for a subprocess. */
+.dots-line-evidence {
+  color: var(--ash-dim);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.dots-line-simulated {
+  color: var(--ash);
+}
+
+/* Persistent no-execution disclosure under the safe scenario controls. */
+.dots-disclosure {
+  margin: 0;
+  color: var(--ash-dim);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  font-style: italic;
 }
 
 .dots-description {
