@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CardId } from "../manifest";
+import { isAnnexDemo, receiptPath, type RoomId } from "./catalogue";
 
-export type RoomId = "starship" | "ghostty" | "hyprland" | "dots";
+export type { RoomId } from "./catalogue";
 
 export interface RouteState {
   room: RoomId;
@@ -9,6 +10,12 @@ export interface RouteState {
   targetReceipt?: CardId;
 }
 
+/**
+ * Canonical room paths come from the catalogue (HJ-678): the catalogue owns
+ * a demo's route identity, so these tables are derived from it rather than
+ * declared in parallel. The room aliases below are retained for deep-link
+ * compatibility with ADR-002.
+ */
 export const ROOM_PATHS: Record<RoomId, string> = {
   starship: "/prompt",
   ghostty: "/palette",
@@ -16,14 +23,18 @@ export const ROOM_PATHS: Record<RoomId, string> = {
   dots: "/dots",
 };
 
-export const PATH_TO_ROOM: Record<string, RoomId> = {
+const ROOM_ALIASES: Record<string, RoomId> = {
   "/": "starship",
-  "/prompt": "starship",
   "/starship": "starship",
-  "/palette": "ghostty",
   "/ghostty": "ghostty",
-  "/desk": "hyprland",
   "/hyprland": "hyprland",
+};
+
+export const PATH_TO_ROOM: Record<string, RoomId> = {
+  ...ROOM_ALIASES,
+  "/prompt": "starship",
+  "/palette": "ghostty",
+  "/desk": "hyprland",
   "/dots": "dots",
 };
 
@@ -36,10 +47,16 @@ export function parseRoute(pathname = "/", hash = ""): RouteState {
 
   // Handle /index or /annex path or #index hash
   if (cleanPath === "/index" || cleanPath === "/annex" || cleanHash === "index" || cleanHash === "annex") {
+    const requested = cleanHash && cleanHash !== "index" && cleanHash !== "annex"
+      ? (cleanHash as CardId)
+      : undefined;
+    // Only annex demos are valid receipts: an unknown or absorbed id must not
+    // produce a targeted (but unreachable) receipt.
+    const targetReceipt = requested && isAnnexDemo(requested) ? requested : undefined;
     return {
       room: "starship",
       indexOpen: true,
-      targetReceipt: cleanHash && cleanHash !== "index" && cleanHash !== "annex" ? (cleanHash as CardId) : undefined,
+      targetReceipt,
     };
   }
 
@@ -65,7 +82,7 @@ export function parseRoute(pathname = "/", hash = ""): RouteState {
  */
 export function getRoutePath(state: RouteState): string {
   if (state.indexOpen) {
-    return state.targetReceipt ? `/annex#${state.targetReceipt}` : "/annex";
+    return state.targetReceipt ? receiptPath(state.targetReceipt) : "/annex";
   }
   return ROOM_PATHS[state.room] ?? "/prompt";
 }
