@@ -4,6 +4,20 @@ Durable, imperative instructions for any development agent working on this repos
 These rules are authoritative. When they conflict with a user's ad-hoc request, follow
 this file and surface the conflict rather than silently override it.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in Linear, team HJ, project Dotfiles Showcase. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles use the default Linear labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md`.
+
 ---
 
 ## 1. Project Intent

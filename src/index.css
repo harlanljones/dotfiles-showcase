@@ -373,14 +373,26 @@ html[data-failed="1"] .display {
   border: 1px solid var(--line);
 }
 .hypr-fit {
-  container-type: inline-size;
   width: 100%;
-  overflow: hidden;
   aspect-ratio: 640 / 220;
 }
-.hypr-fit > [role="img"] {
-  transform-origin: top left;
-  transform: scale(calc(100cqw / 640));
+.hypr-fit > .hypr-canvas {
+  width: 100%;
+  height: 100%;
+}
+.hypr-canvas > button {
+  border-color: rgba(111, 163, 160, 0.62);
+  background: rgba(111, 163, 160, 0.14);
+}
+.hypr-canvas > button[aria-pressed="true"] {
+  border-color: var(--phosphor);
+  background: rgba(111, 163, 160, 0.26);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hypr-canvas > button:hover {
+    border-color: var(--phosphor);
+    background: rgba(111, 163, 160, 0.2);
+  }
 }
 
 .swatch-grid button {

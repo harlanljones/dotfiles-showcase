@@ -186,8 +186,7 @@ export default function HyprlandCard() {
               <span className="sr-only">{layoutSummary}</span>
               <div className="hypr-fit">
                 <div
-                  className="relative"
-                  style={{ width: DIAGRAM_W, height: DIAGRAM_H }}
+                  className="hypr-canvas relative"
                 >
                   {allOff && (
                     <div className="absolute inset-0 flex items-center justify-center font-mono text-xs text-white/55">
@@ -205,7 +204,12 @@ export default function HyprlandCard() {
                           ? "border-[#6fa3a0] bg-[#6fa3a0]/[0.18]"
                           : "border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] hover:border-[#6fa3a0]/60"
                       }`}
-                      style={{ left: d.drawX, top: d.drawY, width: d.w, height: d.h }}
+                      style={{
+                        left: `${(d.drawX / DIAGRAM_W) * 100}%`,
+                        top: `${(d.drawY / DIAGRAM_H) * 100}%`,
+                        width: `${(d.w / DIAGRAM_W) * 100}%`,
+                        height: `${(d.h / DIAGRAM_H) * 100}%`,
+                      }}
                     >
                       {d.p.output === PRIMARY_OUTPUT && (
                         <span className="absolute right-1 top-1 font-mono text-[8px] tracking-wider text-[#6fa3a0]">
