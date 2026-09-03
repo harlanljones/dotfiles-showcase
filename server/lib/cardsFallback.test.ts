@@ -98,6 +98,29 @@ describe("fallback coverage: builders render without any live config", () => {
     expect(data.warnings[0]).toContain("Live dots source was incomplete");
   });
 
+  it("shell-env fallback serves the sanitized snapshot with startup sequences", () => {
+    const data = buildCard("shell-env") as {
+      zshSource: string;
+      bashSource: string;
+      envSource: string;
+      zsh: { exports: unknown[]; path: string[] };
+      bash: { exports: unknown[]; path: string[] };
+      env: Array<{ file: string; vars: unknown[] }>;
+      startup: { zsh: unknown[]; bash: unknown[] };
+      warnings: string[];
+    };
+    expect(data.zshSource).toBe("fallback");
+    expect(data.bashSource).toBe("fallback");
+    expect(data.envSource).toBe("fallback");
+    expect(data.zsh.exports.length).toBeGreaterThan(0);
+    expect(data.zsh.path).toContain("$PATH");
+    expect(data.bash.path).toContain("$PATH");
+    expect(data.env.length).toBeGreaterThan(0);
+    expect(data.startup.zsh.length).toBeGreaterThan(0);
+    expect(data.startup.bash.length).toBeGreaterThan(0);
+    expect(data.warnings.length).toBeGreaterThan(0);
+  });
+
   it("herdr fallback serves config summary and plugins list", () => {
     const data = buildCard("herdr") as {
       configSource: string;

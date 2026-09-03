@@ -245,6 +245,17 @@ codex = [["agent"]]
 // Manifest-driven builders (D4 wiring)
 // ---------------------------------------------------------------------------
 
+import {
+  buildParity,
+  isSensitiveKey,
+  normalizeHome,
+  parseEnvDFile,
+  parsePathEntries,
+  parseRcExports,
+  parseShellEnvSnapshot,
+  rcProfile,
+  redactSensitive,
+} from "../../src/lib/shellEnv";
 import { buildCard, cardKeys } from "./cardsData";
 import { MANIFEST } from "../../src/manifest";
 
@@ -286,6 +297,7 @@ describe("cards: manifest-driven builders", () => {
       ripgrep: ["source", "flags"],
       lazygit: ["source", "content"],
       herdr: ["configSource", "pluginsSource", "config", "plugins", "rawConfig", "rawPlugins"],
+      "shell-env": ["zshSource", "bashSource", "envSource", "zsh", "bash", "env", "startup", "warnings"],
     };
     for (const [key, fields] of Object.entries(shapes)) {
       const data = buildCard(key) as Record<string, unknown>;
@@ -297,5 +309,120 @@ describe("cards: manifest-driven builders", () => {
 
   it("returns undefined for unknown keys", () => {
     expect(buildCard("nonexistent")).toBeUndefined();
+  });
+});
+
+describe("parseRcExports", () => {
+  it("extracts export lines in order and ignores functions and bare assignments", () => {
+    const exports = parseRcExports(`# comment
+export EDITOR=nvim
+export PATH="$HOME/.local/bin:$PATH"
+ft() {
+  local log_dir="x"
+  mkdir -p "$log_dir"
+}
+PLAIN=ignored
+export FZF_DEFAULT_OPTS='--height=40% --layout=reverse'
+`);
+    expect(exports).toEqual([
+      { key: "EDITOR", value: "nvim" },
+      { key: "PATH", value: "$HOME/.local/bin:$PATH" },
+      { key: "FZF_DEFAULT_OPTS", value: "--height=40% --layout=reverse" },
+    ]);
+  });
+
+  it("returns an empty list for content without exports", () => {
+    expect(parseRcExports("# nothing\necho hi\n")).toEqual([]);
+  });
+});
+
+describe("parsePathEntries / normalizeHome", () => {
+  it("splits PATH values and drops empty segments", () => {
+    expect(parsePathEntries("~/.local/bin:$PATH:")).toEqual(["~/.local/bin", "$PATH"]);
+  });
+
+  it("rewrites leading home literals and $HOME as ~", () => {
+    expect(normalizeHome("/home/u/.local/bin:/usr/bin", "/home/u")).toBe("~/.local/bin:/usr/bin");
+    expect(normalizeHome("$HOME/.local/bin:$PATH", "/home/u")).toBe("~/.local/bin:$PATH");
+    expect(normalizeHome("/usr/bin", "/home/u")).toBe("/usr/bin");
+  });
+});
+
+describe("parseEnvDFile", () => {
+  it("parses KEY=value lines without an export keyword", () => {
+    expect(parseEnvDFile("# systemd env\nEDITOR=nvim\nLESS=-R\n\nbogus line\n")).toEqual([
+      { key: "EDITOR", value: "nvim" },
+      { key: "LESS", value: "-R" },
+    ]);
+  });
+});
+
+describe("redactSensitive", () => {
+  it("redacts token-like keys and keeps plain paths", () => {
+    expect(isSensitiveKey("GITHUB_TOKEN")).toBe(true);
+    expect(isSensitiveKey("api_key")).toBe(true);
+    expect(isSensitiveKey("EDITOR")).toBe(false);
+    const out = redactSensitive([
+      { key: "GITHUB_TOKEN", value: "ghp_abc" },
+      { key: "EDITOR", value: "nvim" },
+    ]);
+    expect(out).toEqual([
+      { key: "GITHUB_TOKEN", value: "<redacted>" },
+      { key: "EDITOR", value: "nvim" },
+    ]);
+  });
+});
+
+describe("rcProfile", () => {
+  it("derives PATH precedence across multiple export lines, first occurrence wins", () => {
+    const profile = rcProfile(
+      'export PATH="$HOME/.local/bin:$PATH"\nexport PATH="/home/u/.cache/.bun/bin:$PATH"\n',
+      "/home/u",
+    );
+    // First-seen order: the $PATH token from the first line keeps its slot.
+    expect(profile.path).toEqual(["~/.local/bin", "$PATH", "~/.cache/.bun/bin"]);
+    expect(profile.exports.map((e) => e.key)).toEqual(["PATH", "PATH"]);
+  });
+});
+
+describe("buildParity", () => {
+  it("labels shared, diverged, and unique keys", () => {
+    const rows = buildParity(
+      { exports: [{ key: "EDITOR", value: "nvim" }, { key: "PAGER", value: "less" }], path: [] },
+      { exports: [{ key: "EDITOR", value: "nvim" }, { key: "PAGER", value: "more" }], path: [] },
+      [{ file: "10-defaults.conf", vars: [{ key: "EDITOR", value: "nvim" }, { key: "LESS", value: "-R" }] }],
+    );
+    const byKey = new Map(rows.map((r) => [r.key, r]));
+    expect(byKey.get("EDITOR")).toMatchObject({ status: "shared", zsh: "nvim", bash: "nvim", env: "nvim" });
+    expect(byKey.get("PAGER")?.status).toBe("diverged");
+    expect(byKey.get("LESS")).toMatchObject({ status: "unique", zsh: null, env: "-R" });
+    expect(rows.map((r) => r.key)).toEqual([...rows.map((r) => r.key)].sort());
+  });
+});
+
+describe("parseShellEnvSnapshot", () => {
+  it("parses the committed fallback snapshot with sections intact", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const raw = readFileSync(join(import.meta.dir, "..", "..", "fallback", "shell-env.json"), "utf8");
+    const snap = parseShellEnvSnapshot(raw);
+    expect(snap).not.toBeNull();
+    expect(snap!.zsh.exports.length).toBeGreaterThan(0);
+    expect(snap!.bash.path).toContain("$PATH");
+    expect(snap!.env.length).toBeGreaterThan(0);
+  });
+
+  it("returns null for malformed JSON instead of throwing", () => {
+    expect(parseShellEnvSnapshot("{oops")).toBeNull();
+    expect(parseShellEnvSnapshot("[]")).not.toBeNull();
+  });
+
+  it("the committed snapshot carries no credential-like patterns", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { findSecretMatches } = await import("../../scripts/refresh-fallbacks");
+    const raw = readFileSync(join(import.meta.dir, "..", "..", "fallback", "shell-env.json"), "utf8");
+    expect(findSecretMatches(raw)).toEqual([]);
+    expect(raw).not.toMatch(/\/home\/harlan|\/Users\/harlan/);
   });
 });

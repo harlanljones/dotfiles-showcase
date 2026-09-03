@@ -18,7 +18,8 @@ export type CardId =
   | "dots"
   | "neovim"
   | "ripgrep"
-  | "herdr";
+  | "herdr"
+  | "shell-env";
 
 export type CardKind = "live" | "static" | "interactive" | "simulated";
 
@@ -37,6 +38,7 @@ export const FALLBACK_FILES = [
   "mise.toml",
   "pacman.txt",
   "ripgrep-rc",
+  "shell-env.json",
   "starship.toml",
 ] as const;
 
@@ -167,6 +169,17 @@ export const MANIFEST: ManifestEntry[] = [
     sources: [
       { livePath: "~/.config/herdr/config.toml", fallbackFile: "herdr-config.toml" },
       { livePath: "~/.config/herdr/plugins.json", fallbackFile: "herdr-plugins.json" },
+    ],
+  },
+  {
+    id: "shell-env",
+    title: "Shell Profiles & Environment",
+    blurb: "Startup sequencing, PATH precedence, session exports, and zsh/bash parity.",
+    kind: "live",
+    sources: [
+      { livePath: "~/.zshrc", fallbackFile: "shell-env.json" },
+      { livePath: "~/.bashrc", fallbackFile: "shell-env.json" },
+      { livePath: "~/.config/environment.d", fallbackFile: "shell-env.json" },
     ],
   },
 ];

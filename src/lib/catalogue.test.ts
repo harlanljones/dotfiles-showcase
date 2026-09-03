@@ -36,9 +36,9 @@ describe("Explorer catalogue: card migration into categories", () => {
     expect(cards.map((c) => c.id)).toEqual(["hyprland", "ghostty", "packages", "dots"]);
   });
 
-  it("migrates Shell cards cleanly: Starship, Failure Recolor, Fuzzy Tools, ripgrep", () => {
+  it("migrates Shell cards cleanly: Starship, Failure Recolor, Fuzzy Tools, ripgrep, Shell Env", () => {
     const cards = cardsForCategory("shell");
-    expect(cards.map((c) => c.id)).toEqual(["starship", "recolor", "fuzzy", "ripgrep"]);
+    expect(cards.map((c) => c.id)).toEqual(["starship", "recolor", "fuzzy", "ripgrep", "shell-env"]);
   });
 
   it("migrates Editor cards cleanly: Neovim, mise", () => {
@@ -58,7 +58,7 @@ describe("Explorer catalogue: card migration into categories", () => {
 
   it("all other cards are lazy (lazy = true)", () => {
     const lazy = CATALOGUE.filter((c) => c.lazy);
-    expect(lazy.length).toBe(12);
+    expect(lazy.length).toBe(13);
   });
 });
 

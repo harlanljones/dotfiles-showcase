@@ -32,6 +32,7 @@ const { default: RecolorCard } = await import("./RecolorCard");
 const { default: StarshipCard } = await import("./StarshipCard");
 const { default: DotsCliCard } = await import("./DotsCliCard");
 const { default: HerdrCard } = await import("./HerdrCard");
+const { default: ShellEnvCard } = await import("./ShellEnvCard");
 
 const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?: () => void }>> = {
   dots: DotsCliCard,
@@ -43,6 +44,7 @@ const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
   herdr: HerdrCard,
+  "shell-env": ShellEnvCard,
 };
 
 /** Distinct provenance values declared by a payload's top-level source fields. */
