@@ -5,8 +5,8 @@
 # the Starship Playground renders a faithful prompt when the live file is absent.
 
 add_newline = true
-command_timeout = 200
-format = "$username$hostname[$directory$git_branch$git_status$git_state${custom.git_dirty}]($style)$git_commit$character"
+command_timeout = 2000
+format = "$username$hostname[$directory$git_branch$git_status$git_state]($style)$git_commit$character"
 
 [character]
 error_symbol = "[❯](bold red)"
@@ -25,23 +25,17 @@ style = "italic cyan"
 
 [git_status]
 style = "cyan"
-ahead = "⇡${count} "
-diverged = "⇕⇡${ahead_count}⇣${behind_count} "
-behind = "⇣${count} "
-conflicted = " "
-up_to_date = " "
-untracked = ""
-modified = ""
-stashed = ""
-staged = ""
-renamed = ""
-deleted = ""
-
-[custom.git_dirty]
-command = "printf ''"
-when = '''git status --porcelain --ignore-submodules=dirty | grep -Eq '^(\?\?|.[MT])' '''
-format = "[$output]($style) "
-style = "cyan"
+ahead = "↑${count} "
+diverged = "⇅↑${ahead_count}↓${behind_count} "
+behind = "↓${count} "
+conflicted = "≠ "
+up_to_date = ""
+untracked = "? "
+modified = "± "
+stashed = "≡ "
+staged = "◆ "
+renamed = "» "
+deleted = "✕ "
 
 [git_commit]
 only_detached = true

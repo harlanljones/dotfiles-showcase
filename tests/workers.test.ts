@@ -36,7 +36,7 @@ describe("fallbacks bundle coverage", () => {
 
   it("starship fallback carries the recolor-relevant config", () => {
     const starship = FALLBACKS["starship.toml"] ?? "";
-    expect(starship).toContain("custom.git_dirty");
+    expect(starship).toMatch(/git_status|custom\.git_dirty/);
     expect(starship).toContain("truncation_length");
   });
 

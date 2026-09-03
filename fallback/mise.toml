@@ -7,13 +7,24 @@ chezmoi = "latest"
 claude = "latest"
 codex = "latest"
 copilot = "latest"
+gemini = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
 gh = "latest"
+"github:can1357/oh-my-pi" = "latest"
 go = "1.26.5"
 node = "latest"
+"npm:@xai-official/grok" = "latest"
 "npm:playwright" = "latest"
 opencode = "latest"
+pi = "latest"
 pnpm = "latest"
 python = "3.12.13"
+ruby = "latest"
 terraform = "latest"
 tflint = "latest"
 uv = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["ruby"]
+
+[settings.ruby]
+compile = false

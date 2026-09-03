@@ -209,6 +209,7 @@ export function renderStarship(input: PromptState): RenderResult {
       // requested machine's dotfile algorithm.
       STARSHIP_SHELL: exec,
       COLUMNS: String(state.width),
+      TERM: process.env.TERM && process.env.TERM !== "dumb" ? process.env.TERM : "xterm-256color",
     };
     if (state.ssh) {
       env.SSH_CONNECTION = "10.0.0.2 22 10.0.0.9 22";

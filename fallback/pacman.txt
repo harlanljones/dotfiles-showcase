@@ -27,9 +27,8 @@ clang
 cliamp
 cloudflared
 cups
-cups-browsed
 cups-filters
-cups-pdf
+cups-pk-helper
 ddcutil
 direnv
 docker
@@ -80,6 +79,7 @@ herdr
 hyprland
 hyprland-guiutils
 hyprland-preview-share-picker
+hyprmoncfg
 hyprpicker
 hyprsunset
 imagemagick
@@ -101,6 +101,7 @@ libappindicator
 libbacktrace
 libpulse
 libqalculate
+libratbag
 libreoffice-fresh
 libsecret
 libva-nvidia-driver
@@ -152,6 +153,7 @@ openai-codex-desktop
 pacman-contrib
 pamixer
 pinta
+piper
 pipewire
 pipewire-alsa
 pipewire-jack
@@ -185,6 +187,7 @@ starship
 steam
 sushi
 system-config-printer
+tailscale
 tensaku
 tesseract
 tesseract-data-eng
@@ -217,6 +220,7 @@ xdg-desktop-portal-gtk
 xdg-desktop-portal-hyprland
 xdg-terminal-exec
 xmlstarlet
+xorg-xinput
 xournalpp
 yaru-icon-theme
 yay
