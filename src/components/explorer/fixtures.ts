@@ -280,4 +280,88 @@ export const FETCHERS: FetcherCase[] = [
       rawPlugins: "[]\n",
     },
   },
+  {
+    name: "agent-skills",
+    live: {
+      source: "live",
+      skills: [
+        {
+          name: "tdd",
+          description: "Test-driven development loop reference.",
+          category: "mattpocock",
+          harnesses: ["claude", "codex", "gemini", "cline", "pi"],
+        },
+        {
+          name: "dots",
+          description: "Dotfiles management and synchronization.",
+          category: "local",
+          harnesses: ["codex"],
+        },
+      ],
+      harnesses: [
+        { id: "claude", label: "Claude Code", path: "~/.claude/skills" },
+        { id: "codex", label: "Codex", path: "~/.agents/skills" },
+        { id: "gemini", label: "Gemini CLI", path: "~/.gemini/skills" },
+        { id: "cline", label: "Cline", path: "~/.cline/skills" },
+        { id: "pi", label: "Pi", path: "~/.pi/agent/skills" },
+      ],
+    },
+    fallback: {
+      source: "fallback",
+      skills: [
+        {
+          name: "tdd",
+          description: "Test-driven development loop reference.",
+          category: "mattpocock",
+          harnesses: ["claude", "codex", "gemini", "cline", "pi"],
+        },
+      ],
+      harnesses: [
+        { id: "claude", label: "Claude Code", path: "~/.claude/skills" },
+        { id: "codex", label: "Codex", path: "~/.agents/skills" },
+        { id: "gemini", label: "Gemini CLI", path: "~/.gemini/skills" },
+        { id: "cline", label: "Cline", path: "~/.cline/skills" },
+        { id: "pi", label: "Pi", path: "~/.pi/agent/skills" },
+      ],
+    },
+  },
+  {
+    name: "git-core",
+    live: {
+      source: "live",
+      ignoresSource: "live",
+      user: { name: "Example User", email: "user@example.com" },
+      signing: {
+        commitGpgsign: null,
+        tagGpgsign: null,
+        gpgFormat: null,
+        gpgProgram: null,
+        signingKeySet: false,
+      },
+      aliases: [["co", "checkout"]],
+      policies: [{ section: "pull", entries: [["rebase", "true"]] }],
+      credentialHelpers: ["!/usr/bin/gh auth git-credential"],
+      safeDirs: [],
+      ignores: ["**/.claude/settings.local.json"],
+      rawConfig: "[user]\n\tname = Example User\n",
+    },
+    fallback: {
+      source: "fallback",
+      ignoresSource: "fallback",
+      user: { name: "Example User", email: "user@example.com" },
+      signing: {
+        commitGpgsign: null,
+        tagGpgsign: null,
+        gpgFormat: null,
+        gpgProgram: null,
+        signingKeySet: false,
+      },
+      aliases: [["co", "checkout"]],
+      policies: [{ section: "pull", entries: [["rebase", "true"]] }],
+      credentialHelpers: [],
+      safeDirs: [],
+      ignores: [".DS_Store"],
+      rawConfig: "[user]\n\tname = Example User\n",
+    },
+  },
 ];

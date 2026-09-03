@@ -35,6 +35,8 @@ const LOADERS: Record<string, () => Promise<{ default: React.ComponentType<{ onO
   herdr: () => import("./explorer/HerdrCard"),
   recolor: () => import("./explorer/RecolorCard"),
   "shell-env": () => import("./explorer/ShellEnvCard"),
+  "agent-skills": () => import("./explorer/AgentSkillsCard"),
+  "git-core": () => import("./explorer/GitCoreCard"),
 };
 
 const CARDS = {} as Record<CardId, React.ComponentType<{ onOpenPlayground?: () => void }>>;

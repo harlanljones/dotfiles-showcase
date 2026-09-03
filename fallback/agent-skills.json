@@ -1,0 +1,1349 @@
+{
+  "note": "Fallback snapshot: agent-skills.json. Live source: ~/.agents/skills (categories from ~/.local/share/chezmoi/.chezmoidata/agent_skills.yaml). SYNTHETIC — curated snapshot, never auto-refreshed. Skill names/descriptions are upstream prose; no host identities.",
+  "skills": [
+    {
+      "name": "agent-reach",
+      "description": "MUST USE when user wants to 调研/research/搜索/search/查/找/look up anything on the internet — e.g. 全网调研 X / 帮我调研一下 X / 查一下 X / 搜搜 X / 看看大家怎么评价 X / X 上有什么讨论 / research this topic。 Also MUST USE when user mentions any platform or shares any URL/链接: 小红书/xiaohongshu/xhs, Twitter/推特/X, B站/bilibili, Reddit, Facebook, Instagram, V2EX, LinkedIn/领英/招聘/求职/jobs, YouTube, GitHub code search, 小宇宙播客, 雪球/股票行情, RSS feeds, or any web URL. 15 platforms, multi-backend routing (OpenCLI / per-platform CLIs / APIs). Zero config for 6 channels. Run `agent-reach doctor --json` to see which backend serves each platform right now. NOT for: 写报告/数据分析/翻译等内容加工（本 skill 只负责从互联网获取内容）； 发帖/评论/点赞等写操作；已有专门 skill 的平台（先用专门 skill）。 【路由方式】SKILL.md 包含路由表和常用命令，复杂场景需按需阅读对应分类的 references/*.md。 分类：search / social (小红书/推特/B站/V2EX/Reddit/Facebook/Instagram) / career(LinkedIn) / dev(github) / web(网页/文章/RSS) / video(YouTube/B站/播客) / finance(雪球/股票)。",
+      "category": "agent-reach",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "agents-sdk",
+      "description": "Build AI agents on Cloudflare Workers using the Agents SDK. Load when creating stateful agents, durable workflows, real-time WebSocket apps, scheduled tasks, MCP servers, chat applications, voice agents, or browser automation. Covers Agent class, state management, callable RPC, Workflows, durable execution, queues, retries, observability, and React hooks. Biases towards retrieval from Cloudflare docs over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "ai-image-generation",
+      "description": "Generate and edit images on RunComfy via the `runcomfy` CLI — a smart router across the full image-model catalog: FLUX 2 (Klein 9B/4B, Pro, Dev, Flash, Turbo, Max), Google Nano Banana 2 / Pro, OpenAI GPT Image 2, ByteDance Seedream 5 / 4-5 / 4-0 and Dreamina 4-0, Alibaba Qwen Image and Z-Image Turbo, Wan 2-7. Covers both text-to-image (t2i) and image-to-image / edit (i2i) endpoints — the skill picks the right model for the user's actual intent (typography precision, photoreal portraits, sub-second iteration, multi-reference brand styling, open-weights workflow) and ships each model's documented prompting patterns plus the minimal `runcomfy run` invoke. Triggers on \"generate image\", \"make a picture\", \"text to image\", \"AI image\", \"make an image of …\", \"image to image\", \"i2i\", or any explicit ask to create or restyle an image.",
+      "category": "prime-skills",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "animate",
+      "description": "Build an animation from scratch, making the decisions in the order that determines whether it feels right — should it animate at all, what purpose, which tool, which properties, which curve and duration, how it interrupts, how it exits. Writes the implementation. Use when asked to animate something, add motion, make a component feel alive, or build a transition. For critiquing existing motion use review-animations; for auditing a whole codebase use improve-animations.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "animate-expo",
+      "description": "Build animations in React Native and Expo, making the decisions in the order that determines whether they feel right — should it animate, which thread it runs on, which properties, spring or timing, how the gesture hands off, how it degrades. Writes the implementation with Reanimated, Gesture Handler, Expo Router and expo-haptics. Use when animating anything in an Expo app, adding gestures, sheets, screen transitions, press feedback or haptics, or fixing motion that stutters on device. For web animation use `animate`.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "animation-vocabulary",
+      "description": "Reverse-lookup glossary that turns a vague description of a web animation or motion effect into its exact term (\"the bouncy thing when a popover opens\" → Pop in; \"the iOS rubber-band scroll\" → Rubber-banding). Use when the user asks \"what's it called when…\", or describes a motion effect without knowing its name and wants the right word to prompt an AI or designer with. For naming an effect, not designing or building one.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "apple-design",
+      "description": "Apple's approach to interface design and fluid, physical motion, translated for the web. Use when building or reviewing gesture-driven UI, spring animations, drag/swipe/sheet interactions, momentum and interruptible transitions, translucent materials and depth, typography (optical sizing, tracking, leading), reduced-motion, or the design foundations (feedback, spatial consistency, restraint) behind Apple-style interfaces.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "ask-matt",
+      "description": "Ask which skill or flow fits your situation. A router over the skills in this repo.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "ask-sonner",
+      "description": "Guide to Sonner, the React toast library — install and wire up the Toaster, pick the right toast() call, promise and loading toasts, updating, dismissing and persisting toasts, styling, theming and icons, positioning and multiple toasters. Use when working with Sonner or troubleshooting it — toasts that don't appear, appear twice, lose their styles, ignore Tailwind classes, sit behind a modal, or don't follow dark mode.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "autopilot",
+      "description": "Keep a PR merge-ready by triaging comments, resolving clear conflicts, and fixing CI in a loop.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "canvas",
+      "description": "Create standalone analytical artifacts in the IDE's canvas format when the output benefits from an interactive visual workspace.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "claude-handoff",
+      "description": "Hand the current conversation off to a fresh background agent that picks up the work immediately.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "cloudflare",
+      "description": "Comprehensive Cloudflare platform skill covering Workers, Pages, storage (KV, D1, R2), AI (Workers AI, Vectorize, Agents SDK), feature flags (Flagship), networking (Tunnel, Spectrum), security (WAF, DDoS), and infrastructure-as-code (Terraform, Pulumi). Use for any Cloudflare development task. Biases towards retrieval from Cloudflare docs over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "cloudflare-email-service",
+      "description": "Send and receive transactional emails with Cloudflare Email Service (Email Sending + Email Routing). Use when building email sending (Workers binding or REST API), email routing, Agents SDK email handling, or integrating email into any app — Workers, Node.js, Python, Go, etc. Also use for email deliverability, SPF/DKIM/DMARC, wrangler email setup, MCP email tools, or when a coding agent needs to send emails. Even for simple requests like \"add email to my Worker\" — this skill has critical config details.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "cloudflare-one",
+      "description": "\"Guides Cloudflare One Zero Trust and SASE work across Access, Gateway, WARP, Tunnel, Cloudflare WAN, DLP, CASB, device posture, and identity. Use when designing, configuring, troubleshooting, or reviewing Cloudflare One deployments. Retrieval-first: use current Cloudflare docs/API schemas instead of embedded product docs.\"",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "cloudflare-one-migrations",
+      "description": "Plans migrations from Zscaler ZIA/ZPA, Palo Alto, legacy VPN, SWG, or SASE stacks to Cloudflare One. Use for migration assessments, policy mapping, rollout plans, and parity/gap analysis.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "code-review",
+      "description": "\"Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \\\"review since X\\\".\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "codebase-design",
+      "description": "Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "create-hook",
+      "description": "Create Codex hooks. Use when you want to create a hook, write hooks.json, add hook scripts, or automate behavior around agent events.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "create-rule",
+      "description": "Create Codex rules for persistent AI guidance. Use when you want to create a rule, add coding standards, set up project conventions, configure file-specific patterns, create RULE.md files, or asks about .cursor/rules/ or AGENTS.md.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "create-skill",
+      "description": "Create Codex Agent Skills. Use when authoring a new skill or asking about SKILL.md structure.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "create-subagent",
+      "description": "Create custom subagents for specialized AI tasks. Use when you want to create a new type of subagent, set up task-specific agents, configure code reviewers, debuggers, or domain-specific assistants with custom prompts.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "diagnose-crash",
+      "description": "Diagnose why a program crashed on this machine, from a systemd-coredump core dump. Use when a process has segfaulted, aborted, or otherwise dumped core, when asked why an application crashed or disappeared, or when a \"Process crashed:\" desktop notification is acted on. Triggers: crash, segfault, SIGSEGV, SIGABRT, core dump, coredumpctl, \"why did X crash\", \"X keeps crashing\", backtrace symbolization. Covers reporting a confirmed Omarchy bug upstream — see reporting.md.",
+      "category": "shared",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "diagnosing-bugs",
+      "description": "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose\"/\"debug this\", or reports something broken/throwing/failing/slow.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "domain-modeling",
+      "description": "Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a CONTEXT.md, or recording or editing an ADR.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "dots",
+      "description": "MUST USE whenever creating, modifying, deleting, reviewing, or syncing user configuration files, dotfiles, or application settings (~/.config/*, ~/.zshrc, ~/.bash*, ~/.local/*, ~/.agents/*, Hyprland, Neovim, tmux, git configs, scripts, etc.). Provides workflows for chezmoi drift capture (dots absorb), previewing diffs (dots diff), applying changes (dots sync), health diagnostics (dots doctor), and committing/pushing with Ollama conventional commit messages (dots push).",
+      "category": "local",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "durable-objects",
+      "description": "Create and review Cloudflare Durable Objects. Use when building stateful coordination (chat rooms, multiplayer games, booking systems), implementing RPC methods, SQLite storage, alarms, WebSockets, or reviewing DO code for best practices. Covers Workers integration, wrangler config, and testing with Vitest. Biases towards retrieval from Cloudflare docs over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "editor",
+      "description": "Understand, generate, and edit footage with Diffusion Studio via the `dapi` CLI: analyze video/audio/images, generate them with AI, and compose video compositions. Use for any media analysis, media generation, or video editing task.",
+      "category": "diffusionstudio",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "emil-design-eng",
+      "description": "This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "find-animation-opportunities",
+      "description": "Search a codebase or UI for places that don't animate but should, and reject everything that shouldn't. Read-only; it proposes motion with exact values, it does not implement it. Use when the user asks \"what could be animated here?\" or wants to \"make this feel more alive\". For fixing existing animations, use improve-animations or review-animations instead.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "find-skills",
+      "description": "Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.",
+      "category": "vercel-labs",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "flyai",
+      "description": "Search flights, hotels, attractions, concerts, and travel deals with natural language. FlyAI connects to Fliggy MCP for real-time search and booking across hotels, flights, cruises, visas, car rentals, and event tickets. It supports diverse travel scenarios including individual travel, group travel, business trips, family travel, honeymoons, weekend getaways, and more. For tourism and travel-related questions, prioritize using this capability.",
+      "category": "flyai",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "frontier-sweep",
+      "description": "Orchestrates parallel autonomous coding agents across Linear frontier tickets. Queries Linear for unblocked, unclaimed tickets at the dependency frontier, spawns subagents into git worktrees to implement each ticket, and loops until the frontier is clear. Agents write code and PR descriptions but never commit or push — the human reviews and commits. Use when the user says \"frontier sweep\", \"sweep tickets\", \"clear the frontier\", or wants autonomous parallel ticket implementation.",
+      "category": "local",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "git-guardrails-claude-code",
+      "description": "Set up Claude Code hooks to block dangerous git commands (push, reset --hard, clean, branch -D, etc.) before they execute. Use when user wants to prevent destructive git operations, add git safety hooks, or block git push/reset in Claude Code.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "goal",
+      "description": "Set a goal that Codex will pursue to completion.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "grill-me",
+      "description": "A relentless interview to sharpen a plan or design.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "grill-with-docs",
+      "description": "A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "grilling",
+      "description": "Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.",
+      "category": "local",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "handoff",
+      "description": "Compact the current conversation into a handoff document for another agent to pick up.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "impeccable",
+      "description": "Use when the user wants to design, redesign, shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, or otherwise improve a frontend interface. Covers websites, landing pages, dashboards, product UI, app shells, components, forms, settings, onboarding, and empty states. Handles UX review, visual hierarchy, information architecture, cognitive load, accessibility, performance, responsive behavior, theming, anti-patterns, typography, fonts, spacing, layout, alignment, color, motion, micro-interactions, UX copy, error states, edge cases, i18n, and reusable design systems or tokens. Also use for bland designs that need to become bolder or more delightful, loud designs that should become quieter, live browser iteration on UI elements, or ambitious visual effects that should feel technically extraordinary. Not for backend-only or non-UI tasks.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "implement",
+      "description": "\"Implement a piece of work based on a spec or set of tickets.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "implement-spec",
+      "description": "\"Implement a specification in code.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "improve-animations",
+      "description": "Survey a codebase's animation and motion code as a senior motion advisor, then produce a prioritized audit and self-contained implementation plans for other agents (or cheaper models) to execute. Read-only on source code — it plans improvements, it does not apply them. Use when the user asks to \"improve the animations\", \"audit the motion\", \"make this app feel better\", or wants a roadmap of animation fixes rather than a review of a single diff.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "description": "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "linear-agent-tracking",
+      "description": "Coordinate agent-owned work in Linear using @schpet/linear-cli. Use when creating or working a Wayfinder map, publishing Matt Pocock-style tickets, claiming ready work, recording progress or resolution, or configuring Linear as a repo's issue tracker.",
+      "category": "local",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "loop",
+      "description": "Run a prompt or skill in this session on a recurring or variable interval (e.g. /loop 5m /foo).",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "loop-me",
+      "description": "Grill me about specs for the workflows I want to build, within this workspace.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "migrate-to-shoehorn",
+      "description": "Migrate test files from `as` type assertions to @total-typescript/shoehorn. Use when user mentions shoehorn, wants to replace `as` in tests, or needs partial test data.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "migrate-to-skills",
+      "description": "Convert 'Applied intelligently' Codex rules (.cursor/rules/*.mdc) and slash commands (.cursor/commands/*.md) to Agent Skills format (.cursor/skills/). Use when you want to migrate rules or commands to skills, convert .mdc rules to SKILL.md format, or consolidate commands into the skills directory.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "mixture-of-agents",
+      "description": "Run a non-trivial planning task through a layered ensemble of frontier models from distinct labs (proposers Gemini 3.1 Pro high + Grok 4.5 + GPT-5.6 Luna; refiners qwen3.8-max-preview + DeepSeek V4 Pro + Codex Opus 5 high) before producing a final implementation plan. The configured proposers run in parallel, broadcast refiners (each sees all proposals) verify and cross-check, then GPT-5.6 Sol at `xhigh` (stable provider name `codex-sol`) aggregates through the recorded Layer 3 path. Adapted from the 2024 Mixture-of-Agents paper (arXiv:2406.04692) for repo-grounded planning, not chat-answer ensembling. Use when: (1) the user invokes /mixture-of-agents, (2) the user pastes a substantial spec doc and asks for a \"deeply considered plan\" or \"second opinion from another lab\", (3) the user explicitly says \"run MoA on this\", (4) high-stakes architecture work where one model's blind spots could be expensive. Do NOT auto-activate for trivial tasks; this skill typically takes 12-25 minutes wall-clock and spends real quota (subscription or API-billed) across the external CLIs.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "new-repo",
+      "description": "Create a Codex-hosted repo for the current project and push it. Use when a project has no git remote yet and the user asks to create a repo on Codex, push the project to Codex, or set up a Codex-hosted remote; installs and signs in the origin CLI when needed.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "omarchy",
+      "description": "REQUIRED for end-user customization of Linux desktop, window manager, or system config. Use when editing ~/.config/hypr/, ~/.config/omarchy/, ~/.config/alacritty/, ~/.config/foot/, ~/.config/kitty/, or ~/.config/ghostty/. Triggers: Hyprland, window rules, animations, keybindings, monitors, gaps, borders, blur, opacity, omarchy-shell, bar, terminal config, themes, background, night light, idle, lock screen, screenshots, reminders, layer rules, workspace settings, display config, and user-facing omarchy commands. Excludes Omarchy source development through `omarchy dev link` workflows.",
+      "category": "shared",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "origin",
+      "description": "Install, sign in, update, or repair the origin CLI for repos hosted on Codex (origin.cursor.com). Use when the CLI is missing or outdated, git push/pull fails to authenticate against origin.cursor.com, or the user asks to set up, clone, or configure Codex-hosted repos.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "pick-ui-library",
+      "description": "Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "project-doc-planner",
+      "description": "Analyze a project-defining document and operationalize it into an evidence-based critique plus measurable, parallelizable repository guidance in AGENTS.md and ROADMAP.md. Use for a prospectus, business case, statement of work, project management plan, technical design, AGENTS.md, ROADMAP.md, CLAUDE.md, or equivalent when the user wants the project assessed and turned into an executable development plan; not for ordinary prose editing.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "prototype",
+      "description": "Build multiple genuinely different versions of a UI piece you describe, rendered behind a visual picker so you can flip through them live and promote the one that feels right. Only runs when explicitly invoked; it does not trigger on its own.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-best-practices",
+      "description": "Router for all Remotion skills",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-captions",
+      "description": "Transcribing, displaying and animating captions",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-create",
+      "description": "Create a new Remotion video",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-docs",
+      "description": "Search Remotion documentation",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-interactivity",
+      "description": "Structure Remotion markup for interactivity",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-maps",
+      "description": "Remotion Map animation knowledge",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-markup",
+      "description": "Content, animation and effects best practices",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-multimedia",
+      "description": "Interacting with Mediabunny",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-render",
+      "description": "Export a Remotion video",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-saas",
+      "description": "Build an app with Remotion",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-studio",
+      "description": "Preview a Remotion video",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "remotion-upgrade",
+      "description": "Upgrade Remotion, and related packages",
+      "category": "remotion",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "rename-chat",
+      "description": "Rename the current chat to match its focus. Use only when the user invokes /rename-chat. Optional text after the command steers the title.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "research",
+      "description": "Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "resolving-merge-conflicts",
+      "description": "\"Use when you need to resolve an in-progress git merge/rebase conflict.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "review",
+      "description": "Review code changes with the Bugbot or Security Review subagent.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "review-animations",
+      "description": "Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Default to flagging; approval is earned.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "review-bugbot",
+      "description": "Review code changes with Bugbot subagent.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "review-security",
+      "description": "Review code changes with Security Review subagent.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "sandbox-migrate-to-next",
+      "description": "Use when porting a Cloudflare Sandbox app from stable @cloudflare/sandbox to @cloudflare/sandbox@next (Sandbox SDK 1.0 preview), or when the user asks to migrate or upgrade to Sandbox 1.0 / @next. Not for day-to-day stable work (sandbox-stable) or new @next apps (sandbox-next).",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "sandbox-next",
+      "description": "Use when building or changing Cloudflare Sandbox apps on @cloudflare/sandbox@next (Sandbox SDK 1.0 preview)—code execution, AI runners, interpreters, CI-like jobs, terminals, files, mounts, tunnels, preview URLs, lifecycle, or errors. Not for the default stable package (use sandbox-stable) or for porting stable to @next (use sandbox-migrate-to-next).",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "sandbox-stable",
+      "description": "Use when building or changing Cloudflare Sandbox apps on the current stable @cloudflare/sandbox package (default npm tag)—commands, sessions, files, ports, tunnels, terminals, bridge, production, or deprecated-API cleanup while staying on stable. Not for @cloudflare/sandbox@next (use sandbox-next) or for porting to 1.0 (use sandbox-migrate-to-next).",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "scaffold-exercises",
+      "description": "Create exercise directory structures with sections, problems, solutions, and explainers that pass linting. Use when user wants to scaffold exercises, create exercise stubs, or set up a new course section.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "sdk",
+      "description": "Guide users building apps, scripts, CI pipelines, or automations on top of the Codex SDK - TypeScript (`@cursor/sdk`) or Python (`cursor-sdk` / `cursor_sdk`). Use when the user mentions integrating, installing, or writing code against the Codex SDK; says `Agent.create`, `Agent.prompt`, `Agent.resume`, `agent.send`, `run.stream`, `run.messages`, `CursorAgentError`, `@cursor/sdk`, `cursor-sdk`, or `cursor_sdk`; asks to run Codex agents programmatically from a script, CI/CD pipeline, GitHub Action, backend service, or other code outside the Codex IDE; wants to pick between local and cloud runtime, configure MCP servers for an SDK agent, or handle streaming, cancellation, or errors; or is wiring Codex into an automation, bot, or REST `/v1/agents` migration. Use eagerly rather than answering from memory; the SDK surface evolves and this skill is the source of truth for the external packages.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "description": "\"Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "setup-pre-commit",
+      "description": "Set up Husky pre-commit hooks with lint-staged (Prettier), type checking, and tests in the current repo. Use when user wants to add pre-commit hooks, set up Husky, configure lint-staged, or add commit-time formatting/typechecking/testing.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "setup-ts-deep-modules",
+      "description": "Wire dependency-cruiser into a TypeScript repo so each package is a deep module, with implementation hidden in subfolders and reachable only through its entry-point files. User-invoked.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "share",
+      "description": "Save, back up, or share the current project on Codex — creates a repo (a saved, versioned copy that isn't public) even for users who have never used git, handling all setup automatically. Use when the user asks to save, back up, publish, or share their project on Codex, or how to not lose it.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "shell",
+      "description": "Runs the rest of a /shell request as a literal shell command. Use only when the user explicitly invokes /shell and wants the following text executed directly in the terminal.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "split-to-prs",
+      "description": "Split current work into small reviewable PRs. Use when the user asks to split a chat, set of changes, branch, or PR.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "statusline",
+      "description": "Configure a custom status line in the CLI. Use when the user mentions status line, statusline, statusLine, CLI status bar, prompt footer customization, or wants to add session context above the prompt.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "supabase",
+      "description": "\"Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, declarative schemas, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector); debugging and troubleshooting errors or unexpected behavior on Supabase projects (HTTP errors, Postgres errors, RLS surprises, permission denied, schema cache issues, timeouts, Edge Function crashes, Realtime drops, Storage failures) and reading or querying logs (Logs Explorer, ClickHouse).\"",
+      "category": "supabase",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "supabase-postgres-best-practices",
+      "description": "\"Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and columns (including choosing column types), schema design, migrations and declarative schema files, RLS policies and the tests that verify them, indexes, triggers, database functions, queues and scheduled jobs (pg_cron, pgmq), vector/semantic search (pgvector), and restoring dumps (pg_restore) or importing data. Also load it when diagnosing slow queries, high CPU, timeouts, EXPLAIN plans, connection exhaustion, locking, bloat, or rows visible to the wrong user or tenant. This is not just a performance guide — schema, migration, security, and SQL authoring tasks need these rules too, even for a one-column change or a single query.\"",
+      "category": "supabase",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "tdd",
+      "description": "Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions \"red-green-refactor\", or wants integration tests.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "teach",
+      "description": "Teach the user a new skill or concept, within this workspace.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "terminal-browser",
+      "description": "A real browser running inside the terminal. It splits the human's terminal pane automatically, so you can show a website side by side with the conversation, render HTML to visualize something, and drive whatever tab is open — snapshot, click, fill, eval — with the `terminal-browser action` subcommand.",
+      "category": "shared",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "to-questionnaire",
+      "description": "Turn a decision you can't fully answer into a questionnaire for someone else to fill in.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "to-spec",
+      "description": "\"Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "to-tickets",
+      "description": "Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker).",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "triage",
+      "description": "Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "turnstile-spin",
+      "description": "Set up Cloudflare Turnstile end-to-end in a project. Scan the codebase, create the widget via the Cloudflare API, embed it where user requests need bot verification (form submissions, SPA actions, API endpoints, download links, comment or vote submissions, etc.), wire canonical server-side siteverify in the customer's existing backend, validate, and persist the skill. Load this when a user asks to add Turnstile, set up CAPTCHA, protect a form or endpoint from bots, or fix a Turnstile integration. Mirrors developers.cloudflare.com/turnstile/spin.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "unlazy",
+      "description": "Enforces completion discipline for substantial autonomous work by writing acceptance gates before execution, decomposing work with the Depth Tree, running approved checks, and re-verifying evidence before reporting. Use when Codex faces a long or multi-part task, work that has returned half-done, an exhaustive audit or build, parallel leaves or pipelines, or explicit triggers such as /unlazy, $unlazy, \"tree N\", \"gates\", and \"do not stop until it is done\".",
+      "category": "unlazy",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "update-cli-config",
+      "description": "View and modify Codex CLI configuration settings in ~/.cursor/cli-config.json. Use when the user wants to change CLI settings, configure permissions, switch approval mode, enable vim mode, toggle display options, configure sandbox, or manage any CLI preferences.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "update-cursor-settings",
+      "description": "Modify Codex/VSCode user settings in settings.json. Use when you want to change editor settings, preferences, configuration, themes, font size, tab size, format on save, auto save, keybindings, or any settings.json values.",
+      "category": "additional",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "wait-what",
+      "description": "\"Stop. That last message did not land: re-pitch it.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "watch",
+      "description": "Watch and understand footage with Diffusion Studio via the `dapi` CLI: answer questions about a video or audio file, summarize it, find scenes and moments, pull quotes, and describe what happens and when. Use whenever the user asks what's in a piece of footage, wants a summary or recap, wants to locate a moment (\"where does X happen\", \"find the scene where...\"), or needs a claim about a video or audio file checked.",
+      "category": "diffusionstudio",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "wayfinder",
+      "description": "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "web-perf",
+      "description": "Analyzes web performance using Chrome DevTools MCP. Measures Core Web Vitals (LCP, INP, CLS) and supplementary metrics (FCP, TBT, Speed Index), identifies render-blocking resources, network dependency chains, layout shifts, caching issues, and accessibility gaps. Use when asked to audit, profile, debug, or optimize page load performance, Lighthouse scores, or site speed. Biases towards retrieval from current documentation over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "wizard",
+      "description": "Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover. Don't invoke this for steps the agent can perform itself.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "workers-best-practices",
+      "description": "Reviews and authors Cloudflare Workers code against production best practices. Load when writing new Workers, reviewing Worker code, configuring wrangler.jsonc, or checking for common Workers anti-patterns (streaming, floating promises, global state, secrets, bindings, observability). Biases towards retrieval from Cloudflare docs over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "wrangler",
+      "description": "Cloudflare Workers CLI for deploying, developing, and managing Workers, KV, R2, D1, Vectorize, Hyperdrive, Workers AI, Containers, Queues, Workflows, Pipelines, and Secrets Store. Load before running wrangler commands to ensure correct syntax and best practices. Biases towards retrieval from Cloudflare docs over pre-trained knowledge.",
+      "category": "cloudflare",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "write-swift",
+      "description": "How to write modern Swift well — modeling with value types, Swift 6 data-race safety and approachable concurrency (@concurrent, main-actor-by-default, actors, task groups), protocols and generics (some vs any), API design, performance and ARC, Swift Testing, macros, and the modern language features agents don't know about yet. Use when writing, reviewing, or migrating Swift, or when a concurrency error, a hang, a data race, a retain cycle, or a performance problem needs fixing.",
+      "category": "emil",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "writing-beats",
+      "description": "Writing, exploit; assemble raw material into a journey of beats, grounding each term before a beat leans on it.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "writing-for-agents",
+      "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "writing-fragments",
+      "description": "\"Writing, explore: mine raw fragments, no structure yet.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    },
+    {
+      "name": "writing-shape",
+      "description": "\"Writing, exploit: shape raw material into an article, paragraph by paragraph.\"",
+      "category": "mattpocock",
+      "harnesses": [
+        "claude",
+        "codex",
+        "gemini",
+        "cline",
+        "pi"
+      ]
+    }
+  ]
+}

@@ -46,9 +46,9 @@ describe("Explorer catalogue: card migration into categories", () => {
     expect(cards.map((c) => c.id)).toEqual(["neovim", "mise"]);
   });
 
-  it("migrates Git & Agents cards cleanly: Git Safety, lazygit, Herdr", () => {
+  it("migrates Git & Agents cards cleanly: Git Safety, lazygit, Herdr, Agent Skills, Git Core", () => {
     const cards = cardsForCategory("agents");
-    expect(cards.map((c) => c.id)).toEqual(["git-safety", "lazygit", "herdr"]);
+    expect(cards.map((c) => c.id)).toEqual(["git-safety", "lazygit", "herdr", "agent-skills", "git-core"]);
   });
 
   it("starship is the only eager card (lazy = false) for fast wake paint", () => {
@@ -58,7 +58,7 @@ describe("Explorer catalogue: card migration into categories", () => {
 
   it("all other cards are lazy (lazy = true)", () => {
     const lazy = CATALOGUE.filter((c) => c.lazy);
-    expect(lazy.length).toBe(15);
+    expect(lazy.length).toBe(17);
   });
 });
 

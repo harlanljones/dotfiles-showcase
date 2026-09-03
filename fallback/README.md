@@ -44,6 +44,8 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 | `ripgrep-rc` | FULL-COPY | `~/.config/ripgrep/rc` | header replaces the file's own first comment line; rest verbatim |
 | `shell-env.json` | SYNTHETIC | `~/.zshrc`, `~/.bashrc`, `~/.config/environment.d/` | hand-authored sanitized snapshot (exports, PATH precedence, env.d vars); host literals replaced (`~`, `<host>`), no credentials |
 | `starship.toml` | SANITIZED SAMPLE | `~/.config/starship.toml` | structure mirrors live (format string, git_status/git_commit/git_state/repo_root_format); **hostname literal sanitized away**, username block genericized |
+| `agent-skills.json` | SYNTHETIC | `~/.agents/skills` (+ categories from `~/.local/share/chezmoi/.chezmoidata/agent_skills.yaml`) | curated snapshot (112 skills at authoring time: name/description/pack category/per-harness coverage); never auto-refreshed |
+| `gitconfig` | SYNTHETIC | `~/.config/git/config` (+ `~/.config/git/ignore`) | sanitized mirror with synthetic identity; global-ignore snapshot appended past the marker line |
 
 ## Refresh procedure
 

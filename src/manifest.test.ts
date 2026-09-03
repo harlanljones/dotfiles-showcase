@@ -35,6 +35,8 @@ describe("manifest schema (D4)", () => {
       "ripgrep",
       "herdr",
       "shell-env",
+      "agent-skills",
+      "git-core",
     ]);
   });
 

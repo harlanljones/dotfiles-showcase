@@ -35,6 +35,8 @@ const { default: HerdrCard } = await import("./HerdrCard");
 const { default: GhosttyTerminalCard } = await import("./GhosttyTerminalCard");
 const { default: BtopCard } = await import("./BtopCard");
 const { default: ShellEnvCard } = await import("./ShellEnvCard");
+const { default: AgentSkillsCard } = await import("./AgentSkillsCard");
+const { default: GitCoreCard } = await import("./GitCoreCard");
 
 const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?: () => void }>> = {
   dots: DotsCliCard,
@@ -49,6 +51,8 @@ const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?
   ripgrep: RipgrepCard,
   herdr: HerdrCard,
   "shell-env": ShellEnvCard,
+  "agent-skills": AgentSkillsCard,
+  "git-core": GitCoreCard,
 };
 
 /** Distinct provenance values declared by a payload's top-level source fields. */

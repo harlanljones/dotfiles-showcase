@@ -45,6 +45,8 @@ const { default: HerdrCard } = await import("../src/components/explorer/HerdrCar
 const { default: GhosttyTerminalCard } = await import("../src/components/explorer/GhosttyTerminalCard");
 const { default: BtopCard } = await import("../src/components/explorer/BtopCard");
 const { default: ShellEnvCard } = await import("../src/components/explorer/ShellEnvCard");
+const { default: AgentSkillsCard } = await import("../src/components/explorer/AgentSkillsCard");
+const { default: GitCoreCard } = await import("../src/components/explorer/GitCoreCard");
 
 const COMPONENTS: Record<string, React.ComponentType> = {
   dots: DotsCliCard,
@@ -59,6 +61,8 @@ const COMPONENTS: Record<string, React.ComponentType> = {
   ripgrep: RipgrepCard,
   herdr: HerdrCard,
   "shell-env": ShellEnvCard,
+  "agent-skills": AgentSkillsCard,
+  "git-core": GitCoreCard,
   "git-safety": GitSafetyCard,
   fuzzy: FuzzyToolsCard,
   recolor: RecolorCard,

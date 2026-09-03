@@ -68,6 +68,8 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   { id: "git-safety", category: "agents", route: "/agents#git-safety", word: "git safety", lazy: true },
   { id: "lazygit", category: "agents", route: "/agents#lazygit", word: "lazygit", lazy: true },
   { id: "herdr", category: "agents", route: "/agents#herdr", word: "herdr", lazy: true },
+  { id: "agent-skills", category: "agents", route: "/agents#agent-skills", word: "agent skills", lazy: true },
+  { id: "git-core", category: "agents", route: "/agents#git-core", word: "git core", lazy: true },
 ] as const satisfies readonly CatalogueEntry[];
 
 export const ABSORBED_DEMOS: readonly CardId[] = [];

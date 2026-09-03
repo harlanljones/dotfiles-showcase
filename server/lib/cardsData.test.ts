@@ -12,6 +12,13 @@ import {
   parseMiseTools,
   parseHerdrConfig,
   parseHerdrPlugins,
+  parseSkillFrontmatter,
+  parseAgentSkillsCategories,
+  parseAgentSkillsSnapshot,
+  parseGitConfig,
+  summarizeGitSigning,
+  splitGitconfigFallback,
+  gitValue,
 } from "./cardsData";
 
 describe("parseMiseTools", () => {
@@ -399,6 +406,8 @@ describe("cards: manifest-driven builders", () => {
       lazygit: ["source", "content"],
       herdr: ["configSource", "pluginsSource", "config", "plugins", "rawConfig", "rawPlugins"],
       "shell-env": ["zshSource", "bashSource", "envSource", "zsh", "bash", "env", "startup", "warnings"],
+      "agent-skills": ["source", "skills", "harnesses"],
+      "git-core": ["source", "ignoresSource", "user", "signing", "aliases", "policies", "credentialHelpers", "safeDirs", "ignores", "rawConfig"],
     };
     for (const [key, fields] of Object.entries(shapes)) {
       const data = buildCard(key) as Record<string, unknown>;
@@ -525,5 +534,154 @@ describe("parseShellEnvSnapshot", () => {
     const raw = readFileSync(join(import.meta.dir, "..", "..", "fallback", "shell-env.json"), "utf8");
     expect(findSecretMatches(raw)).toEqual([]);
     expect(raw).not.toMatch(/\/home\/harlan|\/Users\/harlan/);
+  });
+});
+
+describe("parseSkillFrontmatter", () => {
+  it("extracts name and description from the YAML frontmatter", () => {
+    const front = parseSkillFrontmatter(`---
+name: tdd
+description: Test-driven development. Use when the user wants red-green-refactor.
+---
+
+# Test-Driven Development
+`);
+    expect(front).toEqual({
+      name: "tdd",
+      description: "Test-driven development. Use when the user wants red-green-refactor.",
+    });
+  });
+
+  it("returns empty fields when no frontmatter block exists", () => {
+    expect(parseSkillFrontmatter("# No frontmatter here\n")).toEqual({ name: "", description: "" });
+  });
+
+  it("strips YAML block-scalar indicators from folded descriptions", () => {
+    const front = parseSkillFrontmatter(`---
+name: autopilot
+description: >-
+  Keep a PR merge-ready by triaging comments.
+---
+
+# Autopilot
+`);
+    expect(front).toEqual({
+      name: "autopilot",
+      description: "Keep a PR merge-ready by triaging comments.",
+    });
+  });
+});
+
+describe("parseAgentSkillsCategories", () => {
+  const yaml = `agentSkills:
+  portableLocal:
+    - dots
+    - frontier-sweep
+  packs:
+    mattpocock:
+      repo: mattpocock/skills
+      skills:
+        - tdd
+        - triage
+    supabase:
+      repo: supabase/agent-skills
+      skills: [supabase, supabase-postgres-best-practices]
+  sharedExtras:
+    - name: omarchy
+      sourcePath: /usr/share/omarchy/default/agents/skills/omarchy
+  impeccableProviders:
+    - name: claude
+      skillPath: .claude/skills/impeccable/SKILL.md
+`;
+  it("maps block lists, inline flow lists, portable locals and shared extras", () => {
+    const map = parseAgentSkillsCategories(yaml);
+    expect(map.get("dots")).toBe("local");
+    expect(map.get("tdd")).toBe("mattpocock");
+    expect(map.get("supabase")).toBe("supabase");
+    expect(map.get("supabase-postgres-best-practices")).toBe("supabase");
+    expect(map.get("omarchy")).toBe("shared");
+    expect(map.has("claude")).toBe(false);
+    expect(map.has("impeccable")).toBe(false);
+  });
+});
+
+describe("parseAgentSkillsSnapshot", () => {
+  it("parses the bundled snapshot shape and drops malformed rows", () => {
+    const skills = parseAgentSkillsSnapshot(
+      JSON.stringify({
+        skills: [
+          { name: "tdd", description: "d", category: "mattpocock", harnesses: ["claude", 42] },
+          { name: "", description: "nameless" },
+          "not-an-object",
+        ],
+      }),
+    );
+    expect(skills).toEqual([
+      { name: "tdd", description: "d", category: "mattpocock", harnesses: ["claude"] },
+    ]);
+  });
+
+  it("returns [] for invalid JSON", () => {
+    expect(parseAgentSkillsSnapshot("nope{")).toEqual([]);
+  });
+});
+
+describe("parseGitConfig", () => {
+  const sample = `[alias]
+\tco = checkout
+[credential "https://github.com"]
+\thelper =
+\thelper = !/usr/bin/gh auth git-credential
+[user]
+\tname = Example User
+[commit]
+\tverbose = true           # Include diff
+`;
+  it("parses sections, subsections and repeated keys", () => {
+    const sections = parseGitConfig(sample);
+    expect(sections.map((s) => s.section)).toEqual([
+      "alias",
+      'credential "https://github.com"',
+      "user",
+      "commit",
+    ]);
+    expect(gitValue(sections, "alias", "co")).toBe("checkout");
+    expect(gitValue(sections, "user", "name")).toBe("Example User");
+    const helpers = sections
+      .find((s) => s.section.startsWith("credential"))!
+      .entries.find(([k]) => k === "helper")!;
+    expect(helpers[1]).toEqual(["", "!/usr/bin/gh auth git-credential"]);
+  });
+
+  it("summarizes signing posture and detects an unset state", () => {
+    const signing = summarizeGitSigning(parseGitConfig(sample));
+    expect(signing).toEqual({
+      commitGpgsign: null,
+      tagGpgsign: null,
+      gpgFormat: null,
+      gpgProgram: null,
+      signingKeySet: false,
+    });
+    const signed = summarizeGitSigning(
+      parseGitConfig("[commit]\n\tgpgsign = true\n[gpg]\n\tformat = ssh\n\tprogram = /usr/bin/op-ssh-sign\n[user]\n\tsigningkey = ssh-ed25519 AAAA\n"),
+    );
+    expect(signed.commitGpgsign).toBe("true");
+    expect(signed.gpgFormat).toBe("ssh");
+    expect(signed.gpgProgram).toBe("/usr/bin/op-ssh-sign");
+    expect(signed.signingKeySet).toBe(true);
+  });
+});
+
+describe("splitGitconfigFallback", () => {
+  it("splits the ignore snapshot past the marker", () => {
+    const split = splitGitconfigFallback("[user]\n\tname = Example User\n\n# --- global ignores snapshot (live source: ~/.config/git/ignore) ---\n#i **/.claude/settings.local.json\n#i .DS_Store\n");
+    expect(split.configText).toContain("[user]");
+    expect(split.configText).not.toContain("#i");
+    expect(split.ignorePatterns).toEqual(["**/.claude/settings.local.json", ".DS_Store"]);
+  });
+
+  it("returns the whole content when no marker is present", () => {
+    const split = splitGitconfigFallback("[user]\n");
+    expect(split.ignorePatterns).toEqual([]);
   });
 });

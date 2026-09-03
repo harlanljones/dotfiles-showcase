@@ -21,7 +21,9 @@ export type CardId =
   | "neovim"
   | "ripgrep"
   | "herdr"
-  | "shell-env";
+  | "shell-env"
+  | "agent-skills"
+  | "git-core";
 
 export type CardKind = "live" | "static" | "interactive" | "simulated";
 
@@ -29,9 +31,11 @@ export type CardKind = "live" | "static" | "interactive" | "simulated";
 export const FALLBACK_FILES = [
   "Brewfile",
   "btop.conf",
+  "agent-skills.json",
   "dots",
   "ghostty-config",
   "ghostty-theme.conf",
+  "gitconfig",
   "herdr-config.toml",
   "herdr-plugins.json",
   "hypr-monitors.lua",
@@ -202,6 +206,20 @@ export const MANIFEST: ManifestEntry[] = [
       { livePath: "~/.bashrc", fallbackFile: "shell-env.json" },
       { livePath: "~/.config/environment.d", fallbackFile: "shell-env.json" },
     ],
+  },
+  {
+    id: "agent-skills",
+    title: "Agent Skills Hub",
+    blurb: "Cross-agent skill catalogue synced from one shared root into Claude Code, Codex, Gemini, Cline, and Pi — search, filter, and per-harness coverage.",
+    kind: "live",
+    sources: [{ livePath: "~/.agents/skills", fallbackFile: "agent-skills.json" }],
+  },
+  {
+    id: "git-core",
+    title: "Git Core & Security",
+    blurb: "Global git config: signing posture, aliases, safety policies, credential helpers, and global ignores.",
+    kind: "live",
+    sources: [{ livePath: "~/.config/git/config", fallbackFile: "gitconfig" }],
   },
 ];
 
