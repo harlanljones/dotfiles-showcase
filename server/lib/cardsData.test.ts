@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
   parseBrewfile,
+  parseBtopConf,
   parseGhosttyConfig,
+  parseGhosttyTerminal,
   parseGhosttyTheme,
   parseHyprMonitors,
   parseLazyLock,
@@ -62,6 +64,103 @@ keybind = control+insert=copy_to_clipboard
     expect(main.fontFamily).toBe("JetBrainsMono Nerd Font");
     expect(main.fontSize).toBe(9);
     expect(main.keybinds).toHaveLength(2);
+  });
+});
+
+describe("parseGhosttyTerminal", () => {
+  it("extracts backend, padding, font, cursor, shell integration and keybinds", () => {
+    const term = parseGhosttyTerminal(`font-family = "JetBrainsMono Nerd Font"
+font-style = Regular
+font-size = 9
+window-theme = ghostty
+window-padding-x = 14
+window-padding-y = 14
+cursor-style = "block"
+cursor-style-blink = false
+shell-integration-features = no-cursor,ssh-env
+mouse-scroll-multiplier = 0.95
+async-backend = epoll
+keybind = shift+insert=paste_from_clipboard
+keybind = super+control+shift+alt+arrow_down=resize_split:down,100
+`);
+    expect(term.fontFamily).toBe("JetBrainsMono Nerd Font");
+    expect(term.fontStyle).toBe("Regular");
+    expect(term.fontSize).toBe(9);
+    expect(term.paddingX).toBe(14);
+    expect(term.paddingY).toBe(14);
+    expect(term.asyncBackend).toBe("epoll");
+    expect(term.cursorStyle).toBe("block");
+    expect(term.cursorBlink).toBe(false);
+    expect(term.shellIntegration).toEqual(["no-cursor", "ssh-env"]);
+    expect(term.scrollMultiplier).toBe(0.95);
+    expect(term.keybinds).toHaveLength(2);
+    expect(term.csiExamples).toHaveLength(0);
+  });
+
+  it("captures commented-out CSI-u keybinds as opt-in protocol examples", () => {
+    const term = parseGhosttyTerminal(`# Send Shift+Enter as CSI-u so TUIs can distinguish it from Enter.
+# keybind = shift+enter=csi:13;2u
+# keybind = alt+shift+enter=csi:13;4u
+keybind = shift+insert=paste_from_clipboard
+`);
+    expect(term.keybinds).toEqual(["shift+insert=paste_from_clipboard"]);
+    expect(term.csiExamples).toEqual([
+      "shift+enter=csi:13;2u",
+      "alt+shift+enter=csi:13;4u",
+    ]);
+  });
+
+  it("returns nulls and empty lists for unrecognized content", () => {
+    expect(parseGhosttyTerminal("nothing here")).toEqual({
+      fontFamily: null,
+      fontStyle: null,
+      fontSize: null,
+      paddingX: null,
+      paddingY: null,
+      windowTheme: null,
+      asyncBackend: null,
+      cursorStyle: null,
+      cursorBlink: null,
+      shellIntegration: [],
+      scrollMultiplier: null,
+      confirmClose: null,
+      resizeOverlay: null,
+      keybinds: [],
+      csiExamples: [],
+      themeRef: null,
+    });
+  });
+});
+
+describe("parseBtopConf", () => {
+  it("parses effective key=value pairs in file order, skipping comments", () => {
+    const parsed = parseBtopConf(`#? Config file for btop v.1.4.6
+
+#* Name of a theme file.
+color_theme = "current"
+theme_background = true
+
+#* Use 24-bit truecolor.
+truecolor = true
+shown_boxes = "cpu mem net proc"
+update_ms = 2000
+proc_sorting = "cpu lazy"
+`);
+    expect(parsed.order).toEqual([
+      "color_theme",
+      "theme_background",
+      "truecolor",
+      "shown_boxes",
+      "update_ms",
+      "proc_sorting",
+    ]);
+    expect(parsed.values["color_theme"]).toBe('"current"');
+    expect(parsed.values["shown_boxes"]).toBe('"cpu mem net proc"');
+    expect(parsed.values["update_ms"]).toBe("2000");
+  });
+
+  it("returns empty settings for unrecognized content", () => {
+    expect(parseBtopConf("# only comments\n\n")).toEqual({ values: {}, order: [] });
   });
 });
 
@@ -278,6 +377,8 @@ describe("cards: manifest-driven builders", () => {
   it("keeps each card's payload shape stable", () => {
     const shapes: Record<string, string[]> = {
       ghostty: ["mainSource", "themeSource", "fontFamily", "fontSize", "keybinds", "theme"],
+      "ghostty-terminal": ["source", "fontFamily", "fontSize", "paddingX", "paddingY", "asyncBackend", "keybinds", "csiExamples"],
+      btop: ["source", "settings", "order"],
       mise: ["source", "tools"],
       packages: ["brewSource", "formulae", "casks", "pacmanSource", "pacman"],
       hyprland: ["source", "gdkScale", "monitors"],

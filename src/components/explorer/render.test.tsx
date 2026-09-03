@@ -32,11 +32,15 @@ const { default: RecolorCard } = await import("./RecolorCard");
 const { default: StarshipCard } = await import("./StarshipCard");
 const { default: DotsCliCard } = await import("./DotsCliCard");
 const { default: HerdrCard } = await import("./HerdrCard");
+const { default: GhosttyTerminalCard } = await import("./GhosttyTerminalCard");
+const { default: BtopCard } = await import("./BtopCard");
 
 const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?: () => void }>> = {
   dots: DotsCliCard,
   lazygit: LazygitCard,
   ghostty: GhosttyPaletteCard,
+  "ghostty-terminal": GhosttyTerminalCard,
+  btop: BtopCard,
   mise: MiseCard,
   packages: PackagesCard,
   hyprland: HyprlandCard,

@@ -12,6 +12,8 @@ export type CardId =
   | "lazygit"
   | "fuzzy"
   | "ghostty"
+  | "ghostty-terminal"
+  | "btop"
   | "mise"
   | "packages"
   | "hyprland"
@@ -25,6 +27,7 @@ export type CardKind = "live" | "static" | "interactive" | "simulated";
 /** Every bundled fallback file that exists under `/fallback`. */
 export const FALLBACK_FILES = [
   "Brewfile",
+  "btop.conf",
   "dots",
   "ghostty-config",
   "ghostty-theme.conf",
@@ -100,8 +103,8 @@ export const MANIFEST: ManifestEntry[] = [
   },
   {
     id: "ghostty",
-    title: "Ghostty Theme",
-    blurb: "Font, keybinds, and the omarchy dynamic palette.",
+    title: "Omarchy Palette",
+    blurb: "The dynamic 16-color ANSI palette plus truecolor background/foreground, generated per omarchy theme.",
     kind: "live",
     sources: [
       { livePath: "~/.config/ghostty/config", fallbackFile: "ghostty-config" },
@@ -109,6 +112,24 @@ export const MANIFEST: ManifestEntry[] = [
         livePath: "~/.local/state/omarchy/current/theme/ghostty.conf",
         fallbackFile: "ghostty-theme.conf",
       },
+    ],
+  },
+  {
+    id: "ghostty-terminal",
+    title: "Ghostty Terminal",
+    blurb: "Wayland epoll backend, CSI-u key protocol, padding, font, and keybinds from the ghostty config.",
+    kind: "live",
+    sources: [
+      { livePath: "~/.config/ghostty/config", fallbackFile: "ghostty-config" },
+    ],
+  },
+  {
+    id: "btop",
+    title: "System Monitor",
+    blurb: "btop layout boxes, presets, theme, and process-monitoring settings.",
+    kind: "live",
+    sources: [
+      { livePath: "~/.config/btop/btop.conf", fallbackFile: "btop.conf" },
     ],
   },
   {

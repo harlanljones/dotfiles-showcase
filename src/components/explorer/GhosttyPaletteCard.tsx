@@ -156,8 +156,8 @@ export default function GhosttyPaletteCard() {
 
   return (
     <CardShell
-      title="Ghostty Theme"
-      blurb="The terminal pulls its palette at runtime from omarchy's current-theme state file — swap themes without touching the config. Click a swatch to preview it as terminal foreground on the theme background."
+      title="Omarchy Palette"
+      blurb="The terminal pulls its palette at runtime from omarchy's current-theme state file — swap themes without touching the config. Click a swatch to preview it as terminal foreground on the theme background. Terminal behavior (backend, padding, keybinds) lives in the Ghostty Terminal card."
       badges={
         data ? (
           <div className="flex gap-1.5">

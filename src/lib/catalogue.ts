@@ -48,6 +48,8 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   // System & Display
   { id: "hyprland", category: "system", route: "/system#hyprland", word: "hyprland", lazy: true },
   { id: "ghostty", category: "system", route: "/system#ghostty", word: "ghostty", lazy: true },
+  { id: "ghostty-terminal", category: "system", route: "/system#ghostty-terminal", word: "terminal", lazy: true },
+  { id: "btop", category: "system", route: "/system#btop", word: "btop", lazy: true },
   { id: "packages", category: "system", route: "/system#packages", word: "packages", lazy: true },
   { id: "dots", category: "system", route: "/system#dots", word: "dots", lazy: true },
 

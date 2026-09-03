@@ -83,6 +83,117 @@ export function resolveHomeRef(ref: string): string {
   return ref.startsWith("~/") ? join(userHome(), ref.slice(2)) : ref;
 }
 
+export interface GhosttyTerminal {
+  fontFamily: string | null;
+  fontStyle: string | null;
+  fontSize: number | null;
+  paddingX: number | null;
+  paddingY: number | null;
+  windowTheme: string | null;
+  /** Wayland async backend (e.g. "epoll" — the hyprland slowness fix). */
+  asyncBackend: string | null;
+  cursorStyle: string | null;
+  cursorBlink: boolean | null;
+  shellIntegration: string[];
+  scrollMultiplier: number | null;
+  confirmClose: string | null;
+  resizeOverlay: string | null;
+  /** Active keybind lines (`keybind = <keys>=<action>` values). */
+  keybinds: string[];
+  /**
+   * Commented-out `csi:` keybind examples — the config documents CSI-u
+   * (shift+enter / alt+shift+enter) as opt-in, so the card surfaces the
+   * protocol even though no CSI-u bind is active by default.
+   */
+  csiExamples: string[];
+  /** Raw config-file reference (e.g. the omarchy dynamic theme path). */
+  themeRef: string | null;
+}
+
+/** ghostty main config — terminal behavior: backend, padding, font, keybinds. */
+export function parseGhosttyTerminal(content: string): GhosttyTerminal {
+  const term: GhosttyTerminal = {
+    fontFamily: null,
+    fontStyle: null,
+    fontSize: null,
+    paddingX: null,
+    paddingY: null,
+    windowTheme: null,
+    asyncBackend: null,
+    cursorStyle: null,
+    cursorBlink: null,
+    shellIntegration: [],
+    scrollMultiplier: null,
+    confirmClose: null,
+    resizeOverlay: null,
+    keybinds: [],
+    csiExamples: [],
+    themeRef: null,
+  };
+  for (const line of content.split("\n")) {
+    const t = line.trim();
+    // Opt-in CSI-u protocol examples live in comments — capture before skipping.
+    let m = t.match(/^#\s*keybind\s*=\s*(.+\bcsi:.+)$/i);
+    if (m) {
+      term.csiExamples.push(m[1].trim());
+      continue;
+    }
+    if (!t || t.startsWith("#")) continue;
+    m = t.match(/^font-family\s*=\s*"?([^"\n]+)"?/);
+    if (m) term.fontFamily = m[1].trim();
+    m = t.match(/^font-style\s*=\s*(\S+)/);
+    if (m) term.fontStyle = m[1].trim();
+    m = t.match(/^font-size\s*=\s*([\d.]+)/);
+    if (m) term.fontSize = Number(m[1]);
+    m = t.match(/^window-padding-x\s*=\s*([\d.]+)/);
+    if (m) term.paddingX = Number(m[1]);
+    m = t.match(/^window-padding-y\s*=\s*([\d.]+)/);
+    if (m) term.paddingY = Number(m[1]);
+    m = t.match(/^window-theme\s*=\s*(\S+)/);
+    if (m) term.windowTheme = m[1].trim();
+    m = t.match(/^async-backend\s*=\s*(\S+)/);
+    if (m) term.asyncBackend = m[1].trim();
+    m = t.match(/^cursor-style\s*=\s*"?([^"\n]+)"?/);
+    if (m) term.cursorStyle = m[1].trim();
+    m = t.match(/^cursor-style-blink\s*=\s*(true|false)/);
+    if (m) term.cursorBlink = m[1] === "true";
+    m = t.match(/^shell-integration-features\s*=\s*(.+)$/);
+    if (m) term.shellIntegration = m[1].split(",").map((s) => s.trim()).filter(Boolean);
+    m = t.match(/^mouse-scroll-multiplier\s*=\s*([\d.]+)/);
+    if (m) term.scrollMultiplier = Number(m[1]);
+    m = t.match(/^confirm-close-surface\s*=\s*(\S+)/);
+    if (m) term.confirmClose = m[1].trim();
+    m = t.match(/^resize-overlay\s*=\s*(\S+)/);
+    if (m) term.resizeOverlay = m[1].trim();
+    m = t.match(/^keybind\s*=\s*(.+)$/);
+    if (m) term.keybinds.push(m[1].trim());
+    m = t.match(/^config-file\s*=\s*\?"([^"]+)"/);
+    if (m) term.themeRef = m[1];
+  }
+  return term;
+}
+
+export interface BtopSettings {
+  /** Effective `key = value` pairs in file order (comments/blank lines dropped). */
+  values: Record<string, string>;
+  order: string[];
+}
+
+/** btop.conf — flat settings map; the client groups keys into layout/theme/monitoring. */
+export function parseBtopConf(content: string): BtopSettings {
+  const values: Record<string, string> = {};
+  const order: string[] = [];
+  for (const line of content.split("\n")) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const m = t.match(/^([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (!m) continue;
+    if (!(m[1] in values)) order.push(m[1]);
+    values[m[1]] = m[2];
+  }
+  return { values, order };
+}
+
 export interface HyprMonitor {
   output: string;
   mode: string;
@@ -290,6 +401,19 @@ function lazygitCard() {
   return { source: cfg.source, content: cfg.content };
 }
 
+function ghosttyTerminalCard() {
+  const src = manifestSource("ghostty-terminal", "ghostty-config");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
+  return { source: cfg.source, ...parseGhosttyTerminal(cfg.content) };
+}
+
+function btopCard() {
+  const src = manifestSource("btop", "btop.conf");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
+  const parsed = parseBtopConf(cfg.content);
+  return { source: cfg.source, settings: parsed.values, order: parsed.order };
+}
+
 export interface HerdrPluginAction {
   id: string;
   title: string;
@@ -461,6 +585,8 @@ function herdrCard() {
 
 const CARDS: Record<string, () => unknown> = {
   ghostty: ghosttyCard,
+  "ghostty-terminal": ghosttyTerminalCard,
+  btop: btopCard,
   mise: miseCard,
   packages: packagesCard,
   hyprland: hyprlandCard,
