@@ -1,22 +1,25 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { getManifestEntry, type CardId } from "../manifest";
 import { useRouter } from "../lib/router";
-import { CATALOGUE, annexInOrder, roomsInOrder, type RoomId } from "../lib/catalogue";
+import {
+  CATEGORIES,
+  CATALOGUE,
+  cardsForCategory,
+  type CategoryId,
+} from "../lib/catalogue";
 import { emit } from "../lib/telemetry";
+import { SourceBadge } from "./explorer/ui";
 import StarshipCard from "./explorer/StarshipCard";
 
 /**
- * PERF-03 chunk map (D8): the wake room (StarshipCard, which also serves the
- * `recolor` id) stays in the initial bundle; the other card components split
- * into on-demand chunks via React.lazy with Vite default chunking. Which demo
- * is lazy is declared once in the catalogue (HJ-678) and applied here.
+ * PERF-03 chunk map: the wake path (StarshipCard) stays in the initial bundle;
+ * other card components split into on-demand chunks via React.lazy.
  */
-const EAGER: Partial<Record<CardId, React.ComponentType>> = {
+const EAGER: Partial<Record<CardId, React.ComponentType<{ onOpenPlayground?: () => void }>>> = {
   starship: StarshipCard,
-  recolor: StarshipCard,
 };
 
-const LOADERS: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+const LOADERS: Record<string, () => Promise<{ default: React.ComponentType<{ onOpenPlayground?: () => void }> }>> = {
   "git-safety": () => import("./explorer/GitSafetyCard"),
   lazygit: () => import("./explorer/LazygitCard"),
   fuzzy: () => import("./explorer/FuzzyToolsCard"),
@@ -28,9 +31,10 @@ const LOADERS: Record<string, () => Promise<{ default: React.ComponentType }>> =
   neovim: () => import("./explorer/NeovimCard"),
   ripgrep: () => import("./explorer/RipgrepCard"),
   herdr: () => import("./explorer/HerdrCard"),
+  recolor: () => import("./explorer/RecolorCard"),
 };
 
-const CARDS = {} as Record<CardId, React.ComponentType>;
+const CARDS = {} as Record<CardId, React.ComponentType<{ onOpenPlayground?: () => void }>>;
 for (const entry of CATALOGUE) {
   if (entry.lazy) {
     CARDS[entry.id] = lazy(LOADERS[entry.id]);
@@ -38,7 +42,6 @@ for (const entry of CATALOGUE) {
     CARDS[entry.id] = EAGER[entry.id]!;
   }
 }
-CARDS.recolor = StarshipCard;
 
 function ChunkWait() {
   return (
@@ -60,129 +63,138 @@ function CardWithSuspense({ id }: { id: CardId }) {
 
 export default function Explorer() {
   const { route, navigate } = useRouter();
-  const active = route.room;
-  const indexOpen = route.indexOpen;
-  const ActiveCard = CARDS[active];
+  const activeCategory = route.category;
 
-  // Focused receipt arrival (HJ-678): a receipt URL like /annex#lazygit both
-  // selects and exposes that exact demo when the annex wakes. The set keeps
-  // native details toggling under the visitor's control afterwards.
-  const [openReceipts, setOpenReceipts] = useState<Set<CardId>>(
-    () => new Set<CardId>(route.targetReceipt ? [route.targetReceipt] : []),
+  // Track expanded cards. Deep-linked targetCard is expanded on arrival.
+  const [expandedCards, setExpandedCards] = useState<Set<CardId>>(
+    () => new Set<CardId>(route.targetCard ? [route.targetCard] : []),
   );
-  const targetRef = useRef<HTMLDetailsElement>(null);
 
-  useEffect(() => {
-    if (!indexOpen || !route.targetReceipt) return;
-    const receipt: CardId = route.targetReceipt;
-    setOpenReceipts((current) => new Set(current).add(receipt));
-    // Defer the scroll until the receipt content mounts and paints.
-    const timer = window.setTimeout(() => {
-      targetRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    }, 60);
-    return () => window.clearTimeout(timer);
-  }, [indexOpen, route.targetReceipt]);
+  const targetRef = useRef<HTMLElement>(null);
 
   // If landing on root "/", normalize URL to canonical path without adding a history entry
   useEffect(() => {
     if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "")) {
-      navigate({ room: "starship", indexOpen: false }, true);
+      navigate({ category: "system" }, true);
     }
   }, [navigate]);
 
-  const openRoom = (id: RoomId) => {
-    if (id !== active) emit("room_switch", { from: active, to: id });
-    navigate({ room: id, indexOpen: false });
-  };
-
-  const toggleIndex = () => {
-    if (indexOpen) emit("annex_closed");
-    else emit("annex_opened");
-    navigate({ indexOpen: !indexOpen });
-  };
-
-  // UX-01: ESC closes the index overlay and returns focus to the toggle so the
-  // keyboard never strands inside the annex.
-  const indexToggleRef = useRef<HTMLButtonElement>(null);
+  // Handle URL hash deep-linking arrival & scrolling
   useEffect(() => {
-    if (!indexOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        emit("annex_closed");
-        navigate({ indexOpen: false });
-        indexToggleRef.current?.focus();
+    if (!route.targetCard) return;
+    const target = route.targetCard;
+    setExpandedCards((current) => new Set(current).add(target));
+    const timer = window.setTimeout(() => {
+      targetRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [route.category, route.targetCard]);
+
+  const openCategory = (id: CategoryId) => {
+    if (id !== activeCategory) {
+      emit("room_switch", { from: activeCategory, to: id });
+    }
+    navigate({ category: id, targetCard: undefined });
+  };
+
+  const toggleCard = (id: CardId) => {
+    setExpandedCards((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+        if (route.targetCard === id) {
+          navigate({ targetCard: undefined }, true);
+        }
+      } else {
+        next.add(id);
+        navigate({ targetCard: id });
       }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [indexOpen, navigate]);
+      return next;
+    });
+  };
+
+  const categoryCards = cardsForCategory(activeCategory);
+  const currentCategory = CATEGORIES.find((c) => c.id === activeCategory);
 
   return (
     <>
       <header className="chrome">
-        <nav className="room-names" aria-label="Rooms">
-          {roomsInOrder().map((entry) => (
+        <nav className="category-tabs room-names" aria-label="Categories">
+          {CATEGORIES.map((cat) => (
             <button
-              key={entry.id}
+              key={cat.id}
               type="button"
-              aria-current={!indexOpen && active === entry.id ? "page" : undefined}
-              onClick={() => openRoom(entry.id as RoomId)}
+              className="category-tab"
+              aria-current={activeCategory === cat.id ? "page" : undefined}
+              onClick={() => openCategory(cat.id)}
             >
-              {entry.word}
+              {cat.label}
             </button>
           ))}
         </nav>
         <div className="chrome-words">
-          <button
-            ref={indexToggleRef}
-            type="button"
-            aria-pressed={indexOpen}
-            onClick={toggleIndex}
-          >
-            index
-          </button>
           <a href="https://github.com/harlanljones/dotfiles">source</a>
         </div>
       </header>
 
-      {indexOpen ? (
-        <div className="index-overlay">
-          <div className="index-list">
-            {annexInOrder().map((entry) => {
+      <main className="field">
+        <div className="explorer-content">
+          <div
+            className="category-grid"
+            role="region"
+            aria-label={currentCategory?.label ?? "Cards"}
+          >
+            {categoryCards.map((entry) => {
               const manifest = getManifestEntry(entry.id);
-              const focused = route.targetReceipt === entry.id;
+              const isExpanded = expandedCards.has(entry.id);
+              const isTargeted = route.targetCard === entry.id;
+
               return (
-                <details
+                <article
                   key={entry.id}
-                  ref={focused ? targetRef : undefined}
-                  className={focused ? "receipt-focused" : undefined}
-                  open={openReceipts.has(entry.id)}
-                  onToggle={() => {
-                    setOpenReceipts((current) => {
-                      const next = new Set(current);
-                      if (next.has(entry.id)) next.delete(entry.id);
-                      else next.add(entry.id);
-                      return next;
-                    });
-                  }}
-                  data-receipt={entry.id}
+                  id={entry.id}
+                  data-card={entry.id}
+                  ref={isTargeted ? targetRef : undefined}
+                  className={`showcase-card ${isExpanded ? "showcase-card-expanded" : "showcase-card-collapsed"}${isTargeted ? " card-focused" : ""}`}
                 >
-                  <summary>{manifest?.title ?? entry.word}</summary>
-                  <div className="annex-body">
-                    <CardWithSuspense id={entry.id} />
+                  <div
+                    className="showcase-card-header"
+                    onClick={() => toggleCard(entry.id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="showcase-card-meta">
+                      <h2 className="showcase-card-title">{manifest?.title ?? entry.word}</h2>
+                      {manifest?.kind && (
+                        <SourceBadge source={manifest.kind} />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="showcase-expand-btn"
+                      aria-expanded={isExpanded}
+                      aria-controls={`card-detail-${entry.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCard(entry.id);
+                      }}
+                    >
+                      {isExpanded ? "collapse ▴" : "expand ▾"}
+                    </button>
                   </div>
-                </details>
+                  {manifest?.blurb && (
+                    <p className="showcase-card-blurb">{manifest.blurb}</p>
+                  )}
+                  {isExpanded && (
+                    <div id={`card-detail-${entry.id}`} className="showcase-card-body">
+                      <CardWithSuspense id={entry.id} />
+                    </div>
+                  )}
+                </article>
               );
             })}
           </div>
         </div>
-      ) : (
-        <main className="field">
-          <div className="room-field">
-            <CardWithSuspense id={active} />
-          </div>
-        </main>
-      )}
+      </main>
     </>
   );
 }

@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
-export type SourceKind = "live" | "fallback" | "simulated" | "static";
+export type SourceKind = "live" | "fallback" | "simulated" | "static" | "interactive";
 
 const SOURCE_STYLES: Record<SourceKind, string> = {
   live: "text-[#6fa3a0]",
   fallback: "text-[#b16371]",
   simulated: "text-[#959aa4]",
   static: "text-[#868b93]",
+  interactive: "text-[#6fa3a0]",
 };
 
 const SOURCE_LABEL: Record<SourceKind, string> = {
@@ -14,6 +15,7 @@ const SOURCE_LABEL: Record<SourceKind, string> = {
   fallback: "FALLBACK",
   simulated: "SIMULATED",
   static: "STATIC",
+  interactive: "INTERACTIVE",
 };
 
 export function SourceBadge({ source }: { source: SourceKind }) {
