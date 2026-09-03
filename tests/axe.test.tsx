@@ -44,6 +44,7 @@ const { default: DotsCliCard } = await import("../src/components/explorer/DotsCl
 const { default: HerdrCard } = await import("../src/components/explorer/HerdrCard");
 const { default: GhosttyTerminalCard } = await import("../src/components/explorer/GhosttyTerminalCard");
 const { default: BtopCard } = await import("../src/components/explorer/BtopCard");
+const { default: ShellEnvCard } = await import("../src/components/explorer/ShellEnvCard");
 
 const COMPONENTS: Record<string, React.ComponentType> = {
   dots: DotsCliCard,
@@ -57,6 +58,7 @@ const COMPONENTS: Record<string, React.ComponentType> = {
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
   herdr: HerdrCard,
+  "shell-env": ShellEnvCard,
   "git-safety": GitSafetyCard,
   fuzzy: FuzzyToolsCard,
   recolor: RecolorCard,

@@ -58,6 +58,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   { id: "recolor", category: "shell", route: "/shell#recolor", word: "recolor", lazy: true },
   { id: "fuzzy", category: "shell", route: "/shell#fuzzy", word: "fuzzy", lazy: true },
   { id: "ripgrep", category: "shell", route: "/shell#ripgrep", word: "ripgrep", lazy: true },
+  { id: "shell-env", category: "shell", route: "/shell#shell-env", word: "shell env", lazy: true },
 
   // Editor & Runtimes
   { id: "neovim", category: "editor", route: "/editor#neovim", word: "neovim", lazy: true },

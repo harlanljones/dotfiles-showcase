@@ -1,7 +1,18 @@
 import { execSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readConfig, userHome, type ConfigResult } from "./configs";
 import { getManifestEntry, type CardId, type ConfigSource, type FallbackFile } from "../../src/manifest";
+import {
+  EMPTY_PROFILE,
+  STARTUP_BASH,
+  STARTUP_ZSH,
+  parseEnvDFile,
+  parseShellEnvSnapshot,
+  rcProfile,
+  type EnvDFile,
+  type ShellEnvPayload,
+} from "../../src/lib/shellEnv";
 import { isWorkerd } from "./runtime";
 import { parseDotsScript } from "./dots";
 import type { DotsCardPayload } from "../../src/lib/dotsCli";
@@ -414,6 +425,77 @@ function btopCard() {
   return { source: cfg.source, settings: parsed.values, order: parsed.order };
 }
 
+/** Resolve one of the shell-env manifest live paths by suffix (they share a fallback file). */
+function shellEnvLivePath(liveSuffix: string): string {
+  const entry = getManifestEntry("shell-env");
+  const src = entry?.sources?.find((s) => s.livePath.endsWith(liveSuffix));
+  if (!src) {
+    throw new Error(`manifest entry "shell-env" declares no source for ${liveSuffix}`);
+  }
+  return resolveLivePath(src.livePath);
+}
+
+/**
+ * Read `~/.config/environment.d/*.conf` (systemd session env). Returns null
+ * when the directory is unreadable or absent (degrades to the bundled
+ * snapshot); never throws. Only `*.conf` files are read — backups
+ * (`*.bak`) and chezmoi templates (`*.tmpl`) are skipped.
+ */
+function readEnvD(dir: string): EnvDFile[] | null {
+  if (isWorkerd()) return null;
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const files: EnvDFile[] = [];
+  for (const name of names.sort()) {
+    if (!name.endsWith(".conf")) continue;
+    try {
+      const content = readFileSync(join(dir, name), "utf8");
+      files.push({ file: name, vars: parseEnvDFile(content) });
+    } catch {
+      // Unreadable file — skip it, keep the rest.
+    }
+  }
+  return files;
+}
+
+function shellEnvCard(): ShellEnvPayload {
+  const zshCfg = readConfig(shellEnvLivePath(".zshrc"), "shell-env.json");
+  const bashCfg = readConfig(shellEnvLivePath(".bashrc"), "shell-env.json");
+  const snapshot =
+    parseShellEnvSnapshot(readConfig([], "shell-env.json").content) ?? {
+      zsh: EMPTY_PROFILE,
+      bash: EMPTY_PROFILE,
+      env: [],
+    };
+  const home = userHome();
+  const warnings: string[] = [];
+
+  const zsh = zshCfg.source === "live" ? rcProfile(zshCfg.content, home) : snapshot.zsh;
+  const bash = bashCfg.source === "live" ? rcProfile(bashCfg.content, home) : snapshot.bash;
+  const envLive = readEnvD(shellEnvLivePath("environment.d"));
+  const env = envLive ?? snapshot.env;
+  const envSource = envLive ? "live" : "fallback";
+
+  if (zshCfg.source === "fallback" && bashCfg.source === "fallback" && envSource === "fallback") {
+    warnings.push("No live shell configs found; showing the bundled sanitized snapshot.");
+  }
+
+  return {
+    zshSource: zshCfg.source,
+    bashSource: bashCfg.source,
+    envSource,
+    zsh,
+    bash,
+    env,
+    startup: { zsh: STARTUP_ZSH, bash: STARTUP_BASH },
+    warnings,
+  };
+}
+
 export interface HerdrPluginAction {
   id: string;
   title: string;
@@ -595,6 +677,7 @@ const CARDS: Record<string, () => unknown> = {
   ripgrep: ripgrepCard,
   lazygit: lazygitCard,
   herdr: herdrCard,
+  "shell-env": shellEnvCard,
 };
 
 export type CardKey = keyof typeof CARDS;

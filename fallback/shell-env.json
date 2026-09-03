@@ -1,0 +1,42 @@
+{
+  "_note": "Synthetic sanitized snapshot for the Shell Profiles & Environment card. Hand-authored from the shape of the chezmoi-managed shell configs (dot_zshrc, dot_bashrc, dot_config/environment.d/) with all host-identifying literals replaced (~, <host>) and no credentials. Strategy: SYNTHETIC (see fallback/README.md). Live sources: ~/.zshrc, ~/.bashrc, ~/.config/environment.d/.",
+  "zsh": {
+    "exports": [
+      { "key": "EDITOR", "value": "nvim" },
+      { "key": "VISUAL", "value": "nvim" },
+      { "key": "PATH", "value": "~/.local/bin:$PATH" },
+      { "key": "RIPGREP_CONFIG_PATH", "value": "~/.config/ripgrep/rc" },
+      { "key": "FZF_DEFAULT_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
+      { "key": "FZF_CTRL_T_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
+      { "key": "FZF_ALT_C_COMMAND", "value": "fd --type d --hidden --follow --exclude .git" },
+      { "key": "FZF_DEFAULT_OPTS", "value": "--height=40% --layout=reverse --border --info=inline" },
+      { "key": "PAGER", "value": "less" },
+      { "key": "MANPAGER", "value": "sh -c 'col -bx | bat -l man -p'" }
+    ],
+    "path": ["~/.local/bin", "$PATH"]
+  },
+  "bash": {
+    "exports": [
+      { "key": "OMARCHY_PATH", "value": "/usr/share/omarchy" },
+      { "key": "PATH", "value": "~/.local/bin:$PATH" },
+      { "key": "PATH", "value": "~/.cache/.bun/bin:$PATH" },
+      { "key": "WEBKIT_DISABLE_DMABUF_RENDERER", "value": "1" }
+    ],
+    "path": ["~/.local/bin", "~/.cache/.bun/bin", "$PATH"]
+  },
+  "env": [
+    {
+      "file": "10-defaults.conf",
+      "vars": [
+        { "key": "EDITOR", "value": "nvim" },
+        { "key": "VISUAL", "value": "nvim" },
+        { "key": "PAGER", "value": "less" },
+        { "key": "LESS", "value": "-R" }
+      ]
+    },
+    {
+      "file": "10-machine.conf",
+      "vars": [{ "key": "MACHINE_NAME", "value": "<host>" }]
+    }
+  ]
+}

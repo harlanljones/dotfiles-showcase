@@ -179,6 +179,47 @@ export const FETCHERS: FetcherCase[] = [
     fallback: { source: "fallback", flags: ["--smart-case"] },
   },
   {
+    name: "shell-env",
+    live: {
+      zshSource: "live",
+      bashSource: "live",
+      envSource: "live",
+      zsh: {
+        exports: [{ key: "EDITOR", value: "nvim" }],
+        path: ["~/.local/bin", "$PATH"],
+      },
+      bash: {
+        exports: [{ key: "OMARCHY_PATH", value: "/usr/share/omarchy" }],
+        path: ["~/.local/bin", "$PATH"],
+      },
+      env: [{ file: "10-defaults.conf", vars: [{ key: "EDITOR", value: "nvim" }] }],
+      startup: {
+        zsh: [{ file: "~/.zshrc", when: "interactive shells", managed: true, note: "chezmoi dot_zshrc" }],
+        bash: [{ file: "~/.bashrc", when: "interactive shells", managed: true, note: "chezmoi dot_bashrc" }],
+      },
+      warnings: [],
+    },
+    fallback: {
+      zshSource: "fallback",
+      bashSource: "fallback",
+      envSource: "fallback",
+      zsh: {
+        exports: [{ key: "EDITOR", value: "nvim" }],
+        path: ["~/.local/bin", "$PATH"],
+      },
+      bash: {
+        exports: [{ key: "OMARCHY_PATH", value: "/usr/share/omarchy" }],
+        path: ["~/.local/bin", "$PATH"],
+      },
+      env: [{ file: "10-defaults.conf", vars: [{ key: "EDITOR", value: "nvim" }] }],
+      startup: {
+        zsh: [{ file: "~/.zshrc", when: "interactive shells", managed: true, note: "chezmoi dot_zshrc" }],
+        bash: [{ file: "~/.bashrc", when: "interactive shells", managed: true, note: "chezmoi dot_bashrc" }],
+      },
+      warnings: ["No live shell configs found; showing the bundled sanitized snapshot."],
+    },
+  },
+  {
     name: "herdr",
     live: {
       configSource: "live",

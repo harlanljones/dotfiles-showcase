@@ -42,6 +42,7 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 | `mise.toml` | FULL-COPY | `~/.config/mise/config.toml` | `[tools]` table verbatim; no env/secrets sections exist |
 | `pacman.txt` | DERIVED-SNAPSHOT | `pacman -Qe` on host | explicit package names, one per line; regenerate with `pacman -Qe \| awk '{print $1}' > fallback/pacman.txt` |
 | `ripgrep-rc` | FULL-COPY | `~/.config/ripgrep/rc` | header replaces the file's own first comment line; rest verbatim |
+| `shell-env.json` | SYNTHETIC | `~/.zshrc`, `~/.bashrc`, `~/.config/environment.d/` | hand-authored sanitized snapshot (exports, PATH precedence, env.d vars); host literals replaced (`~`, `<host>`), no credentials |
 | `starship.toml` | SANITIZED SAMPLE | `~/.config/starship.toml` | structure mirrors live (format string, git_status/git_commit/git_state/repo_root_format); **hostname literal sanitized away**, username block genericized |
 
 ## Refresh procedure

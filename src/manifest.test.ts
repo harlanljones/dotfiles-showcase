@@ -34,6 +34,7 @@ describe("manifest schema (D4)", () => {
       "neovim",
       "ripgrep",
       "herdr",
+      "shell-env",
     ]);
   });
 

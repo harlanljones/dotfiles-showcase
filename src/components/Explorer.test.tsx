@@ -56,7 +56,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     expect(cardIds).toEqual(["hyprland", "ghostty", "ghostty-terminal", "btop", "packages", "dots"]);
   });
 
-  it("switching to Shell tab renders Shell cards: Starship, Failure Recolor, Fuzzy Tools, ripgrep", async () => {
+  it("switching to Shell tab renders Shell cards: Starship, Failure Recolor, Fuzzy Tools, ripgrep, Shell Env", async () => {
     windowRef.happyDOM.setURL("http://localhost/system");
     const root = createRoot(container);
     await act(async () => {
@@ -75,7 +75,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     const cardIds = Array.from<any>(container.querySelectorAll("article.showcase-card")).map(
       (el) => el.getAttribute("data-card"),
     );
-    expect(cardIds).toEqual(["starship", "recolor", "fuzzy", "ripgrep"]);
+    expect(cardIds).toEqual(["starship", "recolor", "fuzzy", "ripgrep", "shell-env"]);
   });
 
   it("switching to Editor tab renders Editor cards: Neovim, mise", async () => {
