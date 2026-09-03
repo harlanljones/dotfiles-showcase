@@ -98,8 +98,7 @@ describe("fallback coverage: builders render without any live config", () => {
     expect(data.warnings[0]).toContain("Live dots source was incomplete");
   });
 
-  it("herdr fallback serves config summary and plugins list", () => {
-    const data = buildCard("herdr") as {
+  it("herdr fallback serves config summary and plugins list", () => {    const data = buildCard("herdr") as {
       configSource: string;
       pluginsSource: string;
       config: { prefix: string; resumeAgents: boolean; supportedAgents: string[] };
@@ -111,6 +110,36 @@ describe("fallback coverage: builders render without any live config", () => {
     expect(data.config.resumeAgents).toBe(true);
     expect(data.config.supportedAgents.length).toBeGreaterThan(0);
     expect(data.plugins.length).toBeGreaterThan(0);
+  });
+
+  it("agent-skills fallback serves the bundled skill catalogue", () => {
+    const data = buildCard("agent-skills") as {
+      source: string;
+      skills: Array<{ name: string; description: string; category: string; harnesses: string[] }>;
+    };
+    expect(data.source).toBe("fallback");
+    expect(data.skills.length).toBeGreaterThan(100);
+    for (const skill of data.skills) {
+      expect(skill.name.length).toBeGreaterThan(0);
+      expect(skill.harnesses).toContain("codex");
+    }
+  });
+
+  it("git-core fallback serves sanitized identity and the ignore snapshot", () => {
+    const data = buildCard("git-core") as {
+      source: string;
+      ignoresSource: string;
+      user: { name: string; email: string };
+      aliases: Array<[string, string]>;
+      ignores: string[];
+      rawConfig: string;
+    };
+    expect(data.source).toBe("fallback");
+    expect(data.ignoresSource).toBe("fallback");
+    expect(data.user.email).toBe("user@example.com");
+    expect(data.aliases.length).toBeGreaterThan(0);
+    expect(data.ignores.length).toBeGreaterThan(0);
+    expect(data.rawConfig).not.toContain("harlanljones");
   });
 });
 

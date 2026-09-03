@@ -99,7 +99,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     expect(cardIds).toEqual(["neovim", "mise"]);
   });
 
-  it("switching to Git & Agents tab renders Git & Agents cards: Git Safety, lazygit, Herdr", async () => {
+  it("switching to Git & Agents tab renders Git & Agents cards: Git Safety, lazygit, Herdr, Agent Skills, Git Core", async () => {
     windowRef.happyDOM.setURL("http://localhost/system");
     const root = createRoot(container);
     await act(async () => {
@@ -117,7 +117,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     const cardIds = Array.from<any>(container.querySelectorAll("article.showcase-card")).map(
       (el) => el.getAttribute("data-card"),
     );
-    expect(cardIds).toEqual(["git-safety", "lazygit", "herdr"]);
+    expect(cardIds).toEqual(["git-safety", "lazygit", "herdr", "agent-skills", "git-core"]);
   });
 
   it("deep-links to /shell#starship and expands starship card", async () => {

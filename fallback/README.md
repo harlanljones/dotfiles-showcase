@@ -42,6 +42,8 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 | `pacman.txt` | DERIVED-SNAPSHOT | `pacman -Qe` on host | explicit package names, one per line; regenerate with `pacman -Qe \| awk '{print $1}' > fallback/pacman.txt` |
 | `ripgrep-rc` | FULL-COPY | `~/.config/ripgrep/rc` | header replaces the file's own first comment line; rest verbatim |
 | `starship.toml` | SANITIZED SAMPLE | `~/.config/starship.toml` | structure mirrors live (format string, git_status/git_commit/git_state/repo_root_format); **hostname literal sanitized away**, username block genericized |
+| `agent-skills.json` | SYNTHETIC | `~/.agents/skills` (+ categories from `~/.local/share/chezmoi/.chezmoidata/agent_skills.yaml`) | curated snapshot (112 skills at authoring time: name/description/pack category/per-harness coverage); never auto-refreshed |
+| `gitconfig` | SYNTHETIC | `~/.config/git/config` (+ `~/.config/git/ignore`) | sanitized mirror with synthetic identity; global-ignore snapshot appended past the marker line |
 
 ## Refresh procedure
 

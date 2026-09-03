@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readConfig, userHome, type ConfigResult } from "./configs";
 import { getManifestEntry, type CardId, type ConfigSource, type FallbackFile } from "../../src/manifest";
@@ -459,6 +460,421 @@ function herdrCard() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Agent Skills Hub + Git Core & Security (HJ-699)
+//
+// Live roots: ~/.agents/skills (canonical catalogue; Codex/OpenCode discover
+// it directly) reconciled by chezmoi into per-harness discovery roots
+// (~/.claude/skills, ~/.cline/skills, ~/.gemini/skills,
+// ~/.gemini/config/skills, ~/.pi/agent/skills). Categories come from
+// ~/.local/share/chezmoi/.chezmoidata/agent_skills.yaml (pack membership);
+// anything installed but undeclared there is "additional".
+// ---------------------------------------------------------------------------
+
+export interface AgentHarness {
+  id: string;
+  label: string;
+  /** Display path of the harness discovery root ("~/" = user home). */
+  path: string;
+}
+
+export const AGENT_HARNESSES: AgentHarness[] = [
+  { id: "claude", label: "Claude Code", path: "~/.claude/skills" },
+  { id: "codex", label: "Codex", path: "~/.agents/skills" },
+  { id: "gemini", label: "Gemini CLI", path: "~/.gemini/skills" },
+  { id: "cline", label: "Cline", path: "~/.cline/skills" },
+  { id: "pi", label: "Pi", path: "~/.pi/agent/skills" },
+];
+
+export interface AgentSkillEntry {
+  name: string;
+  description: string;
+  /** Pack key from agent_skills.yaml ("local"/"shared" for the linked sets). */
+  category: string;
+  /** Harness ids (see AGENT_HARNESSES) whose discovery root carries the skill. */
+  harnesses: string[];
+}
+
+/** SKILL.md frontmatter (`name:` / `description:`) → identity + one-line use. */
+export function parseSkillFrontmatter(content: string): { name: string; description: string } {
+  const block = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const fields: Record<string, string> = {};
+  let current = "";
+  for (const line of (block ? block[1] : "").split("\n")) {
+    const kv = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (kv) {
+      current = kv[1];
+      fields[current] = kv[2].trim();
+    } else if (current && /^\s+\S/.test(line)) {
+      fields[current] += ` ${line.trim()}`;
+    }
+  }
+  // YAML block-scalar indicators (`>`, `>-`, `|+`, …) are formatting, not prose.
+  const description = (fields.description ?? "").replace(/^[>|][+-]?\s*/, "").trim();
+  return { name: fields.name ?? "", description };
+}
+
+/**
+ * Targeted reader for the `.chezmoidata/agent_skills.yaml` shape:
+ * `portableLocal` (→ "local"), each `packs.<pack>.skills` list — block or
+ * inline flow style — (→ pack key), and `sharedExtras` names (→ "shared").
+ * First claim wins; unknown skills default to "additional" at the call site.
+ */
+export function parseAgentSkillsCategories(yaml: string): Map<string, string> {
+  const map = new Map<string, string>();
+  let mode: "none" | "portable" | "packs" | "extras" = "none";
+  let pack = "";
+  let inSkills = false;
+  for (const line of yaml.split("\n")) {
+    const top = line.match(/^  (\w+):\s*$/);
+    if (top) {
+      mode =
+        top[1] === "portableLocal" ? "portable"
+        : top[1] === "packs" ? "packs"
+        : top[1] === "sharedExtras" ? "extras"
+        : "none";
+      pack = "";
+      inSkills = false;
+      continue;
+    }
+    if (mode === "portable") {
+      const item = line.match(/^    - (\S+)\s*$/);
+      if (item && !map.has(item[1])) map.set(item[1], "local");
+    } else if (mode === "packs") {
+      const header = line.match(/^    ([\w-]+):\s*$/);
+      if (header) {
+        pack = header[1];
+        inSkills = false;
+        continue;
+      }
+      if (/^      skills:\s*$/.test(line)) {
+        inSkills = true;
+        continue;
+      }
+      const inline = line.match(/^      skills:\s*\[(.*)\]\s*$/);
+      if (inline && pack) {
+        for (const part of inline[1].split(",")) {
+          const name = part.trim();
+          if (name && !map.has(name)) map.set(name, pack);
+        }
+        inSkills = false;
+        continue;
+      }
+      if (/^      [A-Za-z]/.test(line)) {
+        inSkills = false;
+        continue;
+      }
+      const item = line.match(/^        - (\S+)\s*$/);
+      if (item && pack && inSkills && !map.has(item[1])) map.set(item[1], pack);
+    } else if (mode === "extras") {
+      const item = line.match(/^    - name:\s*(\S+)\s*$/);
+      if (item && !map.has(item[1])) map.set(item[1], "shared");
+    }
+  }
+  return map;
+}
+
+export interface AgentSkillsPayload {
+  source: "live" | "fallback";
+  skills: AgentSkillEntry[];
+  harnesses: AgentHarness[];
+}
+
+function harnessRoots(home: string): Record<string, string[]> {
+  return {
+    claude: [join(home, ".claude", "skills")],
+    codex: [join(home, ".agents", "skills")],
+    gemini: [join(home, ".gemini", "skills"), join(home, ".gemini", "config", "skills")],
+    cline: [join(home, ".cline", "skills")],
+    pi: [join(home, ".pi", "agent", "skills")],
+  };
+}
+
+function skillPresent(roots: string[], name: string): boolean {
+  for (const root of roots) {
+    try {
+      if (existsSync(join(root, name))) return true;
+    } catch {
+      // unreadable candidate — treat as absent
+    }
+  }
+  return false;
+}
+
+/** Live scan of the canonical skills root. Null when the root is unreadable. */
+export function scanAgentSkills(skillsDir: string, home: string): AgentSkillEntry[] | null {
+  let dirents;
+  try {
+    dirents = readdirSync(skillsDir, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  let categories = new Map<string, string>();
+  try {
+    const yamlPath = join(home, ".local", "share", "chezmoi", ".chezmoidata", "agent_skills.yaml");
+    if (existsSync(yamlPath)) categories = parseAgentSkillsCategories(readFileSync(yamlPath, "utf8"));
+  } catch {
+    // yaml unavailable — every skill falls back to "additional"
+  }
+  const roots = harnessRoots(home);
+  const skills: AgentSkillEntry[] = [];
+  for (const entry of dirents) {
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+    const name = entry.name;
+    let description = "";
+    try {
+      const front = parseSkillFrontmatter(readFileSync(join(skillsDir, name, "SKILL.md"), "utf8"));
+      if (front.name && front.name !== name) continue; // stray dir, not this skill
+      description = front.description;
+    } catch {
+      continue; // no readable SKILL.md — not a skill
+    }
+    const harnesses = AGENT_HARNESSES.filter((h) =>
+      h.id === "codex" ? true : skillPresent(roots[h.id] ?? [], name),
+    ).map((h) => h.id);
+    skills.push({ name, description, category: categories.get(name) ?? "additional", harnesses });
+  }
+  skills.sort((a, b) => a.name.localeCompare(b.name));
+  return skills;
+}
+
+/** Bundled snapshot (fallback/agent-skills.json) → skill list. Never throws. */
+export function parseAgentSkillsSnapshot(json: string): AgentSkillEntry[] {
+  try {
+    const parsed = JSON.parse(json) as { skills?: unknown };
+    if (!Array.isArray(parsed.skills)) return [];
+    return parsed.skills.flatMap((s) => {
+      if (!s || typeof s !== "object") return [];
+      const rec = s as Record<string, unknown>;
+      if (typeof rec.name !== "string" || !rec.name) return [];
+      const harnesses = Array.isArray(rec.harnesses)
+        ? rec.harnesses.filter((h): h is string => typeof h === "string")
+        : [];
+      return [{
+        name: rec.name,
+        description: typeof rec.description === "string" ? rec.description : "",
+        category: typeof rec.category === "string" && rec.category ? rec.category : "additional",
+        harnesses,
+      }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function agentSkillsCard(): AgentSkillsPayload {
+  const src = manifestSource("agent-skills", "agent-skills.json");
+  // On workerd there is no host skills tree; degrade directly to the snapshot.
+  if (!isWorkerd()) {
+    try {
+      const skills = scanAgentSkills(resolveLivePath(src.livePath), userHome());
+      if (skills && skills.length > 0) {
+        return { source: "live", skills, harnesses: AGENT_HARNESSES };
+      }
+    } catch {
+      // fall through to the bundled snapshot
+    }
+  }
+  const fb = readConfig([], src.fallbackFile);
+  return { source: fb.source, skills: parseAgentSkillsSnapshot(fb.content), harnesses: AGENT_HARNESSES };
+}
+
+// ---------------------------------------------------------------------------
+// Git Core & Security: ~/.config/git/config + ~/.config/git/ignore.
+//
+// The parser is a tolerant ini-style reader (sections, subsections, repeated
+// keys). Signing-key VALUES are never served — only whether one is set — and
+// the bundled fallback carries synthetic identity placeholders.
+// ---------------------------------------------------------------------------
+
+export interface GitConfigSection {
+  section: string;
+  /** Ordered [key, values] pairs; repeated keys accumulate values. */
+  entries: Array<[string, string[]]>;
+}
+
+export function parseGitConfig(content: string): GitConfigSection[] {
+  const sections: GitConfigSection[] = [];
+  let current: GitConfigSection | null = null;
+  for (const raw of content.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#") || line.startsWith(";")) continue;
+    const sec = line.match(/^\[([^\]"\s]+)(?:\s+"([^"]+)")?\]$/);
+    if (sec) {
+      current = { section: sec[2] ? `${sec[1]} "${sec[2]}"` : sec[1], entries: [] };
+      sections.push(current);
+      continue;
+    }
+    const kv = line.match(/^([A-Za-z0-9-]+)\s*=\s*(.*)$/) ?? line.match(/^([A-Za-z0-9-]+)$/);
+    if (kv && current) {
+      const value = (kv[2] ?? "true").trim();
+      const existing = current.entries.find(([k]) => k === kv[1]);
+      if (existing) existing[1].push(value);
+      else current.entries.push([kv[1], [value]]);
+    }
+  }
+  return sections;
+}
+
+/** Look up a section's entries by bare section name (ignores subsections). */
+export function gitSectionEntries(sections: GitConfigSection[], name: string): Array<[string, string[]]> {
+  return sections.find((s) => s.section === name)?.entries ?? [];
+}
+
+/** First value of `key` in `section`, with trailing inline comments stripped. */
+export function gitValue(
+  sections: GitConfigSection[],
+  section: string,
+  key: string,
+): string | null {
+  for (const [k, values] of gitSectionEntries(sections, section)) {
+    if (k === key && values.length > 0) return values[0].split("#")[0].trim() || null;
+  }
+  return null;
+}
+
+export interface GitSigningSummary {
+  commitGpgsign: string | null;
+  tagGpgsign: string | null;
+  gpgFormat: string | null;
+  gpgProgram: string | null;
+  signingKeySet: boolean;
+}
+
+export function summarizeGitSigning(sections: GitConfigSection[]): GitSigningSummary {
+  return {
+    commitGpgsign: gitValue(sections, "commit", "gpgsign"),
+    tagGpgsign: gitValue(sections, "tag", "gpgsign") ?? gitValue(sections, "tag", "gpgSign"),
+    gpgFormat: gitValue(sections, "gpg", "format"),
+    gpgProgram: gitValue(sections, "gpg", "program"),
+    signingKeySet: gitValue(sections, "user", "signingkey") !== null,
+  };
+}
+
+/** Marker dividing the fallback gitconfig snapshot from its ignore snapshot. */
+export const GITCONFIG_IGNORE_MARKER =
+  "# --- global ignores snapshot (live source: ~/.config/git/ignore) ---";
+
+/** Fallback file layout: gitconfig text, then `#i <pattern>` lines past the marker. */
+export function splitGitconfigFallback(content: string): { configText: string; ignorePatterns: string[] } {
+  const idx = content.indexOf(GITCONFIG_IGNORE_MARKER);
+  if (idx === -1) return { configText: content, ignorePatterns: [] };
+  const ignorePatterns = content
+    .slice(idx + GITCONFIG_IGNORE_MARKER.length)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("#i "))
+    .map((l) => l.slice(3).trim())
+    .filter(Boolean);
+  return { configText: content.slice(0, idx), ignorePatterns };
+}
+
+/** ~/.config/git/ignore → patterns (comments/blank skipped). Null when unreadable. */
+export function readGitIgnore(livePath: string): string[] | null {
+  try {
+    if (!existsSync(livePath)) return null;
+    return readFileSync(livePath, "utf8")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"));
+  } catch {
+    return null;
+  }
+}
+
+export interface GitCorePayload {
+  source: "live" | "fallback";
+  ignoresSource: "live" | "fallback";
+  user: { name: string | null; email: string | null };
+  signing: GitSigningSummary;
+  aliases: Array<[string, string]>;
+  /** Safety-relevant sections rendered verbatim (pull/push/diff/commit/…). */
+  policies: Array<{ section: string; entries: Array<[string, string]> }>;
+  credentialHelpers: string[];
+  safeDirs: string[];
+  ignores: string[];
+  rawConfig: string;
+}
+
+/** Sections surfaced as safety policy (identity/alias/credential/safe shown separately). */
+const GIT_POLICY_SECTIONS = new Set([
+  "init",
+  "pull",
+  "push",
+  "diff",
+  "commit",
+  "column",
+  "branch",
+  "tag",
+  "rerere",
+  "core",
+  "status",
+  "advice",
+  "interactive",
+  "delta",
+  "merge",
+]);
+
+function gitCoreCard(): GitCorePayload {
+  const src = manifestSource("git-core", "gitconfig");
+  const cfg = readConfig(resolveLivePath(src.livePath), src.fallbackFile);
+
+  let configText: string;
+  let ignores: string[];
+  let ignoresSource: "live" | "fallback";
+  if (cfg.source === "live") {
+    configText = cfg.content;
+    const liveIgnores = isWorkerd() ? null : readGitIgnore(join(userHome(), ".config", "git", "ignore"));
+    if (liveIgnores) {
+      ignores = liveIgnores;
+      ignoresSource = "live";
+    } else {
+      ignores = splitGitconfigFallback(readConfig([], src.fallbackFile).content).ignorePatterns;
+      ignoresSource = "fallback";
+    }
+  } else {
+    const split = splitGitconfigFallback(cfg.content);
+    configText = split.configText;
+    ignores = split.ignorePatterns;
+    ignoresSource = "fallback";
+  }
+
+  const sections = parseGitConfig(configText);
+  const aliases: Array<[string, string]> = gitSectionEntries(sections, "alias").map(
+    ([k, v]) => [k, v.join(", ")],
+  );
+  const credentialHelpers = sections
+    .filter((s) => s.section === "credential" || s.section.startsWith('credential "'))
+    .flatMap((s) => s.entries)
+    .filter(([k]) => k === "helper")
+    .flatMap(([, v]) => v)
+    .filter((v) => v.length > 0);
+  const safeDirs = sections
+    .filter((s) => s.section === "safe")
+    .flatMap((s) => s.entries)
+    .filter(([k]) => k === "directory")
+    .flatMap(([, v]) => v);
+  const policies = sections
+    .filter((s) => GIT_POLICY_SECTIONS.has(s.section))
+    .map((s) => ({ section: s.section, entries: s.entries.map(([k, v]): [string, string] => [k, v.join(", ")]) }));
+
+  return {
+    source: cfg.source,
+    ignoresSource,
+    user: {
+      name: gitValue(sections, "user", "name"),
+      email: gitValue(sections, "user", "email"),
+    },
+    signing: summarizeGitSigning(sections),
+    aliases,
+    policies,
+    credentialHelpers,
+    safeDirs,
+    ignores,
+    rawConfig: configText,
+  };
+}
+
 const CARDS: Record<string, () => unknown> = {
   ghostty: ghosttyCard,
   mise: miseCard,
@@ -469,6 +885,8 @@ const CARDS: Record<string, () => unknown> = {
   ripgrep: ripgrepCard,
   lazygit: lazygitCard,
   herdr: herdrCard,
+  "agent-skills": agentSkillsCard,
+  "git-core": gitCoreCard,
 };
 
 export type CardKey = keyof typeof CARDS;

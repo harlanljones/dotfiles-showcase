@@ -42,6 +42,8 @@ const { default: RecolorCard } = await import("../src/components/explorer/Recolo
 const { default: StarshipCard } = await import("../src/components/explorer/StarshipCard");
 const { default: DotsCliCard } = await import("../src/components/explorer/DotsCliCard");
 const { default: HerdrCard } = await import("../src/components/explorer/HerdrCard");
+const { default: AgentSkillsCard } = await import("../src/components/explorer/AgentSkillsCard");
+const { default: GitCoreCard } = await import("../src/components/explorer/GitCoreCard");
 
 const COMPONENTS: Record<string, React.ComponentType> = {
   dots: DotsCliCard,
@@ -53,6 +55,8 @@ const COMPONENTS: Record<string, React.ComponentType> = {
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
   herdr: HerdrCard,
+  "agent-skills": AgentSkillsCard,
+  "git-core": GitCoreCard,
   "git-safety": GitSafetyCard,
   fuzzy: FuzzyToolsCard,
   recolor: RecolorCard,

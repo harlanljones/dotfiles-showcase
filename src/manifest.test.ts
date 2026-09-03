@@ -32,6 +32,8 @@ describe("manifest schema (D4)", () => {
       "neovim",
       "ripgrep",
       "herdr",
+      "agent-skills",
+      "git-core",
     ]);
   });
 

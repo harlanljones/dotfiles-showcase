@@ -1,0 +1,56 @@
+# Fallback snapshot: gitconfig.
+# Live source: ~/.config/git/config
+# Sanitization: [user] identity is synthetic (Example User / user@example.com);
+# no signing keys, emails, or hostnames are bundled. Structure mirrors the live
+# config so the Git Core card renders faithfully when the live file is absent.
+# NOTE: the live config declares no commit/tag signing and no safe.directory
+# entries — the card reports that absence honestly instead of inventing it.
+
+# See https://git-scm.com/docs/git-config
+
+[alias]
+	co = checkout
+	br = branch
+	ci = commit
+	st = status
+[init]
+	defaultBranch = master
+[pull]
+	rebase = true 			 # Rebase (instead of merge) on pull
+[push]
+	autoSetupRemote = true   # Automatically set upstream branch on push
+[diff]
+	algorithm = histogram    # Clearer diffs on moved/edited lines
+	colorMoved = plain       # Highlight moved blocks in diffs
+	mnemonicPrefix = true    # More intuitive refs in diff output
+[commit]
+	verbose = true           # Include diff comment in commit message template
+[column]
+	ui = auto 			     # Output in columns when possible
+[branch]
+	sort = -committerdate    # Sort branches by most recent commit first
+[tag]
+	sort = -version:refname  # Sort version numbers as you would expect
+[rerere]
+	enabled = true           # Record and reuse conflict resolutions
+	autoupdate = true        # Apply stored conflict resolutions automatically
+[user]
+	name = Example User
+	email = user@example.com
+[credential "https://github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/usr/bin/gh auth git-credential
+[core]
+	fsmonitor = true
+	untrackedCache = true
+[status]
+	showUntrackedFiles = normal
+[advice]
+	statusUoption = false
+
+# --- global ignores snapshot (live source: ~/.config/git/ignore) ---
+#i **/.claude/settings.local.json
+#i .DS_Store
