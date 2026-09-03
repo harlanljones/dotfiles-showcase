@@ -27,6 +27,7 @@ const LOADERS: Record<string, () => Promise<{ default: React.ComponentType }>> =
   dots: () => import("./explorer/DotsCliCard"),
   neovim: () => import("./explorer/NeovimCard"),
   ripgrep: () => import("./explorer/RipgrepCard"),
+  herdr: () => import("./explorer/HerdrCard"),
 };
 
 const CARDS = {} as Record<CardId, React.ComponentType>;

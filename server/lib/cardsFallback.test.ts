@@ -97,6 +97,21 @@ describe("fallback coverage: builders render without any live config", () => {
     expect(data.commands).toHaveLength(10);
     expect(data.warnings[0]).toContain("Live dots source was incomplete");
   });
+
+  it("herdr fallback serves config summary and plugins list", () => {
+    const data = buildCard("herdr") as {
+      configSource: string;
+      pluginsSource: string;
+      config: { prefix: string; resumeAgents: boolean; supportedAgents: string[] };
+      plugins: unknown[];
+    };
+    expect(data.configSource).toBe("fallback");
+    expect(data.pluginsSource).toBe("fallback");
+    expect(data.config.prefix).toBe("ctrl+space");
+    expect(data.config.resumeAgents).toBe(true);
+    expect(data.config.supportedAgents.length).toBeGreaterThan(0);
+    expect(data.plugins.length).toBeGreaterThan(0);
+  });
 });
 
 describe("fallback coverage: HTTP surface", () => {

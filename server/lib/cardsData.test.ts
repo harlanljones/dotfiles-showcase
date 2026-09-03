@@ -8,6 +8,8 @@ import {
   parseLazyvimExtras,
   parseListFile,
   parseMiseTools,
+  parseHerdrConfig,
+  parseHerdrPlugins,
 } from "./cardsData";
 
 describe("parseMiseTools", () => {
@@ -152,6 +154,93 @@ describe("parseLazyvimExtras / parseLazyLock", () => {
   });
 });
 
+describe("parseHerdrPlugins", () => {
+  it("extracts plugin metadata, actions, and source repo", () => {
+    const json = JSON.stringify([
+      {
+        plugin_id: "test.plugin",
+        name: "Test Plugin",
+        version: "1.0.0",
+        min_herdr_version: "0.8.0",
+        description: "A test plugin for herdr",
+        enabled: true,
+        platforms: ["linux"],
+        actions: [{ id: "act1", title: "Action One", description: "Desc" }],
+        source: { kind: "github", owner: "test", repo: "plugin" },
+      },
+    ]);
+    const plugins = parseHerdrPlugins(json);
+    expect(plugins).toHaveLength(1);
+    expect(plugins[0].id).toBe("test.plugin");
+    expect(plugins[0].name).toBe("Test Plugin");
+    expect(plugins[0].version).toBe("1.0.0");
+    expect(plugins[0].minHerdrVersion).toBe("0.8.0");
+    expect(plugins[0].enabled).toBe(true);
+    expect(plugins[0].actions).toEqual([{ id: "act1", title: "Action One", description: "Desc" }]);
+    expect(plugins[0].sourceRepo).toBe("test/plugin");
+  });
+
+  it("handles empty or invalid JSON gracefully", () => {
+    expect(parseHerdrPlugins("not valid json")).toEqual([]);
+    expect(parseHerdrPlugins("{}")).toEqual([]);
+  });
+});
+
+describe("parseHerdrConfig", () => {
+  it("extracts prefix, theme, agent settings, key commands, and supported agents", () => {
+    const toml = `
+prefix = "ctrl+space"
+
+[theme]
+name = "terminal"
+
+[ui]
+accent = "blue"
+agent_panel_sort = "priority"
+
+[session]
+resume_agents_on_restore = true
+
+[worktrees]
+directory = "~/.herdr/worktrees"
+
+[keys]
+previous_agent = "alt+shift+up"
+next_agent = "alt+shift+down"
+
+[[keys.command]]
+key = "prefix+l"
+type = "plugin_action"
+command = "harlan.corral.toggle"
+description = "Toggle Linear panel"
+
+[ui.sidebar.agents.rows_by_agent]
+claude = [["agent"]]
+codex = [["agent"]]
+`;
+    const cfg = parseHerdrConfig(toml);
+    expect(cfg.prefix).toBe("ctrl+space");
+    expect(cfg.theme).toBe("terminal");
+    expect(cfg.accent).toBe("blue");
+    expect(cfg.agentPanelSort).toBe("priority");
+    expect(cfg.resumeAgents).toBe(true);
+    expect(cfg.worktreesDir).toBe("~/.herdr/worktrees");
+    expect(cfg.supportedAgents).toEqual(["claude", "codex"]);
+    expect(cfg.agentKeybinds).toEqual([
+      { action: "previous_agent", key: "alt+shift+up" },
+      { action: "next_agent", key: "alt+shift+down" },
+    ]);
+    expect(cfg.keyCommands).toEqual([
+      {
+        key: "prefix+l",
+        type: "plugin_action",
+        command: "harlan.corral.toggle",
+        description: "Toggle Linear panel",
+      },
+    ]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Manifest-driven builders (D4 wiring)
 // ---------------------------------------------------------------------------
@@ -196,6 +285,7 @@ describe("cards: manifest-driven builders", () => {
       neovim: ["extrasSource", "lockSource", "extras", "plugins"],
       ripgrep: ["source", "flags"],
       lazygit: ["source", "content"],
+      herdr: ["configSource", "pluginsSource", "config", "plugins", "rawConfig", "rawPlugins"],
     };
     for (const [key, fields] of Object.entries(shapes)) {
       const data = buildCard(key) as Record<string, unknown>;

@@ -42,10 +42,10 @@ describe("Explorer catalogue: primary rooms", () => {
 });
 
 describe("Explorer catalogue: annex receipts", () => {
-  it("declares exactly seven annex demos in the current order", () => {
+  it("declares exactly eight annex demos in the current order", () => {
     const annex = annexInOrder();
     expect(annex.map((a) => a.id)).toEqual([
-      "git-safety", "lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep",
+      "git-safety", "lazygit", "fuzzy", "mise", "packages", "neovim", "ripgrep", "herdr",
     ]);
   });
 

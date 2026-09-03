@@ -41,6 +41,7 @@ const { default: GitSafetyCard } = await import("../src/components/explorer/GitS
 const { default: RecolorCard } = await import("../src/components/explorer/RecolorCard");
 const { default: StarshipCard } = await import("../src/components/explorer/StarshipCard");
 const { default: DotsCliCard } = await import("../src/components/explorer/DotsCliCard");
+const { default: HerdrCard } = await import("../src/components/explorer/HerdrCard");
 
 const COMPONENTS: Record<string, React.ComponentType> = {
   dots: DotsCliCard,
@@ -51,6 +52,7 @@ const COMPONENTS: Record<string, React.ComponentType> = {
   hyprland: HyprlandCard,
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
+  herdr: HerdrCard,
   "git-safety": GitSafetyCard,
   fuzzy: FuzzyToolsCard,
   recolor: RecolorCard,

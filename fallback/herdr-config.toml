@@ -1,0 +1,193 @@
+# Fallback snapshot: herdr-config.toml.
+# Live source: ~/.config/herdr/config.toml
+
+onboarding = false
+
+# Mirrors the Omarchy tmux config in config/tmux/tmux.conf
+# tmux session -> herdr workspace, tmux window -> herdr tab, tmux pane -> herdr pane
+
+[theme]
+# tmux ran on the terminal's own palette (bg=default, fg=default, ANSI blue accents)
+name = "terminal"
+
+[theme.custom]
+# The active tab is drawn as panel_bg text on an accent background, so panel_bg
+# has to be dark for it to read - same colors as status-left's "#[fg=black,bg=blue]"
+panel_bg = "black"
+
+[terminal]
+# Matches -c "#{pane_current_path}" on every split, window, and session
+new_cwd = "follow"
+
+[keys]
+prefix = "ctrl+space"
+
+# Config and help
+reload_config = "prefix+q"
+help = "prefix+?"
+detach = "prefix+d"
+
+# Copy mode
+copy_mode = "prefix+["
+
+# Panes
+split_horizontal = ["prefix+h", "alt+enter"]
+split_vertical = ["prefix+v", "alt+shift+enter"]
+close_pane = ["prefix+x", "alt+esc"]
+zoom = "prefix+z"
+last_pane = "prefix+;"
+
+focus_pane_left = "ctrl+alt+left"
+focus_pane_down = "ctrl+alt+down"
+focus_pane_up = "ctrl+alt+up"
+focus_pane_right = "ctrl+alt+right"
+
+resize_mode = [
+  "prefix+ctrl+left",
+  "prefix+ctrl+down",
+  "prefix+ctrl+up",
+  "prefix+ctrl+right",
+]
+
+# Like resize-pane on C-M-S-arrows
+resize_pane_left = "ctrl+alt+shift+left"
+resize_pane_down = "ctrl+alt+shift+down"
+resize_pane_up = "ctrl+alt+shift+up"
+resize_pane_right = "ctrl+alt+shift+right"
+
+# No tmux equivalent; herdr's default prefix+shift+p is taken by previous session
+rename_pane = "prefix+shift+o"
+
+# Windows -> tabs
+new_tab = "prefix+c"
+rename_tab = "prefix+r"
+close_tab = "prefix+k"
+switch_tab = ["prefix+1..9", "alt+1..9"]
+previous_tab = ["prefix+p", "alt+left"]
+next_tab = ["prefix+n", "alt+right"]
+
+# Like swap-window -t -1/+1 on M-S-Left/Right
+move_tab_previous = "alt+shift+left"
+move_tab_next = "alt+shift+right"
+
+# Agents - no tmux equivalent. This box runs nine agent CLIs; these are the
+# only way to reach a specific agent pane without hunting through the sidebar.
+previous_agent = "alt+shift+up"
+next_agent = "alt+shift+down"
+focus_agent = "alt+shift+1..9"
+
+# Worktrees - new_worktree keeps its prefix+shift+g default. prefix+shift+w is
+# free because rename_workspace moved to prefix+shift+r above.
+open_worktree = "prefix+shift+w"
+remove_worktree = "prefix+shift+backspace"
+
+# Sessions -> workspaces
+new_workspace = "prefix+shift+c"
+rename_workspace = "prefix+shift+r"
+close_workspace = "prefix+shift+k"
+previous_workspace = ["prefix+shift+p", "alt+up"]
+next_workspace = ["prefix+shift+n", "alt+down"]
+
+[[keys.command]]
+key = "prefix+="
+type = "plugin_action"
+command = "ponko2.equalize-panes.equalize"
+description = "Equalize panes"
+
+[ui]
+accent = "blue"
+
+# tmux drew single-line dividers between adjacent panes and no outer frame
+pane_gaps = false
+pane_outer_borders = false
+
+# tmux had no scrollbar column beside its panes
+pane_scrollbars = false
+
+# kill-window and kill-session never asked
+confirm_close = false
+
+# automatic-rename gave windows a name without prompting
+prompt_new_tab_name = false
+
+# set -g mouse on
+mouse_capture = true
+
+# status-right had the zoom flag followed by #h
+tab_bar_right = [{ type = "zoom" }, { type = "hostname" }]
+
+# set -g set-titles on / set -g set-titles-string '#h:#W', where tmux's #W was
+# the window name - herdr's tab. Default is "{hostname}: {workspace}".
+window_title = "{hostname}: {tab}"
+
+# Agent-oriented additions with no tmux ancestry
+agent_panel_sort = "priority"            # attention queue: needs-input agents first
+status_indicators = "symbols"            # distinct glyphs, not just color - the
+                                         # "terminal" theme inherits whatever Omarchy
+                                         # palette is live, some of them low-contrast
+show_agent_labels_on_pane_borders = true # borders are on and tmux drew pane titles there
+
+# herdr captures the mouse, so ghostty's mouse-scroll-multiplier = 0.95 never
+# applies inside a pane. 2 lines/notch is the closest equivalent.
+mouse_scroll_lines = 2
+
+[ui.toast]
+# Agent finished / needs input goes to the Hyprland notification daemon, so it
+# is visible when herdr is not the focused window.
+delivery = "system"
+delay_seconds = 2   # don't fire on sub-2s agent turns
+
+# Detailed statusline-level info for all agent harnesses/providers on machine
+[ui.sidebar.agents]
+rows = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+
+[ui.sidebar.agents.rows_by_agent]
+claude = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+codex = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+cursor = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+gemini = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+agy = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+pi = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+omp = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+grok = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+opencode = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+cline = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+copilot = [["state_icon", "workspace", "tab"], ["terminal_title_stripped"], ["agent"]]
+
+# Spaces sidebar: display git branch and status (useful workspace info not included in agents)
+[ui.sidebar.spaces]
+rows = [["state_icon", "workspace"], ["branch", "git_status"]]
+
+[server]
+# Layout size while no client is attached. Default 120x40 is far short of a
+# fullscreen ghostty on the 2048x1152 logical displays (JetBrainsMono @9,
+# 14px padding -> roughly 220x55).
+headless_cols = 200
+headless_rows = 50
+
+[session]
+# Agent panes come back as live conversations after a server restart
+resume_agents_on_restore = true
+
+[worktrees]
+directory = "~/.herdr/worktrees"
+
+[update]
+# Pinned: <user>.corral declares min_herdr_version 0.8.0
+channel = "stable"
+
+[advanced]
+# 10 MB default truncates long agent transcripts
+scrollback_limit_bytes = 50000000
+
+[experimental]
+kitty_graphics = true
+# Pane screen history survives a restart; pairs with resume_agents_on_restore
+pane_history = true
+
+# Corral lives in ~/dev/herdr-corral, which only exists on <host>
+[[keys.command]]
+key = "prefix+l"
+type = "plugin_action"
+command = "<user>.corral.toggle"
+description = "Toggle the Linear panel"

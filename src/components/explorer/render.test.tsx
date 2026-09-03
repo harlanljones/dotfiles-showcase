@@ -31,6 +31,7 @@ const { default: GitSafetyCard } = await import("./GitSafetyCard");
 const { default: RecolorCard } = await import("./RecolorCard");
 const { default: StarshipCard } = await import("./StarshipCard");
 const { default: DotsCliCard } = await import("./DotsCliCard");
+const { default: HerdrCard } = await import("./HerdrCard");
 
 const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?: () => void }>> = {
   dots: DotsCliCard,
@@ -41,6 +42,7 @@ const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?
   hyprland: HyprlandCard,
   neovim: NeovimCard,
   ripgrep: RipgrepCard,
+  herdr: HerdrCard,
 };
 
 /** Distinct provenance values declared by a payload's top-level source fields. */

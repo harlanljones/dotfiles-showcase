@@ -1,0 +1,249 @@
+[
+  {
+    "plugin_id": "<user>.corral",
+    "name": "Corral",
+    "version": "0.1.0",
+    "min_herdr_version": "0.8.0",
+    "description": "Dispatch Linear issues to agent panes and sync status back to Linear.",
+    "manifest_path": "/home/<user>/dev/herdr-corral/herdr-plugin.toml",
+    "plugin_root": "/home/<user>/dev/herdr-corral",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos"
+    ],
+    "build": [
+      {
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--locked"
+        ]
+      }
+    ],
+    "startup": [
+      {
+        "command": [
+          "./target/release/corral",
+          "reconcile"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "install-shim",
+        "title": "Install corral shim",
+        "description": "Symlink ~/.local/bin/corral so agents can bind themselves",
+        "command": [
+          "./target/release/corral",
+          "install-shim"
+        ]
+      },
+      {
+        "id": "pause",
+        "title": "Pause Linear write-back",
+        "command": [
+          "./target/release/corral",
+          "pause"
+        ]
+      },
+      {
+        "id": "toggle",
+        "title": "Toggle Linear panel",
+        "description": "Open or close the corral panel",
+        "contexts": [
+          "workspace",
+          "tab"
+        ],
+        "command": [
+          "./target/release/corral",
+          "open"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "on": "pane.agent_detected",
+        "command": [
+          "./target/release/corral",
+          "event",
+          "pane.agent_detected"
+        ]
+      },
+      {
+        "on": "pane.agent_status_changed",
+        "command": [
+          "./target/release/corral",
+          "event",
+          "pane.agent_status_changed"
+        ]
+      },
+      {
+        "on": "pane.closed",
+        "command": [
+          "./target/release/corral",
+          "event",
+          "pane.closed"
+        ]
+      },
+      {
+        "on": "pane.exited",
+        "command": [
+          "./target/release/corral",
+          "event",
+          "pane.exited"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "panel",
+        "title": "Linear",
+        "placement": "split",
+        "command": [
+          "./target/release/corral",
+          "panel"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "local"
+    }
+  },
+  {
+    "plugin_id": "ponko2.equalize-panes",
+    "name": "Equalize Panes",
+    "version": "0.2.1",
+    "min_herdr_version": "0.8.2",
+    "description": "Keep panes the same size as the layout changes",
+    "manifest_path": "/home/<user>/.config/herdr/plugins/github/ponko2.equalize-panes-2b6e52023561/herdr-plugin.toml",
+    "plugin_root": "/home/<user>/.config/herdr/plugins/github/ponko2.equalize-panes-2b6e52023561",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos"
+    ],
+    "build": [
+      {
+        "command": [
+          "./install.sh"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "equalize",
+        "title": "Equalize panes",
+        "description": "Make every pane in the focused tab the same size",
+        "contexts": [
+          "tab"
+        ],
+        "command": [
+          "./bin/equalize-panes"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "on": "pane.closed",
+        "command": [
+          "./bin/equalize-panes"
+        ]
+      },
+      {
+        "on": "pane.created",
+        "command": [
+          "./bin/equalize-panes"
+        ]
+      },
+      {
+        "on": "pane.exited",
+        "command": [
+          "./bin/equalize-panes"
+        ]
+      },
+      {
+        "on": "pane.moved",
+        "command": [
+          "./bin/equalize-panes"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "ponko2",
+      "repo": "herdr-equalize-panes",
+      "resolved_commit": "9aacbe8e53358abff685096d6afdb1315fd7f3de",
+      "managed_path": "/home/<user>/.config/herdr/plugins/github/ponko2.equalize-panes-2b6e52023561",
+      "installed_unix_ms": 1787864990982
+    }
+  },
+  {
+    "plugin_id": "shadowfax.ferry",
+    "name": "Herdr Ferry",
+    "version": "0.2.0",
+    "min_herdr_version": "0.8.0",
+    "description": "Move live panes and tabs or merge workspaces from a native popup.",
+    "manifest_path": "/home/<user>/.config/herdr/plugins/github/shadowfax.ferry-00855cba5350/herdr-plugin.toml",
+    "plugin_root": "/home/<user>/.config/herdr/plugins/github/shadowfax.ferry-00855cba5350",
+    "enabled": false,
+    "platforms": [
+      "macos"
+    ],
+    "build": [
+      {
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--locked"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "install-keybindings",
+        "title": "Install Ferry keybinding",
+        "description": "Bind prefix+m to open Ferry.",
+        "command": [
+          "./target/release/herdr-ferry",
+          "install-keybindings"
+        ]
+      },
+      {
+        "id": "open",
+        "title": "Open Ferry",
+        "description": "Move panes or tabs, or merge one workspace into another.",
+        "contexts": [
+          "pane"
+        ],
+        "command": [
+          "./target/release/herdr-ferry",
+          "open"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "picker",
+        "title": "Ferry",
+        "placement": "popup",
+        "width": 76,
+        "height": 24,
+        "command": [
+          "./target/release/herdr-ferry",
+          "picker"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "shadowfax92",
+      "repo": "herdr-ferry",
+      "resolved_commit": "324a137334f8843b5a0eb28ffca330d282776382",
+      "managed_path": "/home/<user>/.config/herdr/plugins/github/shadowfax.ferry-00855cba5350",
+      "installed_unix_ms": 1787275296859
+    }
+  }
+]

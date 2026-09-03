@@ -31,6 +31,7 @@ describe("manifest schema (D4)", () => {
       "dots",
       "neovim",
       "ripgrep",
+      "herdr",
     ]);
   });
 

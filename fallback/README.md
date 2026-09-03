@@ -32,6 +32,8 @@ the authoritative per-file content strategy; it resolves roadmap decision **D2**
 | `dots` | FULL-COPY | `~/.local/bin/dots` | complete Bash wrapper copied as readable source; the showcase parses it but never executes it |
 | `ghostty-config` | TRIMMED-SAMPLE | `~/.config/ghostty/config` | comments dropped, all effective settings kept (font, window, cursor, shell-integration, keybinds, scroll, async-backend) |
 | `ghostty-theme.conf` | TRIMMED-SAMPLE | `~/.local/state/omarchy/current/theme/ghostty.conf` | generated omarchy state: background/foreground/palette lines only; refresh after theme switch |
+| `herdr-config.toml` | FULL-COPY | `~/.config/herdr/config.toml` | agent orchestration, keybindings, workspaces, and UI settings |
+| `herdr-plugins.json` | FULL-COPY (byte-identical) | `~/.config/herdr/plugins.json` | JSON: no header possible; installed Herdr plugins manifest |
 | `hypr-monitors.lua` | FULL-COPY | `~/.config/hypr/monitors.lua` | header replaces the two wiki comment lines; rest verbatim |
 | `lazygit.yml` | FULL-COPY | `~/.config/lazygit/config.yml` | verbatim modulo provenance header (ollama custom command) |
 | `lazy-lock.json` | FULL-COPY (byte-identical) | `~/.config/nvim/lazy-lock.json` | JSON: no header possible; public plugin pins, complete inventory |

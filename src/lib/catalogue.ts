@@ -44,6 +44,7 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   { id: "packages", placement: "annex", route: "/annex#packages", word: "packages", lazy: true },
   { id: "neovim", placement: "annex", route: "/annex#neovim", word: "neovim", lazy: true },
   { id: "ripgrep", placement: "annex", route: "/annex#ripgrep", word: "ripgrep", lazy: true },
+  { id: "herdr", placement: "annex", route: "/annex#herdr", word: "herdr", lazy: true },
 ] as const satisfies readonly CatalogueEntry[];
 
 export type RoomId = "starship" | "ghostty" | "hyprland" | "dots";

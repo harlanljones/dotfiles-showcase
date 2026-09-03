@@ -17,7 +17,8 @@ export type CardId =
   | "hyprland"
   | "dots"
   | "neovim"
-  | "ripgrep";
+  | "ripgrep"
+  | "herdr";
 
 export type CardKind = "live" | "static" | "interactive" | "simulated";
 
@@ -27,6 +28,8 @@ export const FALLBACK_FILES = [
   "dots",
   "ghostty-config",
   "ghostty-theme.conf",
+  "herdr-config.toml",
+  "herdr-plugins.json",
   "hypr-monitors.lua",
   "lazygit.yml",
   "lazy-lock.json",
@@ -155,6 +158,16 @@ export const MANIFEST: ManifestEntry[] = [
     blurb: "Flags loaded via RIPGREP_CONFIG_PATH on every search.",
     kind: "live",
     sources: [{ livePath: "~/.config/ripgrep/rc", fallbackFile: "ripgrep-rc" }],
+  },
+  {
+    id: "herdr",
+    title: "Herdr Agent Orchestration",
+    blurb: "Multi-agent terminal workspace manager — keys, attention queue, and installed plugins.",
+    kind: "live",
+    sources: [
+      { livePath: "~/.config/herdr/config.toml", fallbackFile: "herdr-config.toml" },
+      { livePath: "~/.config/herdr/plugins.json", fallbackFile: "herdr-plugins.json" },
+    ],
   },
 ];
 

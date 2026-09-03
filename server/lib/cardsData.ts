@@ -290,6 +290,175 @@ function lazygitCard() {
   return { source: cfg.source, content: cfg.content };
 }
 
+export interface HerdrPluginAction {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+export interface HerdrPlugin {
+  id: string;
+  name: string;
+  version: string;
+  minHerdrVersion?: string;
+  description: string;
+  enabled: boolean;
+  platforms: string[];
+  actions: HerdrPluginAction[];
+  sourceKind: string;
+  sourceRepo?: string;
+}
+
+export interface HerdrKeyCommand {
+  key: string;
+  type: string;
+  command: string;
+  description: string;
+}
+
+export interface HerdrConfigSummary {
+  prefix: string;
+  theme: string;
+  accent: string;
+  agentPanelSort: string;
+  resumeAgents: boolean;
+  worktreesDir: string;
+  supportedAgents: string[];
+  keyCommands: HerdrKeyCommand[];
+  agentKeybinds: Array<{ action: string; key: string }>;
+}
+
+export function parseHerdrPlugins(json: string): HerdrPlugin[] {
+  try {
+    const raw = JSON.parse(json) as Array<Record<string, unknown>>;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((p) => {
+      const src = p.source && typeof p.source === "object" ? (p.source as Record<string, unknown>) : {};
+      const actionsRaw = Array.isArray(p.actions) ? p.actions : [];
+      const actions: HerdrPluginAction[] = actionsRaw.map((a: Record<string, unknown>) => ({
+        id: String(a.id ?? ""),
+        title: String(a.title ?? a.id ?? ""),
+        description: a.description ? String(a.description) : undefined,
+      }));
+      return {
+        id: String(p.plugin_id ?? ""),
+        name: String(p.name ?? p.plugin_id ?? "Unnamed Plugin"),
+        version: String(p.version ?? ""),
+        minHerdrVersion: p.min_herdr_version ? String(p.min_herdr_version) : undefined,
+        description: String(p.description ?? ""),
+        enabled: Boolean(p.enabled),
+        platforms: Array.isArray(p.platforms) ? (p.platforms as string[]) : [],
+        actions,
+        sourceKind: String(src.kind ?? "unknown"),
+        sourceRepo: src.owner && src.repo ? `${src.owner}/${src.repo}` : undefined,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function parseHerdrConfig(content: string): HerdrConfigSummary {
+  let section = "";
+  let prefix = "";
+  let theme = "";
+  let accent = "";
+  let agentPanelSort = "";
+  let resumeAgents = false;
+  let worktreesDir = "";
+  const supportedAgents: string[] = [];
+  const keyCommands: HerdrKeyCommand[] = [];
+  const agentKeybinds: Array<{ action: string; key: string }> = [];
+
+  let currentCmd: Record<string, string> | null = null;
+
+  const pushCmd = () => {
+    if (currentCmd && currentCmd.key) {
+      keyCommands.push({
+        key: currentCmd.key,
+        type: currentCmd.type ?? "",
+        command: currentCmd.command ?? "",
+        description: currentCmd.description ?? "",
+      });
+    }
+    currentCmd = null;
+  };
+
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    if (trimmed === "[[keys.command]]") {
+      pushCmd();
+      currentCmd = {};
+      section = "keys.command";
+      continue;
+    }
+
+    const secMatch = trimmed.match(/^\[([^\]]+)\]$/);
+    if (secMatch) {
+      pushCmd();
+      section = secMatch[1].trim();
+      continue;
+    }
+
+    const kvMatch = trimmed.match(/^([A-Za-z0-9_]+)\s*=\s*(.+)$/);
+    if (!kvMatch) continue;
+    const key = kvMatch[1];
+    const val = kvMatch[2].split("#")[0].trim().replace(/^["']|["']$/g, "");
+
+    if (section === "keys.command" && currentCmd) {
+      currentCmd[key] = val;
+    } else if (section === "keys" || section === "") {
+      if (key === "prefix") prefix = val;
+      if (key === "previous_agent" || key === "next_agent" || key === "focus_agent") {
+        agentKeybinds.push({ action: key, key: val });
+      }
+    } else if (section === "theme" && key === "name") {
+      theme = val;
+    } else if (section === "ui") {
+      if (key === "accent") accent = val;
+      if (key === "agent_panel_sort") agentPanelSort = val;
+    } else if (section === "session" && key === "resume_agents_on_restore") {
+      resumeAgents = val === "true";
+    } else if (section === "worktrees" && key === "directory") {
+      worktreesDir = val;
+    } else if (section === "ui.sidebar.agents.rows_by_agent") {
+      supportedAgents.push(key);
+    }
+  }
+
+  pushCmd();
+
+  return {
+    prefix,
+    theme,
+    accent,
+    agentPanelSort,
+    resumeAgents,
+    worktreesDir,
+    supportedAgents,
+    keyCommands,
+    agentKeybinds,
+  };
+}
+
+function herdrCard() {
+  const cfgSrc = manifestSource("herdr", "herdr-config.toml");
+  const pluginsSrc = manifestSource("herdr", "herdr-plugins.json");
+  const cfg = readConfig(resolveLivePath(cfgSrc.livePath), cfgSrc.fallbackFile);
+  const plugins = readConfig(resolveLivePath(pluginsSrc.livePath), pluginsSrc.fallbackFile);
+
+  return {
+    configSource: cfg.source,
+    pluginsSource: plugins.source,
+    config: parseHerdrConfig(cfg.content),
+    plugins: parseHerdrPlugins(plugins.content),
+    rawConfig: cfg.content,
+    rawPlugins: plugins.content,
+  };
+}
+
 const CARDS: Record<string, () => unknown> = {
   ghostty: ghosttyCard,
   mise: miseCard,
@@ -299,6 +468,7 @@ const CARDS: Record<string, () => unknown> = {
   neovim: neovimCard,
   ripgrep: ripgrepCard,
   lazygit: lazygitCard,
+  herdr: herdrCard,
 };
 
 export type CardKey = keyof typeof CARDS;

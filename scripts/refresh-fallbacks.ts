@@ -63,6 +63,7 @@ export interface ScrubIdentity {
 /** Exact host-identifying literals to substitute, with their placeholders. */
 const SCRUB_EXACT: Array<[string, string]> = [
   ["Augustus", "<host>"],
+  ["augustus", "<host>"],
 ];
 
 /**
