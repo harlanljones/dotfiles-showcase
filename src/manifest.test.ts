@@ -25,6 +25,8 @@ describe("manifest schema (D4)", () => {
       "lazygit",
       "fuzzy",
       "ghostty",
+      "ghostty-terminal",
+      "btop",
       "mise",
       "packages",
       "hyprland",
@@ -80,7 +82,9 @@ describe("manifest schema (D4)", () => {
 
 describe("manifest accessors", () => {
   it("looks entries up by id and returns undefined for unknown ids", () => {
-    expect(getManifestEntry("ghostty")?.title).toContain("Ghostty");
+    expect(getManifestEntry("ghostty")?.title).toContain("Palette");
+    expect(getManifestEntry("ghostty-terminal")?.title).toContain("Ghostty");
+    expect(getManifestEntry("btop")?.title).toContain("System Monitor");
     expect(getManifestEntry("nonexistent" as never)).toBeUndefined();
   });
 

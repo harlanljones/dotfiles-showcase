@@ -40,7 +40,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     ]);
   });
 
-  it("renders System category cards in responsive grid: Hyprland, Ghostty, Packages, Dots CLI", async () => {
+  it("renders System category cards in responsive grid: Hyprland, Omarchy Palette, Ghostty Terminal, System Monitor, Packages, Dots CLI", async () => {
     windowRef.happyDOM.setURL("http://localhost/system");
     const root = createRoot(container);
     await act(async () => {
@@ -53,7 +53,7 @@ describe("Explorer: 4 category views & responsive card grid", () => {
     const cardIds = Array.from<any>(container.querySelectorAll("article.showcase-card")).map(
       (el) => el.getAttribute("data-card"),
     );
-    expect(cardIds).toEqual(["hyprland", "ghostty", "packages", "dots"]);
+    expect(cardIds).toEqual(["hyprland", "ghostty", "ghostty-terminal", "btop", "packages", "dots"]);
   });
 
   it("switching to Shell tab renders Shell cards: Starship, Failure Recolor, Fuzzy Tools, ripgrep", async () => {

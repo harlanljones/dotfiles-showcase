@@ -42,11 +42,15 @@ const { default: RecolorCard } = await import("../src/components/explorer/Recolo
 const { default: StarshipCard } = await import("../src/components/explorer/StarshipCard");
 const { default: DotsCliCard } = await import("../src/components/explorer/DotsCliCard");
 const { default: HerdrCard } = await import("../src/components/explorer/HerdrCard");
+const { default: GhosttyTerminalCard } = await import("../src/components/explorer/GhosttyTerminalCard");
+const { default: BtopCard } = await import("../src/components/explorer/BtopCard");
 
 const COMPONENTS: Record<string, React.ComponentType> = {
   dots: DotsCliCard,
   lazygit: LazygitCard,
   ghostty: GhosttyPaletteCard,
+  "ghostty-terminal": GhosttyTerminalCard,
+  btop: BtopCard,
   mise: MiseCard,
   packages: PackagesCard,
   hyprland: HyprlandCard,

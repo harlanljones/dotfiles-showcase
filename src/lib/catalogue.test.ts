@@ -31,9 +31,9 @@ describe("Explorer catalogue: 4 category views", () => {
 });
 
 describe("Explorer catalogue: card migration into categories", () => {
-  it("migrates System cards cleanly: Hyprland, Ghostty, Packages, Dots CLI", () => {
+  it("migrates System cards cleanly: Hyprland, Omarchy Palette, Ghostty Terminal, System Monitor, Packages, Dots CLI", () => {
     const cards = cardsForCategory("system");
-    expect(cards.map((c) => c.id)).toEqual(["hyprland", "ghostty", "packages", "dots"]);
+    expect(cards.map((c) => c.id)).toEqual(["hyprland", "ghostty", "ghostty-terminal", "btop", "packages", "dots"]);
   });
 
   it("migrates Shell cards cleanly: Starship, Failure Recolor, Fuzzy Tools, ripgrep", () => {
@@ -58,7 +58,7 @@ describe("Explorer catalogue: card migration into categories", () => {
 
   it("all other cards are lazy (lazy = true)", () => {
     const lazy = CATALOGUE.filter((c) => c.lazy);
-    expect(lazy.length).toBe(12);
+    expect(lazy.length).toBe(14);
   });
 });
 
