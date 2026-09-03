@@ -3,10 +3,12 @@
 ## Explorer catalogue
 
 The catalogue is the authoritative description of where a showcase demo appears
-in the Explorer and how a visitor reaches it. It distinguishes primary rooms
-from annex receipts while preserving each demo's manifest provenance. New demos
-begin as annex receipts; promotion to a primary room is deliberate.
-An annex receipt has a shareable link that opens that specific demo on arrival.
+in the Explorer and how a visitor reaches it. It assigns every demo to one of
+four category views (System & Display, Shell & Navigation, Editor & Runtimes,
+Git & Agents) while preserving each demo's manifest provenance. A showcase card
+is the catalogue entry's visual unit: collapsed title plus badge plus blurb in
+the category grid, expanding inline to full detail. A card has a shareable link
+that opens that specific demo on arrival.
 
 ## Dots workflow
 
