@@ -74,20 +74,18 @@ jobs:
           bunx wrangler deploy
           echo "deployed=true" >> "$GITHUB_OUTPUT"
 
-      # DEPLOY-10: post-deploy smoke — the DEPLOY-09 manual assertions, codified.
-      # Runs only after a real deploy. Fails the push if the mirror drifts.
+      # DEPLOY-10 / HJ-716: post-deploy smoke — the DEPLOY-09 manual assertions,
+      # codified. Runs only after a real deploy. Fails the push if the mirror
+      # drifts. Route reachability + routing-resolution assertions live in
+      # scripts/smoke.ts (HJ-716) — a bare 200 no longer counts as proof a
+      # route is real; see that file's header and tests/smoke.test.ts for why.
       - name: Post-deploy smoke
         if: steps.deploy.outputs.deployed == 'true'
         run: |
           BASE="https://dotfiles-showcase.harlanljones.workers.dev"
           fail() { echo "::error::$1"; exit 1; }
           sleep 5  # version swap is atomic; small settle delay
-          for p in / /prompt /palette /desk /dots /annex "/prompt?dirty=1&status=1&state=rebase"; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$p")
-            [ "$code" = "200" ] || fail "route $p -> $code (expected 200)"
-          done
-          curl -sf "$BASE/dots" | grep -q '<div id="root"></div>' \
-            || fail "SPA fallback body missing root div"
+          bun run scripts/smoke.ts "$BASE" || fail "post-deploy smoke: route/routing assertions failed"
           curl -sf -X POST "$BASE/api/starship" -H 'Content-Type: application/json' \
             -d '{"branch":"main","dirty":true,"status":1,"shell":"zsh"}' | grep -q '"degraded":true' \
             || fail "degraded:true missing from /api/starship"
