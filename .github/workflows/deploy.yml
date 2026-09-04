@@ -32,6 +32,14 @@ jobs:
       - name: Fallback integrity
         run: bun run fallbacks:check
 
+      # SEARCH-01: config search index drift gate (hard-fail). Regenerates
+      # server/lib/searchIndex.ts from fallback/* + src/manifest.ts in memory
+      # and diffs it against the committed file — a stale index (edited by
+      # hand, or a fallback snapshot changed without regenerating) cannot
+      # reach the mirror. See scripts/generate-search-index.ts.
+      - name: Search index integrity
+        run: bun run search-index:check
+
       - name: Build
         run: bun run build
 
