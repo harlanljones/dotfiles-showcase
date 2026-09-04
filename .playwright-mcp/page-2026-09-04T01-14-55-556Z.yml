@@ -1,0 +1,5 @@
+- button "Wake display" [ref=e4] [cursor=pointer]:
+  - generic [ref=e7]:
+    - generic [ref=e8]: dotfiles showcase
+    - generic [ref=e9]: terminal-native · local-first
+    - generic [ref=e10]: press any key — or click — to wake
