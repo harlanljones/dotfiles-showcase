@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./explorer-expanded-card.css";
 
 export type SourceKind = "live" | "fallback" | "simulated" | "static" | "interactive";
 

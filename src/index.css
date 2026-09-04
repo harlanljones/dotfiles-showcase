@@ -35,7 +35,10 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--glass);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 45% at 50% 52%, rgba(111, 163, 160, 0.055), transparent 70%),
+    var(--glass);
   color: var(--ash);
   font-family: "JetBrainsMono Nerd Font", ui-monospace, monospace;
 }
@@ -194,9 +197,28 @@ html[data-failed="1"] .display {
   cursor: pointer;
   transition: opacity 220ms var(--ease-out);
 }
+.veil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(149, 154, 164, 0.025) 2px 3px
+  );
+}
 .veil[data-gone="true"] {
   pointer-events: none;
   opacity: 0;
+}
+.veil-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  padding: 2rem;
 }
 .block-cursor {
   width: 0.7rem;
@@ -204,6 +226,33 @@ html[data-failed="1"] .display {
   background: var(--phosphor);
   box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
   animation: cursor-blink 1.05s linear infinite;
+}
+.veil-copy {
+  display: grid;
+  justify-items: center;
+}
+.veil-title,
+.veil-subtitle,
+.veil-hint {
+  text-align: center;
+  color: var(--ash-dim);
+}
+.veil-title {
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.veil-subtitle {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+.veil-hint {
+  margin-top: 1.4rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
 }
 @keyframes cursor-blink {
   0%,

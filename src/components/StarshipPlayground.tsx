@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./StarshipPlayground.css";
 import {
   decodePromptState,
   encodePromptState,
@@ -235,7 +236,7 @@ export default function StarshipPlayground({
   }, [failed]);
 
   return (
-    <div className="prompt-stage" data-failed={failed ? "1" : "0"}>
+    <div className="prompt-stage starship-playground" data-failed={failed ? "1" : "0"}>
       <div
         className="terminal-window"
         style={{ background: theme.background, color: theme.foreground }}
@@ -249,7 +250,7 @@ export default function StarshipPlayground({
         </div>
 
         {hasRecolor && (
-          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-ash-dim">
+          <div className="starship-recolor-row">
             <span>
               {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
             </span>
@@ -288,7 +289,7 @@ export default function StarshipPlayground({
       </div>
 
       {error && (
-        <div role="alert" className="border border-fail/35 bg-fail/10 p-3 text-sm text-[#d38290]">
+        <div role="alert" className="starship-notice border border-fail/35 bg-fail/10 p-3 text-sm text-[#d38290]">
           <div className="flex items-start justify-between gap-3">
             <p>{error}</p>
             <span className="shrink-0 text-[10px] tracking-wider text-ash-dim">stale</span>
@@ -299,7 +300,7 @@ export default function StarshipPlayground({
         </div>
       )}
       {degraded && !error && (
-        <p role="status" className="border border-fail/35 bg-fail/10 p-3 text-xs text-[#d38290]">
+        <p role="status" className="starship-notice border border-fail/35 bg-fail/10 p-3 text-xs text-[#d38290]">
           Degraded snapshot — the <code>starship</code> binary is unavailable on this
           deployment, so this preview is a static reconstruction from the bundled
           config with recolor applied. It is not a live render. Run{" "}
@@ -309,8 +310,8 @@ export default function StarshipPlayground({
 
 
       <div className="control-panel">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Scenario presets">
+        <div className="starship-controls-column space-y-3">
+          <div className="starship-presets flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label="Scenario presets">
             {SCENARIOS.map((sc) => (
               <button
                 key={sc.key}
@@ -334,7 +335,7 @@ export default function StarshipPlayground({
             />
           </label>
 
-          <fieldset className="flex flex-wrap gap-3 text-sm">
+          <fieldset className="starship-flags flex flex-wrap gap-3 text-sm">
             <legend className="sr-only">Session flags</legend>
             <Toggle
               label="Dirty"
@@ -378,7 +379,7 @@ export default function StarshipPlayground({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="starship-controls-column space-y-3">
           <label className="block text-sm text-ash-dim">
             Git state
             <select
@@ -439,9 +440,9 @@ export default function StarshipPlayground({
             />
           </label>
 
-          <fieldset className="text-sm">
+          <fieldset className="starship-last-command text-sm">
             <legend className="mb-2 text-ash-dim">Last command</legend>
-            <div className="flex gap-4">
+            <div className="starship-segmented flex gap-4">
               <button
                 className={`py-1 ${s.status === 0 ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
                 type="button"
@@ -508,7 +509,7 @@ function Toggle({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`py-1 text-xs tracking-wide ${on ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
+      className={`starship-toggle py-1 text-xs tracking-wide ${on ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
     >
       {label}
     </button>

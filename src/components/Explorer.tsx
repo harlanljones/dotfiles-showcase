@@ -10,6 +10,7 @@ import {
 import { emit } from "../lib/telemetry";
 import { SourceBadge } from "./explorer/ui";
 import StarshipCard from "./explorer/StarshipCard";
+import "./Explorer.grid.css";
 
 /**
  * PERF-03 chunk map: the wake path (StarshipCard) stays in the initial bundle;

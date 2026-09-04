@@ -37,7 +37,14 @@ export default function App() {
     <div className="display">
       {!awake ? (
         <button type="button" className="veil" onClick={wake} aria-label="Wake display">
-          <span className="block-cursor" aria-hidden="true" />
+          <span className="veil-frame" aria-hidden="true">
+            <span className="block-cursor" />
+            <span className="veil-copy">
+              <span className="veil-title">dotfiles showcase</span>
+              <span className="veil-subtitle">terminal-native · local-first</span>
+              <span className="veil-hint">press any key — or click — to wake</span>
+            </span>
+          </span>
         </button>
       ) : (
         <Explorer />

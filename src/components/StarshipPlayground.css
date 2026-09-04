@@ -1,0 +1,90 @@
+/* Scoped visual treatment from mockups/playground.html (HJ-704, treatment A). */
+.starship-playground {
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace;
+}
+
+.starship-playground .terminal-window {
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.starship-playground .terminal-meta {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.starship-playground .terminal-dot { border-radius: 0; }
+
+.starship-recolor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  color: var(--ash-dim);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.starship-recolor-row button { padding: 0.25rem 0; }
+
+.starship-notice { margin: 0; border-radius: 0; }
+
+.starship-playground .control-panel { gap: 1rem; }
+
+.starship-controls-column {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.starship-controls-column.space-y-3 > * + * { margin-top: 0; }
+
+.starship-playground label,
+.starship-playground legend,
+.starship-playground fieldset { font-family: inherit; }
+
+.starship-presets { column-gap: 1rem; row-gap: 0.25rem; }
+.starship-presets button { padding: 0.25rem 0; letter-spacing: 0.06em; }
+
+.starship-playground label { color: var(--ash-dim); font-size: 0.875rem; }
+
+.starship-playground input[type="text"],
+.starship-playground input[type="number"],
+.starship-playground select {
+  margin-top: 0.25rem;
+  padding: 0.4rem 0;
+  border-bottom-color: rgba(149, 154, 164, 0.2);
+  font-size: 0.875rem;
+}
+
+.starship-playground select option { background: var(--glass-lit); }
+
+.starship-flags { column-gap: 0.9rem; row-gap: 0.25rem; }
+
+.starship-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0;
+  letter-spacing: 0.06em;
+}
+
+.starship-toggle::before {
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.45rem;
+  border: 1px solid var(--ash-dim);
+  content: "";
+}
+
+.starship-toggle[aria-pressed="true"]::before {
+  border-color: var(--phosphor);
+  background: var(--phosphor);
+}
+
+.starship-last-command legend { margin-bottom: 0.4rem; font-size: 0.875rem; }
+.starship-segmented { gap: 1rem; }
+.starship-segmented button { padding: 0.25rem 0; }
+.starship-playground input[type="range"] { margin-top: 0.6rem; }
+.starship-playground .pt-2 { padding-top: 0.25rem; }
+.starship-playground .pt-2 button { padding: 0; letter-spacing: 0.06em; }

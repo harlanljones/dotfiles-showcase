@@ -1,0 +1,149 @@
+/*
+ * The expanded Explorer treatment lives beside its shared UI primitives so it
+ * can refine the card without changing the global component baseline.
+ */
+.showcase-card-expanded {
+  position: relative;
+  border-color: color-mix(in srgb, var(--phosphor) 68%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--phosphor) 8%, transparent), transparent 26rem),
+    var(--glass-lit);
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--phosphor) 82%, transparent),
+    0 18px 42px rgb(0 0 0 / 24%);
+}
+
+.showcase-card-expanded::before {
+  position: absolute;
+  top: -1px;
+  right: 1.1rem;
+  left: 1.1rem;
+  height: 1px;
+  content: "";
+  background: var(--phosphor);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--phosphor) 65%, transparent);
+}
+
+.showcase-card-expanded .showcase-card-header {
+  align-items: center;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--phosphor) 30%, transparent);
+}
+
+.showcase-card-expanded .showcase-card-meta { gap: 0.8rem; }
+
+.showcase-card-expanded .showcase-card-title {
+  color: var(--phosphor);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.showcase-card-expanded .showcase-card-meta > span {
+  padding: 0.18rem 0.42rem;
+  border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.showcase-card-expanded .showcase-card-blurb {
+  max-width: 72ch;
+  margin-top: 0.75rem;
+  color: var(--ash);
+}
+
+.showcase-card-expanded .showcase-expand-btn {
+  border-color: color-mix(in srgb, var(--phosphor) 52%, transparent);
+  background: color-mix(in srgb, var(--phosphor) 7%, transparent);
+  color: var(--phosphor);
+  opacity: 1;
+}
+
+.showcase-card-expanded .showcase-expand-btn:hover {
+  background: color-mix(in srgb, var(--phosphor) 14%, transparent);
+}
+
+.showcase-expand-btn:focus-visible,
+.showcase-card-header:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--phosphor) 18%, transparent);
+}
+
+.showcase-card-expanded .showcase-card-body {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top-color: color-mix(in srgb, var(--phosphor) 25%, transparent);
+}
+
+.showcase-card-expanded .content-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.showcase-card-expanded .inspect {
+  max-width: none;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--phosphor) 30%, transparent);
+  background: rgb(0 0 0 / 16%);
+}
+
+.showcase-card-expanded .inspect summary {
+  width: auto;
+  padding: 0.6rem 0.75rem;
+  color: var(--phosphor);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.showcase-card-expanded .inspect summary::before {
+  display: inline-block;
+  width: 1.2em;
+  content: "+";
+  color: var(--phosphor);
+}
+
+.showcase-card-expanded .inspect[open] summary {
+  margin-bottom: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--phosphor) 24%, transparent);
+  color: var(--phosphor);
+  background: color-mix(in srgb, var(--phosphor) 8%, transparent);
+}
+
+.showcase-card-expanded .inspect[open] summary::before { content: "−"; }
+
+.showcase-card-expanded .inspect summary:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: -3px;
+}
+
+.showcase-card-expanded .inspect .inspect-body {
+  gap: 0.65rem 1rem;
+  padding: 0.8rem 0.75rem;
+}
+
+.showcase-card-expanded .inspect p { color: var(--ash); }
+
+.showcase-card-expanded .code-surface {
+  border-color: color-mix(in srgb, var(--phosphor) 34%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--phosphor) 5%, transparent), transparent 32%),
+    rgb(0 0 0 / 32%);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--phosphor) 55%, transparent);
+  color: var(--ash);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .showcase-card-expanded {
+    animation: expanded-card-enter 180ms var(--ease-out, ease-out);
+  }
+}
+
+@keyframes expanded-card-enter {
+  from {
+    opacity: 0.78;
+    transform: translateY(3px);
+  }
+}

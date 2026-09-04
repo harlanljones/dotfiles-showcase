@@ -1,0 +1,14 @@
+/*
+ * The Explorer grid is intentionally the only surface that uses a display
+ * face. All detail views inherit the application's JetBrains Mono default.
+ */
+.category-tabs .category-tab,
+.showcase-card-collapsed .showcase-card-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+/* Treatment B from the category-grid mockup: compact, readable card headers. */
+.showcase-card-collapsed .showcase-card-title {
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
