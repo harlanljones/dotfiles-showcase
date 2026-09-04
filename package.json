@@ -12,6 +12,8 @@
     "typecheck": "wrangler types && tsc --noEmit",
     "fallbacks:refresh": "bun run scripts/refresh-fallbacks.ts",
     "fallbacks:check": "bun run scripts/refresh-fallbacks.ts --check",
+    "search-index:build": "bun run scripts/generate-search-index.ts",
+    "search-index:check": "bun run scripts/generate-search-index.ts --check",
     "wrangler:types": "wrangler types",
     "wrangler:dev": "wrangler dev --local",
     "wrangler:deploy": "wrangler deploy"
