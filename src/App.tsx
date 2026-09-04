@@ -1,25 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Explorer from "./components/Explorer";
-
-const AWAKE_KEY = "display-awake";
-
-function sessionAwake(): boolean {
-  try {
-    return sessionStorage.getItem(AWAKE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
+import { isAwake, setAwake as rememberAwake } from "./lib/session";
 
 export default function App() {
-  const [awake, setAwake] = useState(sessionAwake);
+  const [awake, setAwake] = useState(isAwake);
 
   const wake = useCallback(() => {
-    try {
-      sessionStorage.setItem(AWAKE_KEY, "1");
-    } catch {
-      /* private mode */
-    }
+    rememberAwake();
     setAwake(true);
   }, []);
 
@@ -39,11 +26,6 @@ export default function App() {
         <button type="button" className="veil" onClick={wake} aria-label="Wake display">
           <span className="veil-frame" aria-hidden="true">
             <span className="block-cursor" />
-            <span className="veil-copy">
-              <span className="veil-title">dotfiles showcase</span>
-              <span className="veil-subtitle">terminal-native · local-first</span>
-              <span className="veil-hint">press any key — or click — to wake</span>
-            </span>
           </span>
         </button>
       ) : (

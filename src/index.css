@@ -35,7 +35,7 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  overflow: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(60% 45% at 50% 52%, rgba(111, 163, 160, 0.055), transparent 70%),
     var(--glass);
@@ -103,16 +103,20 @@ html[data-failed="1"] .display {
 }
 
 .chrome {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.25rem 1.5rem 0;
+  padding: 1.25rem 1.5rem 0.75rem;
   flex-wrap: wrap;
+  background: var(--glass);
 }
 @media (min-width: 640px) {
   .chrome {
-    padding: 1.75rem 2.25rem 0;
+    padding: 1.75rem 2.25rem 0.75rem;
   }
 }
 
@@ -217,7 +221,6 @@ html[data-failed="1"] .display {
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 1.1rem;
   padding: 2rem;
 }
 .block-cursor {
@@ -226,33 +229,6 @@ html[data-failed="1"] .display {
   background: var(--phosphor);
   box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
   animation: cursor-blink 1.05s linear infinite;
-}
-.veil-copy {
-  display: grid;
-  justify-items: center;
-}
-.veil-title,
-.veil-subtitle,
-.veil-hint {
-  text-align: center;
-  color: var(--ash-dim);
-}
-.veil-title {
-  font-size: 0.82rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-.veil-subtitle {
-  margin-top: 0.6rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-.veil-hint {
-  margin-top: 1.4rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
 }
 @keyframes cursor-blink {
   0%,
@@ -281,7 +257,8 @@ html[data-failed="1"] .display {
     transition: none;
   }
   .category-grid,
-  .showcase-card-body {
+  .showcase-card-body,
+  [data-performing] {
     animation: none;
   }
 }
@@ -556,6 +533,152 @@ html[data-failed="1"] .display {
 
 .swatch-grid button {
   border-radius: 0;
+}
+
+/* HJ-715 wave 1: pager status line, palette, performance handoff.
+ * One face (JetBrains Mono inherits from body); chrome stays muted —
+ * phosphor/ash/fail tokens only, no new hues. */
+
+/* Paged mode clamps the open demo to the viewport so j/k/space page it;
+ * native mode (touch, yielded, remembered) scrolls the document instead. */
+.field[data-pager="paged"] .showcase-card-body {
+  max-height: calc(100dvh - 18rem);
+  overflow: hidden;
+}
+
+/* First-view handoff: the veil wakes straight into the demo performing.
+ * Later visits in the session render instantly (no data-performing attr).
+ * Never emitted under prefers-reduced-motion (see Explorer). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-performing="true"] {
+    animation: demo-perform 320ms var(--ease-out);
+  }
+}
+@keyframes demo-perform {
+  from {
+    opacity: 0.55;
+  }
+}
+
+/* The `less`-idiom status line: position + keys, exposed as text. Pinned
+ * to the viewport bottom while the field moves. */
+.pager-status {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--glass);
+  border-top: 1px solid var(--line);
+  color: var(--ash-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+@media (min-width: 640px) {
+  .pager-status {
+    padding: 0.65rem 2.25rem;
+  }
+}
+.pager-status .block-cursor {
+  flex: none;
+  width: 0.5rem;
+  height: 0.85rem;
+  box-shadow: none;
+}
+.pager-status[data-hint="true"] {
+  color: var(--phosphor);
+  border-top-color: var(--phosphor);
+}
+
+/* Visible search control: the only route to the palette on touch, and how
+ * desktop visitors discover the `/` binding. */
+.chrome-search kbd {
+  font: inherit;
+  border: 1px solid var(--line);
+  padding: 0 0.35rem;
+  color: var(--ash-dim);
+}
+
+/* The `/` palette: catalogue names + real config content. */
+.palette-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12dvh 1rem 1rem;
+  background: rgb(2 3 6 / 72%);
+}
+.palette {
+  width: 100%;
+  max-width: 38rem;
+  border: 1px solid var(--line);
+  background: var(--glass-lit);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 45%);
+}
+.palette-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 0.85rem 1rem;
+  color: var(--ash);
+}
+.palette-input::placeholder {
+  color: var(--ash-dim);
+  opacity: 0.7;
+}
+.palette-results {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0;
+  max-height: 50dvh;
+  overflow: auto;
+}
+.palette-empty {
+  padding: 0.7rem 1rem;
+  color: var(--ash-dim);
+  font-size: 0.72rem;
+}
+.palette-hit {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 0.55rem 1rem;
+  color: var(--ash);
+  font-size: 0.74rem;
+}
+.palette-hit:hover {
+  background: rgb(111 163 160 / 8%);
+}
+.palette-hit-kind {
+  flex: none;
+  width: 3.2rem;
+  color: var(--phosphor);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+}
+.palette-hit-label {
+  flex: none;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palette-hit-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ash-dim);
+  font-size: 0.66rem;
 }
 
 .dots-stage {
