@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starship Playground — restyle mockups (HJ-704)</title>
+<style>
+  :root{
+    --glass:#04060a;
+    --glass-lit:#060912;
+    --phosphor:#6fa3a0;
+    --ash:#959aa4;
+    --ash-dim:#868b93;
+    --red:#b16371;
+    --red-bright:#d38290;
+    --line:rgba(149,154,164,.18);
+    --mono:"JetBrainsMono Nerd Font","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --display:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--glass);color:var(--ash);
+    font-family:var(--mono);font-size:14px;line-height:1.6;
+    padding:2rem 1.25rem 4rem;max-width:72rem;margin-inline:auto;
+  }
+  .doc-head{margin-bottom:2.5rem;border-bottom:1px solid var(--line);padding-bottom:1.5rem}
+  .doc-head h1{color:var(--ash);font-size:1.15rem;margin:0 0 .5rem;letter-spacing:.02em}
+  .doc-head p{color:var(--ash-dim);font-size:.8rem;margin:.25rem 0;max-width:60rem}
+  .doc-head code{color:var(--phosphor)}
+  .tokens{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;margin-top:.9rem;font-size:.72rem;color:var(--ash-dim)}
+  .swatch{display:inline-block;width:.7rem;height:.7rem;margin-right:.4rem;vertical-align:-.05rem}
+  section.treatment{margin-bottom:3.5rem}
+  .treatment-tag{
+    display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--phosphor);border:1px solid rgba(111,163,160,.4);
+    padding:.3rem .7rem;margin-bottom:.4rem;
+  }
+  .treatment-sub{color:var(--ash-dim);font-size:.78rem;margin:0 0 1.5rem;max-width:62rem}
+  /* ---- treatment A: mono-only ---- */
+  #treatment-a, #treatment-a h2, #treatment-a h3,
+  #treatment-a .panel-label, #treatment-a legend{
+    font-family:var(--mono);
+  }
+  /* ---- treatment B: display-face headers + mono body ---- */
+  #treatment-b .panel-h, #treatment-b .panel-label, #treatment-b legend,
+  #treatment-b .treatment-tag, #treatment-b h2{
+    font-family:var(--display);
+  }
+  #treatment-b .term, #treatment-b .prompt, #treatment-b .presets button,
+  #treatment-b input, #treatment-b select, #treatment-b .tog{
+    font-family:var(--mono);
+  }
+  #treatment-b h2{font-weight:650;letter-spacing:-.01em}
+  #treatment-b .panel-label{font-weight:600;letter-spacing:.01em}
+  h2.stage-h{color:var(--ash);font-size:1rem;margin:0 0 1rem}
+  /* ---- prompt stage (mirrors .prompt-stage) ---- */
+  .prompt-stage{display:grid;gap:1.75rem}
+  .terminal-window{
+    padding:1.75rem 1.25rem 2rem;min-height:8rem;
+    background:var(--glass-lit);
+    box-shadow:0 18px 50px rgba(0,0,0,.28);
+    border:1px solid var(--line);
+  }
+  @media (min-width:640px){
+    .terminal-window{padding:2.4rem 2rem 2.6rem;min-height:10rem}
+  }
+  .terminal-meta{
+    display:flex;justify-content:space-between;gap:1rem;
+    margin-bottom:1.5rem;font-size:.68rem;letter-spacing:.08em;color:var(--ash-dim);
+  }
+  .terminal-dot{
+    width:.45rem;height:.7rem;background:var(--phosphor);
+    display:inline-block;margin-right:.55rem;vertical-align:-.05rem;
+  }
+  .recolor-row{
+    margin-bottom:1rem;display:flex;flex-wrap:wrap;align-items:center;gap:1rem;
+    font-size:11px;letter-spacing:.06em;color:var(--ash-dim);
+  }
+  .recolor-row .after{color:var(--phosphor)}
+  .prompt{
+    font-size:1.05rem;line-height:1.7;white-space:pre-wrap;word-break:break-word;
+    color:var(--ash);margin:0;
+  }
+  .prompt .c{color:var(--phosphor)}
+  .prompt .r{color:var(--red-bright)}
+  .prompt .dim{color:var(--ash-dim)}
+  .cmd{color:var(--ash)}
+  /* ---- control panel (mirrors .control-panel) ---- */
+  .control-panel{display:grid;gap:1rem;padding:0;background:none;border:0;box-shadow:none}
+  @media (min-width:900px){
+    .control-panel{grid-template-columns:1fr 1fr;column-gap:2rem}
+  }
+  .col{display:grid;gap:.9rem;align-content:start}
+  .presets{display:flex;flex-wrap:wrap;gap:.25rem 1rem}
+  .presets button{
+    background:none;border:0;cursor:default;padding:.25rem 0;
+    font-size:11px;letter-spacing:.06em;color:var(--ash-dim);
+  }
+  .presets button[aria-pressed="true"]{color:var(--phosphor)}
+  .field{display:block;font-size:.875rem;color:var(--ash-dim)}
+  .field input[type="text"], .field input[type="number"], .field select{
+    margin-top:.25rem;width:100%;border:0;border-bottom:1px solid rgba(149,154,164,.2);
+    background:transparent;padding:.4rem 0;color:var(--ash);font-size:.875rem;outline:none;
+  }
+  .field select option{background:var(--glass-lit)}
+  .flags{display:flex;flex-wrap:wrap;gap:.25rem .9rem}
+  .tog{
+    background:none;border:0;cursor:default;padding:.25rem 0;
+    font-size:.75rem;letter-spacing:.06em;color:var(--ash-dim);
+  }
+  .tog[aria-pressed="true"]{color:var(--phosphor)}
+  .tog .box{
+    display:inline-block;width:.6rem;height:.6rem;margin-right:.45rem;
+    border:1px solid var(--ash-dim);vertical-align:0;
+  }
+  .tog[aria-pressed="true"] .box{background:var(--phosphor);border-color:var(--phosphor)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .panel-label{font-size:.875rem;color:var(--ash-dim);display:block}
+  input[type="range"]{width:100%;accent-color:var(--phosphor);margin-top:.6rem}
+  .seg{display:flex;gap:1rem}
+  .seg button{background:none;border:0;cursor:default;padding:.25rem 0;font-size:.875rem;color:var(--ash-dim)}
+  .seg button[aria-pressed="true"].ok{color:var(--phosphor)}
+  .seg button[aria-pressed="true"].err{color:var(--red-bright)}
+  .linklike{background:none;border:0;cursor:default;padding:0;font-size:.75rem;
+    letter-spacing:.06em;color:var(--ash-dim);text-decoration:underline;text-underline-offset:4px}
+  .note{
+    border:1px solid rgba(177,99,113,.35);background:rgba(177,99,113,.1);
+    padding:.75rem;font-size:.75rem;color:var(--red-bright);
+  }
+  .note code{color:var(--red-bright)}
+  .cap{font-size:.72rem;color:var(--ash-dim);margin:.75rem 0 0}
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <h1>Starship Playground — visual restyle mockups</h1>
+  <p>Static mockup only — no playground functionality. Mirrors the layout contract of
+     <code>src/components/StarshipPlayground.tsx</code> (terminal window, prompt stage,
+     control panel with toggles / sliders / presets, terminal-meta row) under the HJ-700
+     terminal-native direction. Dark-only. Single uniform accent throughout.</p>
+  <div class="tokens" aria-label="Direction tokens">
+    <span><span class="swatch" style="background:#6fa3a0"></span>phosphor #6fa3a0 (sole accent)</span>
+    <span><span class="swatch" style="background:#04060a;border:1px solid #959aa4"></span>glass #04060a</span>
+    <span><span class="swatch" style="background:#060912;border:1px solid #959aa4"></span>glass-lit #060912</span>
+    <span><span class="swatch" style="background:#959aa4"></span>body text #959aa4</span>
+    <span><span class="swatch" style="background:#868b93"></span>muted #868b93 (axe-strict floor)</span>
+    <span><span class="swatch" style="background:#d38290"></span>failure red #d38290 (prompt recolor only)</span>
+  </div>
+</header>
+
+<!-- ================= TREATMENT A ================= -->
+<section class="treatment" id="treatment-a" aria-labelledby="h-a">
+  <span class="treatment-tag">Treatment A — mono-only</span>
+  <h2 class="stage-h" id="h-a">A · mono-only — every label, header and control in the JetBrainsMono Nerd Font stack</h2>
+  <p class="treatment-sub">Headers, preset labels, toggles and meta all set in
+    <span style="color:var(--ash)">"JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace</span>
+    (local fallback only — no webfont requests). Terminal and prompt text are mono, as in both treatments.
+    Static state shown: <span style="color:var(--ash)">“rebase gone wrong”</span> — dirty ON, rebase, last-command error, zsh cyan→red recolor.</p>
+
+  <div class="prompt-stage">
+    <div class="terminal-window">
+      <div class="terminal-meta">
+        <span><span class="terminal-dot"></span>42 ms</span>
+        <span>8-color</span>
+      </div>
+      <div class="recolor-row">
+        <span>7 escapes recolored</span>
+        <span><span class="after">after</span>&nbsp;&nbsp;&nbsp;before</span>
+        <span>copy ANSI</span>
+      </div>
+      <pre class="prompt term"><span class="dim">harlan@local</span> <span class="r">on  main ⇡? rebase 2/7</span> <span class="r">via ✗1</span> <span class="dim">took 3.2s</span>
+<span class="r">❯</span> <span class="cmd">git status --short</span></pre>
+      <p class="cap">8-color mode (matches the dotfiles’ recolor code; truecolor TTYs are a known limitation). “after” view: cyan segments recolored red by the zsh wrapper.</p>
+    </div>
+
+    <div class="control-panel">
+      <div class="col">
+        <div class="presets" aria-label="Scenario presets">
+          <button type="button">clean main</button>
+          <button type="button">dirty feature work</button>
+          <button type="button" aria-pressed="true">rebase gone wrong</button>
+          <button type="button">diverged</button>
+          <button type="button">SSH detached hotfix</button>
+        </div>
+        <label class="field">Branch
+          <input type="text" value="main" readonly>
+        </label>
+        <div class="flags" aria-label="Session flags">
+          <button class="tog" type="button" aria-pressed="true"><span class="box"></span>Dirty</button>
+          <button class="tog" type="button" aria-pressed="false"><span class="box"></span>Detached HEAD</button>
+          <button class="tog" type="button" aria-pressed="false"><span class="box"></span>SSH session</button>
+        </div>
+        <div class="grid2">
+          <label class="field">Ahead<input type="number" value="0" readonly></label>
+          <label class="field">Behind<input type="number" value="0" readonly></label>
+        </div>
+      </div>
+      <div class="col">
+        <label class="field">Git state
+          <select disabled><option>none</option><option selected>rebase</option><option>merge</option></select>
+        </label>
+        <label class="field">Shell recolor
+          <select disabled><option selected>zsh — cyan only</option><option>bash — all foreground → red</option></select>
+        </label>
+        <span class="panel-label">Truecolor preview (proposed fix)
+          <span style="display:block;margin-top:.25rem"><button class="tog" type="button" aria-pressed="false"><span class="box"></span>true_color + 38;2 cyan→red</button></span>
+        </span>
+        <label class="field">Terminal width
+          <input type="range" min="60" max="200" step="10" value="200" disabled>
+        </label>
+        <div>
+          <span class="panel-label" style="margin-bottom:.4rem">Last command</span>
+          <div class="seg">
+            <button type="button" class="ok" aria-pressed="false">Success</button>
+            <button type="button" class="err" aria-pressed="true">Error</button>
+          </div>
+        </div>
+        <label class="field">Duration (ms)<input type="number" value="3200" readonly></label>
+        <div><button class="linklike" type="button">copy link</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TREATMENT B ================= -->
+<section class="treatment" id="treatment-b" aria-labelledby="h-b">
+  <span class="treatment-tag">Treatment B — display-face headers + mono body</span>
+  <h2 class="stage-h panel-h" id="h-b">B · Display headers, mono terminal</h2>
+  <p class="treatment-sub panel-label" style="font-weight:400">Panel headers and labels use the system display stack
+    (sans-serif); terminal text, prompt, presets and field values stay mono.
+    Static state shown: <span style="color:var(--ash)">“clean main”</span> — clean tree, last-command success, no recolor row.</p>
+
+  <div class="prompt-stage">
+    <div class="terminal-window">
+      <div class="terminal-meta term">
+        <span><span class="terminal-dot"></span>ready</span>
+        <span>8-color</span>
+      </div>
+      <pre class="prompt term"><span class="dim">harlan@local</span> <span class="c">on  main</span> <span class="dim">via ✓</span>
+<span class="c">❯</span> <span class="cmd">git log --oneline -3</span></pre>
+      <p class="cap term">Clean state — no failing command, so no recolor row. Success path renders in the single phosphor accent.</p>
+    </div>
+
+    <div class="note term" role="status">Degraded snapshot style reference — public Workers builds banner this way; local dev renders live from the real binary.</div>
+
+    <div class="control-panel">
+      <div class="col">
+        <div class="presets" aria-label="Scenario presets">
+          <button type="button" aria-pressed="true">clean main</button>
+          <button type="button">dirty feature work</button>
+          <button type="button">rebase gone wrong</button>
+          <button type="button">diverged</button>
+          <button type="button">SSH detached hotfix</button>
+        </div>
+        <label class="field panel-label">Branch
+          <input type="text" value="main" readonly>
+        </label>
+        <div class="flags" aria-label="Session flags">
+          <button class="tog panel-label" type="button" aria-pressed="false" style="font-weight:400"><span class="box"></span>Dirty</button>
+          <button class="tog panel-label" type="button" aria-pressed="false" style="font-weight:400"><span class="box"></span>Detached HEAD</button>
+          <button class="tog panel-label" type="button" aria-pressed="false" style="font-weight:400"><span class="box"></span>SSH session</button>
+        </div>
+        <div class="grid2">
+          <label class="field panel-label">Ahead<input type="number" value="0" readonly></label>
+          <label class="field panel-label">Behind<input type="number" value="0" readonly></label>
+        </div>
+      </div>
+      <div class="col">
+        <label class="field panel-label">Git state
+          <select disabled><option selected>none</option><option>rebase</option><option>merge</option></select>
+        </label>
+        <label class="field panel-label">Shell recolor
+          <select disabled><option selected>zsh — cyan only</option><option>bash — all foreground → red</option></select>
+        </label>
+        <span class="panel-label">Truecolor preview (proposed fix)
+          <span style="display:block;margin-top:.25rem"><button class="tog" type="button" aria-pressed="false"><span class="box"></span>true_color + 38;2 cyan→red</button></span>
+        </span>
+        <label class="field panel-label">Terminal width
+          <input type="range" min="60" max="200" step="10" value="140" disabled>
+        </label>
+        <div>
+          <span class="panel-label" style="margin-bottom:.4rem">Last command</span>
+          <div class="seg">
+            <button type="button" class="ok" aria-pressed="true">Success</button>
+            <button type="button" class="err" aria-pressed="false">Error</button>
+          </div>
+        </div>
+        <label class="field panel-label">Duration (ms)<input type="number" value="120" readonly></label>
+        <div><button class="linklike" type="button">copy link</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

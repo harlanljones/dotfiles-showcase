@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HJ-702 — Category grid view (terminal-native mockups)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --glass: #04060a;
+    --glass-lit: #060912;
+    --phosphor: #6fa3a0;
+    --ash: #959aa4;
+    --ash-dim: #868b93;
+    --title-ink: #e8f2f1;
+    --line: rgba(149, 154, 164, 0.16);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --mono: "JetBrainsMono Nerd Font", ui-monospace, "JetBrains Mono", monospace;
+    --display: system-ui, -apple-system, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--glass);
+    color: var(--ash);
+    font-family: var(--mono);
+  }
+  .page { max-width: 72rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .page-head { border-bottom: 1px solid var(--line); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .page-head h1 { margin: 0 0 0.5rem; font-size: 1rem; letter-spacing: 0.08em; color: var(--title-ink); }
+  .page-head p { margin: 0.4rem 0; font-size: 0.75rem; line-height: 1.65; color: var(--ash-dim); max-width: 70ch; }
+  .token-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 1rem; font-size: 0.68rem; letter-spacing: 0.08em; }
+  .token-row code { color: var(--phosphor); }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin-top: 0.9rem; font-size: 0.62rem; letter-spacing: 0.18em; }
+
+  .treatment { margin-bottom: 4rem; }
+  .treatment-label {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.9rem; margin-bottom: 2rem;
+  }
+  .treatment-label h2 { margin: 0; font-size: 0.9rem; letter-spacing: 0.1em; color: var(--title-ink); }
+  .treatment-label p { margin: 0; font-size: 0.68rem; line-height: 1.6; color: var(--ash-dim); max-width: 72ch; }
+  .treatment-label code { color: var(--phosphor); font-size: 0.68rem; }
+
+  /* ---- Treatment B: display-face headers ---- */
+  .treatment-b .display-face { font-family: var(--display); }
+  .treatment-b .treatment-label h2,
+  .treatment-b .mock-section-label,
+  .treatment-b .showcase-card-title { font-family: var(--display); }
+  .treatment-b .showcase-card-title { letter-spacing: 0.01em; font-weight: 650; }
+
+  .mock { margin-bottom: 3rem; }
+  .mock-section-label { margin: 0 0 1rem; font-size: 0.72rem; letter-spacing: 0.18em; color: var(--ash-dim); }
+  .mock-section-label strong { color: var(--phosphor); font-weight: 700; }
+
+  /* ---- chrome / tab row (mirrors .chrome + .room-names in src/index.css) ---- */
+  .chrome {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1.5rem; padding: 1.25rem 0 0; flex-wrap: wrap;
+  }
+  .category-tabs { display: flex; flex-wrap: wrap; gap: 0.15rem 1.35rem; }
+  .category-tab {
+    color: var(--ash-dim); font: inherit; font-size: 0.72rem; letter-spacing: 0.18em;
+    opacity: 0.38; padding: 0.35rem 0; background: none; border: 0; text-transform: none;
+  }
+  .category-tab[aria-current="page"] { color: var(--phosphor); opacity: 0.82; }
+  .chrome-words { display: flex; gap: 1.25rem; margin-left: auto; }
+  .chrome-words span { color: var(--ash-dim); font-size: 0.72rem; letter-spacing: 0.16em; opacity: 0.4; padding: 0.35rem 0; }
+
+  /* ---- category grid (mirrors .category-grid: 1col -> 2col @768px) ---- */
+  .field { padding: 1.5rem 0 0.5rem; }
+  .category-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; width: 100%; }
+  @media (min-width: 768px) {
+    .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+  }
+
+  /* ---- collapsed cards (mirrors .showcase-card*) ---- */
+  .showcase-card {
+    border: 1px solid var(--line); background: var(--glass-lit);
+    padding: 1.25rem; display: flex; flex-direction: column;
+  }
+  .showcase-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .showcase-card-meta { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+  .showcase-card-title { margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--title-ink); }
+  .badge { font-size: 10px; letter-spacing: 0.18em; }
+  .badge-live { color: var(--phosphor); }
+  .badge-interactive { color: var(--phosphor); }
+  .badge-simulated { color: var(--ash); }
+  .badge-static { color: var(--ash-dim); }
+  .showcase-card-blurb { margin: 0.5rem 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--ash-dim); }
+  .showcase-expand-btn {
+    font: inherit; font-size: 0.68rem; letter-spacing: 0.12em; color: var(--phosphor);
+    opacity: 0.75; white-space: nowrap; padding: 0.2rem 0.4rem;
+    border: 1px solid rgba(111, 163, 160, 0.25); background: none;
+  }
+
+  .verdict { border: 1px solid var(--line); background: var(--glass-lit); padding: 1.25rem; }
+  .verdict h2 { margin: 0 0 0.75rem; font-size: 0.8rem; letter-spacing: 0.1em; color: var(--title-ink); }
+  .treatment-b .verdict h2 { font-family: var(--display); }
+  .verdict ul { margin: 0; padding-left: 1.1rem; font-size: 0.72rem; line-height: 1.75; color: var(--ash-dim); }
+  .verdict li::marker { color: var(--phosphor); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <h1>HJ-702 — category grid view · terminal-native direction</h1>
+    <p>Static mockup of the Explorer category grid (tab row, responsive card grid, collapsed cards
+    with badges/blurbs) under the terminal-native direction: phosphor on near-black, uniform single
+    accent across all 4 categories, dark-only. Structure mirrors
+    <code>src/components/Explorer.tsx</code> (.category-grid, .showcase-card-collapsed) and
+    <code>src/index.css</code> tokens.</p>
+    <div class="token-row" aria-label="Direction tokens">
+      <span>phosphor <code>#6fa3a0</code></span>
+      <span>glass <code>#04060a</code></span>
+      <span>glass-lit <code>#060912</code></span>
+      <span>body <code>#959aa4</code></span>
+      <span>muted <code>#868b93</code> (axe-strict floor)</span>
+      <span>title <code>#e8f2f1</code></span>
+    </div>
+    <div class="legend" aria-label="Badge legend">
+      <span class="badge badge-live">LIVE</span>
+      <span class="badge badge-interactive">INTERACTIVE</span>
+      <span class="badge badge-simulated">SIMULATED</span>
+      <span class="badge badge-static">STATIC</span>
+    </div>
+    <p>Responsive rule carried over from the app: 1 column below 768px, 2 columns at ≥768px.
+    Resize this file to see the grid reflow. All badges/kinds use the single phosphor accent family —
+    no per-category colors.</p>
+  </header>
+
+  <!-- ================= TREATMENT A : mono-only ================= -->
+  <section class="treatment treatment-a" aria-label="Treatment A, mono-only">
+    <div class="treatment-label">
+      <h2>TREATMENT A — mono-only</h2>
+      <p>Every glyph — tabs, titles, badges, blurbs — set in
+      <code>"JetBrainsMono Nerd Font", ui-monospace, monospace</code> (local fallback only, no webfonts).
+      This is the repo's current voice (<code>src/index.css:39</code>).</p>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>01 / system</strong> — System &amp; Display · 6 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab" aria-current="page">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="System and Display">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Hyprland Monitors</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The dual-monitor layout from monitors.lua, drawn to scale.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Omarchy Palette</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The dynamic 16-color ANSI palette plus truecolor background/foreground, generated per omarchy theme.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Ghostty Terminal</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Wayland epoll backend, CSI-u key protocol, padding, font, and keybinds from the ghostty config.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">System Monitor</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">btop layout boxes, presets, theme, and process-monitoring settings.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Packages</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Homebrew Bundle manifest and explicit pacman packages.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Dots CLI</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">A read-only trace of the ergonomic chezmoi wrapper: choose a command, inspect its handler, and preview a sanitized workflow.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>02 / shell</strong> — Shell &amp; Navigation · 5 collapsed cards (headline: starship)</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab" aria-current="page">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Shell and Navigation">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Starship Prompt</h2><span class="badge badge-interactive">INTERACTIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The real prompt, rendered inline — drive the shell state and see it respond.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Failure Recolor</h2><span class="badge badge-interactive">INTERACTIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">zsh recolors cyan only; bash recolors every foreground color to red.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">fzf · zoxide · atuin</h2><span class="badge badge-simulated">SIMULATED</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Fuzzy finding, smart cd, and shell history — simulated mini-demos.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">ripgrep Defaults</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Flags loaded via RIPGREP_CONFIG_PATH on every search.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Shell Profiles &amp; Environment</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Startup sequencing, PATH precedence, session exports, and zsh/bash parity.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>03 / editor</strong> — Editor &amp; Runtimes · 2 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab" aria-current="page">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Editor and Runtimes">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Neovim / LazyVim</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Enabled LazyVim extras and pinned plugin revisions.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">mise Toolchains</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Declarative runtime versions managed by mise.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>04 / agents</strong> — Git &amp; Agents · 5 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab" aria-current="page">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Git and Agents">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Git Safety Guardrails</h2><span class="badge badge-static">STATIC</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">How each coding agent is blocked from committing or pushing.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">lazygit + Ollama Commits</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Ctrl+G generates the commit message with a local LLM.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Herdr Agent Orchestration</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Multi-agent terminal workspace manager — keys, attention queue, and installed plugins.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Agent Skills Hub</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Cross-agent skill catalogue synced from one shared root into Claude Code, Codex, Gemini, Cline, and Pi — search, filter, and per-harness coverage.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Git Core &amp; Security</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Global git config: signing posture, aliases, safety policies, credential helpers, and global ignores.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ================= TREATMENT B : display-face headers ================= -->
+  <section class="treatment treatment-b" aria-label="Treatment B, display-face headers">
+    <div class="treatment-label">
+      <h2 class="display-face">TREATMENT B — display-face headers + mono body</h2>
+      <p>Card titles and section headers set in the system display stack
+      (<code>system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif</code>); tabs, badges,
+      blurbs, and buttons stay in the JetBrainsMono stack. Same grids, same tokens — only the
+      header voice changes, so HJ-701 can judge the typography verdict side by side with A.</p>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>01 / system</strong> — System &amp; Display · 6 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab" aria-current="page">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="System and Display">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Hyprland Monitors</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The dual-monitor layout from monitors.lua, drawn to scale.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Omarchy Palette</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The dynamic 16-color ANSI palette plus truecolor background/foreground, generated per omarchy theme.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Ghostty Terminal</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Wayland epoll backend, CSI-u key protocol, padding, font, and keybinds from the ghostty config.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">System Monitor</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">btop layout boxes, presets, theme, and process-monitoring settings.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Packages</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Homebrew Bundle manifest and explicit pacman packages.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Dots CLI</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">A read-only trace of the ergonomic chezmoi wrapper: choose a command, inspect its handler, and preview a sanitized workflow.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>02 / shell</strong> — Shell &amp; Navigation · 5 collapsed cards (headline: starship)</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab" aria-current="page">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Shell and Navigation">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Starship Prompt</h2><span class="badge badge-interactive">INTERACTIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">The real prompt, rendered inline — drive the shell state and see it respond.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Failure Recolor</h2><span class="badge badge-interactive">INTERACTIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">zsh recolors cyan only; bash recolors every foreground color to red.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">fzf · zoxide · atuin</h2><span class="badge badge-simulated">SIMULATED</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Fuzzy finding, smart cd, and shell history — simulated mini-demos.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">ripgrep Defaults</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Flags loaded via RIPGREP_CONFIG_PATH on every search.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Shell Profiles &amp; Environment</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Startup sequencing, PATH precedence, session exports, and zsh/bash parity.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>03 / editor</strong> — Editor &amp; Runtimes · 2 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab" aria-current="page">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Editor and Runtimes">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Neovim / LazyVim</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Enabled LazyVim extras and pinned plugin revisions.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">mise Toolchains</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Declarative runtime versions managed by mise.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <div class="mock">
+      <p class="mock-section-label"><strong>04 / agents</strong> — Git &amp; Agents · 5 collapsed cards</p>
+      <header class="chrome">
+        <nav class="category-tabs" aria-label="Categories">
+          <button type="button" class="category-tab">System &amp; Display</button>
+          <button type="button" class="category-tab">Shell &amp; Navigation</button>
+          <button type="button" class="category-tab">Editor &amp; Runtimes</button>
+          <button type="button" class="category-tab" aria-current="page">Git &amp; Agents</button>
+        </nav>
+        <div class="chrome-words"><span>source</span></div>
+      </header>
+      <main class="field">
+        <div class="category-grid" role="region" aria-label="Git and Agents">
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Git Safety Guardrails</h2><span class="badge badge-static">STATIC</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">How each coding agent is blocked from committing or pushing.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">lazygit + Ollama Commits</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Ctrl+G generates the commit message with a local LLM.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Herdr Agent Orchestration</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Multi-agent terminal workspace manager — keys, attention queue, and installed plugins.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Agent Skills Hub</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Cross-agent skill catalogue synced from one shared root into Claude Code, Codex, Gemini, Cline, and Pi — search, filter, and per-harness coverage.</p>
+          </article>
+          <article class="showcase-card">
+            <div class="showcase-card-header">
+              <div class="showcase-card-meta"><h2 class="showcase-card-title">Git Core &amp; Security</h2><span class="badge badge-live">LIVE</span></div>
+              <button type="button" class="showcase-expand-btn">expand ▾</button>
+            </div>
+            <p class="showcase-card-blurb">Global git config: signing posture, aliases, safety policies, credential helpers, and global ignores.</p>
+          </article>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <section class="verdict" aria-label="What the typography verdict should compare">
+    <h2>For the HJ-701 typography verdict — compare A vs B on</h2>
+    <ul>
+      <li>Card-title voice: uniform terminal mono (A) vs proportional display face against mono badges/blurbs (B).</li>
+      <li>Hierarchy: does B's display header strengthen card scanning, or break the phosphor-terminal spell A keeps?</li>
+      <li>Tab row is mono in both — deliberate: chrome stays terminal chrome under either verdict.</li>
+      <li>Direction constants held fixed: #6fa3a0 on #04060a, single accent, dark-only, muted text ≥ #868b93.</li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HJ-703 — Expanded card detail mockups (A/B type treatments)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --glass: #04060a;
+    --glass-lit: #060912;
+    --phosphor: #6fa3a0;
+    --ash: #959aa4;
+    --ash-dim: #868b93;
+    --fail: #b16371;
+    --title-ink: #e8f2f1;
+    --line: rgba(149, 154, 164, 0.16);
+    --mono: "JetBrainsMono Nerd Font", ui-monospace, "JetBrains Mono", monospace;
+    --display: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Inter", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--glass); color: var(--ash); }
+  body { font-family: var(--mono); padding: 2rem 1.5rem 4rem; }
+  .page { max-width: 64rem; margin: 0 auto; }
+  .page-head { border-bottom: 1px solid var(--line); padding-bottom: 1.25rem; margin-bottom: 2.5rem; }
+  .page-head h1 { margin: 0 0 0.5rem; font-size: 0.95rem; letter-spacing: 0.08em; color: var(--title-ink); }
+  .page-head p { margin: 0.35rem 0 0; font-size: 0.75rem; line-height: 1.6; color: var(--ash-dim); }
+  .page-head code { color: var(--phosphor); }
+
+  .treatment { margin-bottom: 3.5rem; }
+  .treatment-label { display: flex; align-items: baseline; gap: 0.9rem; margin-bottom: 0.4rem; }
+  .treatment-label h2 { margin: 0; font-size: 0.85rem; letter-spacing: 0.1em; color: var(--title-ink); }
+  .treatment-label .tag { font-size: 0.65rem; letter-spacing: 0.18em; color: var(--phosphor); }
+  .treatment-B .treatment-label h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0.02em; }
+  .treatment-note { font-size: 0.72rem; line-height: 1.6; color: var(--ash-dim); margin: 0 0 1.25rem; max-width: 46rem; }
+  .treatment-B .treatment-note { font-family: var(--mono); }
+
+  .parts { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin: 0 0 1.25rem; padding: 0; list-style: none; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--ash-dim); }
+  .parts b { color: var(--phosphor); font-weight: 400; margin-right: 0.4rem; }
+
+  /* ---- ghost grid context: two collapsed siblings above the full-row card ---- */
+  .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  @media (max-width: 640px) { .mock-grid { grid-template-columns: 1fr; } }
+  .ghost-card { border: 1px dashed var(--line); padding: 1rem 1.25rem; opacity: 0.45; }
+  .ghost-card p { margin: 0; font-size: 0.68rem; letter-spacing: 0.12em; color: var(--ash-dim); }
+
+  /* ---- expanded card: mirrors .showcase-card + .showcase-card-expanded + .card-focused ---- */
+  .showcase-card {
+    border: 1px solid var(--line);
+    background: var(--glass-lit);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    grid-column: 1 / -1;
+  }
+  .showcase-card-expanded { border-color: rgba(111, 163, 160, 0.45); }
+  .showcase-card.card-focused { border-color: var(--phosphor); }
+  .showcase-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .showcase-card-meta { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+  .showcase-card-title { margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--title-ink); font-family: var(--mono); }
+  .treatment-B .showcase-card-title { font-family: var(--display); font-weight: 700; letter-spacing: 0.02em; font-size: 1.05rem; }
+  .source-badge { font-size: 10px; letter-spacing: 0.18em; color: var(--phosphor); font-family: var(--mono); }
+  .showcase-expand-btn {
+    font-family: var(--mono);
+    font-size: 0.68rem; letter-spacing: 0.12em; color: var(--phosphor);
+    opacity: 0.75; white-space: nowrap; padding: 0.2rem 0.4rem;
+    border: 1px solid rgba(111, 163, 160, 0.25); background: none; cursor: pointer;
+  }
+  /* visible focus ring — mirrors :focus-visible { outline: 1px solid phosphor; offset 3px } */
+  .mock-focus { outline: 1px solid var(--phosphor); outline-offset: 3px; opacity: 1; }
+  .showcase-card-blurb { margin: 0.5rem 0 0; font-size: 0.75rem; line-height: 1.5; color: var(--ash-dim); font-family: var(--mono); }
+  .showcase-card-body { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+
+  /* ---- CardShell: section.content-panel > details.inspect + children ---- */
+  .content-panel { max-width: none; }
+  .inspect { margin: 0 0 1.5rem; max-width: 42rem; }
+  .inspect summary { list-style: none; cursor: pointer; width: fit-content; font-size: 0.68rem; letter-spacing: 0.18em; color: var(--ash); opacity: 0.8; padding: 0.2rem 0; margin-bottom: 0.65rem; font-family: var(--mono); }
+  .inspect summary::-webkit-details-marker { display: none; }
+  .inspect .inspect-body { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: flex-start; }
+  .inspect .inspect-title { margin: 0; font-size: 0.8rem; letter-spacing: 0.08em; color: var(--ash); font-family: var(--mono); }
+  .treatment-B .inspect .inspect-title { font-family: var(--display); font-weight: 600; letter-spacing: 0.02em; }
+  .inspect p { margin: 0; max-width: 42rem; font-size: 0.8rem; line-height: 1.6; color: var(--ash-dim); font-family: var(--mono); }
+  .pill { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--ash-dim); font-family: var(--mono); }
+
+  /* ---- content surface: mirrors pre.code-surface ---- */
+  .code-surface { background: var(--glass-lit); border: 1px solid var(--line); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22); padding: 1rem 1.25rem; overflow-x: auto; margin: 0; font-family: var(--mono); font-size: 0.8rem; line-height: 1.7; color: var(--ash); }
+  .code-surface .pr { color: var(--phosphor); }
+  .code-surface .dim { color: var(--ash-dim); }
+  .term-meta { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; font-size: 0.68rem; letter-spacing: 0.08em; color: var(--ash-dim); font-family: var(--mono); }
+  .term-dot { width: 0.45rem; height: 0.7rem; background: var(--phosphor); display: inline-block; margin-right: 0.55rem; vertical-align: -0.05rem; }
+
+  .caption { margin: 1rem 0 0; font-size: 0.68rem; letter-spacing: 0.06em; line-height: 1.7; color: var(--ash-dim); font-family: var(--mono); }
+  .caption b { color: var(--phosphor); font-weight: 400; }
+  .foot { border-top: 1px solid var(--line); padding-top: 1.25rem; font-size: 0.72rem; line-height: 1.7; color: var(--ash-dim); }
+  .foot code { color: var(--phosphor); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <h1>HJ-703 — EXPANDED CARD DETAIL · MOCKUPS A/B</h1>
+    <p>Direction: terminal-native (Ghostty/Omarchy). phosphor <code>#6fa3a0</code> on near-black <code>#04060a</code> (<code>--glass</code>); uniform single accent; dark-only; muted text <code>&ge;#868b93</code> per repo precedent (axe-strict).</p>
+    <p>Subject: full-row expanded card — header/title/badge row, inspect panel, content surface, visible focus ring. Mirrors <code>.showcase-card-expanded</code> + <code>CardShell</code> in <code>src/components/explorer/ui.tsx</code>.</p>
+  </header>
+
+  <!-- ================= TREATMENT A — MONO ONLY ================= -->
+  <section class="treatment treatment-A" aria-label="Treatment A, mono only">
+    <div class="treatment-label"><span class="tag">A</span><h2>MONO-ONLY — JETBRAINSMONO NERD FONT STACK</h2></div>
+    <p class="treatment-note">Every glyph — titles, badges, inspect, content surface — in the mono stack (<code>JetBrainsMono Nerd Font, ui-monospace, monospace</code>; local fallback, no webfont hotlink). Terminal-purist read.</p>
+    <ol class="parts">
+      <li><b>01</b>header / title / badge row</li>
+      <li><b>02</b>inspect panel (open)</li>
+      <li><b>03</b>content surface</li>
+      <li><b>04</b>focus ring (on collapse control)</li>
+    </ol>
+
+    <div class="mock-grid" aria-hidden="true">
+      <div class="ghost-card"><p>neovim · collapsed</p></div>
+      <div class="ghost-card"><p>lazygit · collapsed</p></div>
+    </div>
+
+    <article class="showcase-card showcase-card-expanded card-focused" aria-label="Expanded card mockup, treatment A">
+      <div class="showcase-card-header">
+        <div class="showcase-card-meta">
+          <h2 class="showcase-card-title">starship</h2>
+          <span class="source-badge">LIVE</span>
+        </div>
+        <button type="button" class="showcase-expand-btn mock-focus" aria-expanded="true">collapse &#9652;</button>
+      </div>
+      <p class="showcase-card-blurb">cross-shell prompt — real binary render, 8-color recolor path</p>
+      <div class="showcase-card-body">
+        <section class="content-panel">
+          <details class="inspect" open>
+            <summary>inspect</summary>
+            <div class="inspect-body">
+              <p class="inspect-title">starship</p>
+              <span class="source-badge">LIVE</span>
+              <p>drives the real <code>starship</code> binary through the Hono/Bun API against an isolated temp git repo; recolors cyan&rarr;red on non-zero status.</p>
+              <span class="pill">~/.config/starship.toml &rarr; fallback</span>
+            </div>
+          </details>
+          <p class="term-meta"><span><span class="term-dot"></span>prompt preview · 8-color mode</span><span>200 cols</span></p>
+          <pre class="code-surface"><span class="pr">harlan@glass</span> <span class="dim">~/dev/dotfiles-showcase</span> <span class="pr">on branch ft/HJ-703</span> <span class="dim">via bun 1.2</span>
+<span class="pr">&gt;</span> <span class="dim">▊</span></pre>
+        </section>
+      </div>
+    </article>
+    <p class="caption"><b>04 · focus ring:</b> 1px solid <b>#6fa3a0</b>, 3px offset — shown on the collapse control (mirrors <b>:focus-visible</b> in <b>src/index.css</b>). Card carries <b>.card-focused</b> phosphor border (deep-link target state).</p>
+  </section>
+
+  <!-- ================= TREATMENT B — DISPLAY HEADERS + MONO BODY ================= -->
+  <section class="treatment treatment-B" aria-label="Treatment B, display headers plus mono body">
+    <div class="treatment-label"><span class="tag">B</span><h2>Display-face headers + mono body</h2></div>
+    <p class="treatment-note">Card title + inspect title in the system display stack; badges, inspect body, blurb, and content surface stay mono. Same tokens, same spacing, same single accent.</p>
+    <ol class="parts">
+      <li><b>01</b>header / title / badge row</li>
+      <li><b>02</b>inspect panel (open)</li>
+      <li><b>03</b>content surface</li>
+      <li><b>04</b>focus ring (on collapse control)</li>
+    </ol>
+
+    <div class="mock-grid" aria-hidden="true">
+      <div class="ghost-card"><p>neovim · collapsed</p></div>
+      <div class="ghost-card"><p>lazygit · collapsed</p></div>
+    </div>
+
+    <article class="showcase-card showcase-card-expanded card-focused" aria-label="Expanded card mockup, treatment B">
+      <div class="showcase-card-header">
+        <div class="showcase-card-meta">
+          <h2 class="showcase-card-title">Starship</h2>
+          <span class="source-badge">LIVE</span>
+        </div>
+        <button type="button" class="showcase-expand-btn mock-focus" aria-expanded="true">collapse &#9652;</button>
+      </div>
+      <p class="showcase-card-blurb">cross-shell prompt — real binary render, 8-color recolor path</p>
+      <div class="showcase-card-body">
+        <section class="content-panel">
+          <details class="inspect" open>
+            <summary>inspect</summary>
+            <div class="inspect-body">
+              <p class="inspect-title">Starship</p>
+              <span class="source-badge">LIVE</span>
+              <p>drives the real <code>starship</code> binary through the Hono/Bun API against an isolated temp git repo; recolors cyan&rarr;red on non-zero status.</p>
+              <span class="pill">~/.config/starship.toml &rarr; fallback</span>
+            </div>
+          </details>
+          <p class="term-meta"><span><span class="term-dot"></span>prompt preview · 8-color mode</span><span>200 cols</span></p>
+          <pre class="code-surface"><span class="pr">harlan@glass</span> <span class="dim">~/dev/dotfiles-showcase</span> <span class="pr">on branch ft/HJ-703</span> <span class="dim">via bun 1.2</span>
+<span class="pr">&gt;</span> <span class="dim">▊</span></pre>
+        </section>
+      </div>
+    </article>
+    <p class="caption"><b>04 · focus ring:</b> identical ring spec as A — only the header type changes. Compare A/B titles side by side for the typography verdict (HJ-701).</p>
+  </section>
+
+  <footer class="foot">
+    <p style="margin:0">Static prototype — no build step, no external requests, $0 medium (owner-directed swap from RunComfy image-gen; see PR_DESCRIPTION.md). Open via <code>file://</code> or any static server. Tokens: <code>--glass #04060a</code> · <code>--glass-lit #060912</code> · <code>--phosphor #6fa3a0</code> · muted <code>#868b93</code>/<code>#959aa4</code> · title ink <code>#e8f2f1</code>.</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -87,7 +87,7 @@ export default function GhosttyTerminalCard() {
             <div className="space-y-1 rounded-lg border border-white/10 bg-white/[0.03] p-3">
               <div className="font-mono text-xs text-white/80">
                 backend:{" "}
-                <span className="text-[#6fa3a0]">
+                <span className="text-phosphor">
                   async-backend = {data.asyncBackend ?? "unset"}
                 </span>
               </div>
@@ -112,10 +112,10 @@ export default function GhosttyTerminalCard() {
                       key={`${b.key}=${b.action}`}
                       className="flex flex-wrap items-center gap-2 py-1"
                     >
-                      <kbd className="border border-[#959aa4]/20 px-1.5 py-0.5 font-mono text-[11px] text-[#959aa4]">
+                      <kbd className="border border-ash/20 px-1.5 py-0.5 font-mono text-[11px] text-ash">
                         {b.key}
                       </kbd>
-                      <span className="font-mono text-xs text-[#6fa3a0]">
+                      <span className="font-mono text-xs text-phosphor">
                         {b.action}
                       </span>
                     </li>
@@ -131,9 +131,9 @@ export default function GhosttyTerminalCard() {
                 <ul className="space-y-1">
                   {data.csiExamples.map((ex) => (
                     <li key={ex} className="font-mono text-[11px] text-white/55">
-                      <span className="text-[#868b93]"># keybind = </span>
+                      <span className="text-ash-dim"># keybind = </span>
                       <span className="text-white/75">{ex}</span>{" "}
-                      <span className="text-[#868b93]">(opt-in)</span>
+                      <span className="text-ash-dim">(opt-in)</span>
                     </li>
                   ))}
                 </ul>
@@ -175,7 +175,7 @@ export default function GhosttyTerminalCard() {
                     step={1}
                     value={activePadX}
                     onChange={(e) => setPadX(Number(e.target.value))}
-                    className="mt-1 w-full accent-[#6fa3a0]"
+                    className="mt-1 w-full accent-phosphor"
                   />
                 </label>
                 <label className="block">
@@ -189,12 +189,12 @@ export default function GhosttyTerminalCard() {
                     step={1}
                     value={activePadY}
                     onChange={(e) => setPadY(Number(e.target.value))}
-                    className="mt-1 w-full accent-[#6fa3a0]"
+                    className="mt-1 w-full accent-phosphor"
                   />
                 </label>
               </div>
               <pre
-                className="overflow-x-auto rounded-lg border border-white/10 bg-black/60 font-mono text-xs leading-relaxed text-[#959aa4]"
+                className="overflow-x-auto rounded-lg border border-white/10 bg-black/60 font-mono text-xs leading-relaxed text-ash"
                 style={{
                   paddingLeft: `${activePadX}px`,
                   paddingRight: `${activePadX}px`,
@@ -268,7 +268,7 @@ export default function GhosttyTerminalCard() {
                       key={`${b.key}=${b.action}`}
                       className="flex flex-wrap items-center gap-2 py-1.5"
                     >
-                      <kbd className="border border-[#959aa4]/20 px-1.5 py-0.5 font-mono text-[11px] text-[#959aa4]">
+                      <kbd className="border border-ash/20 px-1.5 py-0.5 font-mono text-[11px] text-ash">
                         {b.key}
                       </kbd>
                       <span className="font-mono text-xs text-white/50">{b.action}</span>

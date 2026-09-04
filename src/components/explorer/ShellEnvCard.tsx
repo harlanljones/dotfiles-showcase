@@ -89,7 +89,7 @@ export default function ShellEnvCard() {
               <p
                 key={w}
                 role="status"
-                className="border border-[#b16371]/35 bg-[#b16371]/10 px-3 py-2 font-mono text-xs text-[#d38290]"
+                className="border border-fail/35 bg-fail/10 px-3 py-2 font-mono text-xs text-[#d38290]"
               >
                 {w}
               </p>

@@ -249,7 +249,7 @@ export default function StarshipPlayground({
         </div>
 
         {hasRecolor && (
-          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-[#868b93]">
+          <div className="mb-4 flex flex-wrap items-center gap-4 text-[11px] tracking-wide text-ash-dim">
             <span>
               {recoloredCount} escape{recoloredCount === 1 ? "" : "s"} recolored
             </span>
@@ -258,7 +258,7 @@ export default function StarshipPlayground({
                 type="button"
                 aria-pressed={view === "after"}
                 onClick={() => setView("after")}
-                className={view === "after" ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}
+                className={view === "after" ? "text-phosphor" : "hover:text-ash"}
               >
                 after
               </button>
@@ -266,12 +266,12 @@ export default function StarshipPlayground({
                 type="button"
                 aria-pressed={view === "before"}
                 onClick={() => setView("before")}
-                className={view === "before" ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}
+                className={view === "before" ? "text-phosphor" : "hover:text-ash"}
               >
                 before
               </button>
             </span>
-            <button type="button" onClick={copyAnsi} className="hover:text-[#959aa4]">
+            <button type="button" onClick={copyAnsi} className="hover:text-ash">
               {copied ? "copied" : "copy ANSI"}
             </button>
           </div>
@@ -288,10 +288,10 @@ export default function StarshipPlayground({
       </div>
 
       {error && (
-        <div role="alert" className="border border-[#b16371]/35 bg-[#b16371]/10 p-3 text-sm text-[#d38290]">
+        <div role="alert" className="border border-fail/35 bg-fail/10 p-3 text-sm text-[#d38290]">
           <div className="flex items-start justify-between gap-3">
             <p>{error}</p>
-            <span className="shrink-0 text-[10px] tracking-wider text-[#868b93]">stale</span>
+            <span className="shrink-0 text-[10px] tracking-wider text-ash-dim">stale</span>
           </div>
           <button type="button" className="mt-2 text-xs underline underline-offset-4" onClick={() => setS((prev) => ({ ...prev }))}>
             Retry render
@@ -299,7 +299,7 @@ export default function StarshipPlayground({
         </div>
       )}
       {degraded && !error && (
-        <p role="status" className="border border-[#b16371]/35 bg-[#b16371]/10 p-3 text-xs text-[#d38290]">
+        <p role="status" className="border border-fail/35 bg-fail/10 p-3 text-xs text-[#d38290]">
           Degraded snapshot — the <code>starship</code> binary is unavailable on this
           deployment, so this preview is a static reconstruction from the bundled
           config with recolor applied. It is not a live render. Run{" "}
@@ -317,18 +317,18 @@ export default function StarshipPlayground({
                 type="button"
                 aria-pressed={scenarioKey === sc.key}
                 onClick={() => applyScenario(sc)}
-                className={`py-1 font-mono text-[11px] tracking-wide ${scenarioKey === sc.key ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+                className={`py-1 font-mono text-[11px] tracking-wide ${scenarioKey === sc.key ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
               >
                 {sc.label}
               </button>
             ))}
           </div>
 
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Branch
             <input
               aria-label="Git branch"
-              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none focus:border-[#6fa3a0]"
+              className="mt-1 w-full border-b border-ash/20 bg-transparent px-0 py-1.5 text-ash outline-none focus:border-phosphor"
               value={s.branch}
               onChange={(e) => set("branch", e.target.value)}
             />
@@ -379,10 +379,10 @@ export default function StarshipPlayground({
         </div>
 
         <div className="space-y-3">
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Git state
             <select
-              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              className="mt-1 w-full border-b border-ash/20 bg-transparent px-0 py-1.5 text-ash outline-none"
               value={s.state}
               onChange={(e) => set("state", e.target.value as GitState)}
             >
@@ -392,10 +392,10 @@ export default function StarshipPlayground({
             </select>
           </label>
 
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Shell recolor
             <select
-              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              className="mt-1 w-full border-b border-ash/20 bg-transparent px-0 py-1.5 text-ash outline-none"
               value={s.shell}
               onChange={(e) => {
                 const shell = e.target.value as ShellMode;
@@ -408,7 +408,7 @@ export default function StarshipPlayground({
             </select>
           </label>
 
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Truecolor preview (proposed fix)
             <div className="mt-1">
               <Toggle
@@ -422,7 +422,7 @@ export default function StarshipPlayground({
             </div>
           </label>
 
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Terminal width
             <input
               type="range"
@@ -435,15 +435,15 @@ export default function StarshipPlayground({
               onPointerUp={() => emit("range_committed", { field: "width", value: s.width })}
               onKeyUp={() => emit("range_committed", { field: "width", value: s.width })}
               onBlur={() => emit("range_committed", { field: "width", value: s.width })}
-              className="mt-2 w-full accent-[#6fa3a0]"
+              className="mt-2 w-full accent-phosphor"
             />
           </label>
 
           <fieldset className="text-sm">
-            <legend className="mb-2 text-[#868b93]">Last command</legend>
+            <legend className="mb-2 text-ash-dim">Last command</legend>
             <div className="flex gap-4">
               <button
-                className={`py-1 ${s.status === 0 ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+                className={`py-1 ${s.status === 0 ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
                 type="button"
                 aria-pressed={s.status === 0}
                 onClick={() => {
@@ -454,7 +454,7 @@ export default function StarshipPlayground({
                 Success
               </button>
               <button
-                className={`py-1 ${s.status === 1 ? "text-[#b16371]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+                className={`py-1 ${s.status === 1 ? "text-fail" : "text-ash-dim hover:text-ash"}`}
                 type="button"
                 aria-pressed={s.status === 1}
                 onClick={() => {
@@ -467,12 +467,12 @@ export default function StarshipPlayground({
             </div>
           </fieldset>
 
-          <label className="block text-sm text-[#868b93]">
+          <label className="block text-sm text-ash-dim">
             Duration (ms)
             <input
               type="number"
               min={0}
-              className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+              className="mt-1 w-full border-b border-ash/20 bg-transparent px-0 py-1.5 text-ash outline-none"
               value={s.durationMs}
               onChange={(e) => set("durationMs", Number(e.target.value))}
               onBlur={(e) => emit("range_committed", { field: "durationMs", value: Number(e.target.value) })}
@@ -482,7 +482,7 @@ export default function StarshipPlayground({
             <button
               type="button"
               onClick={copyLink}
-              className="text-xs tracking-wide text-[#868b93] hover:text-[#959aa4] underline underline-offset-4"
+              className="text-xs tracking-wide text-ash-dim hover:text-ash underline underline-offset-4"
               aria-label="Copy share link"
             >
               {copiedLink ? "link copied" : "copy link"}
@@ -508,7 +508,7 @@ function Toggle({
       type="button"
       onClick={onClick}
       aria-pressed={on}
-      className={`py-1 text-xs tracking-wide ${on ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+      className={`py-1 text-xs tracking-wide ${on ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
     >
       {label}
     </button>
@@ -527,13 +527,13 @@ function NumberField({
   onCommit?: (v: number) => void;
 }) {
   return (
-    <label className="block text-sm text-[#868b93]">
+    <label className="block text-sm text-ash-dim">
       {label}
       <input
         type="number"
         min={0}
         aria-label={`${label} commits`}
-        className="mt-1 w-full border-b border-[#959aa4]/20 bg-transparent px-0 py-1.5 text-[#959aa4] outline-none"
+        className="mt-1 w-full border-b border-ash/20 bg-transparent px-0 py-1.5 text-ash outline-none"
         value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
         onBlur={onCommit ? () => onCommit(value) : undefined}

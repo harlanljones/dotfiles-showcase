@@ -179,9 +179,9 @@ export default function GhosttyPaletteCard() {
       )}
       {data && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-[#868b93]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-ash-dim">
             <span>
-              font: <span className="text-[#959aa4]">{data.fontFamily ?? "?"}</span>{" "}
+              font: <span className="text-ash">{data.fontFamily ?? "?"}</span>{" "}
               {data.fontSize && <span>@ {data.fontSize}px</span>}
             </span>
             {data.themeRef && <span>theme ← {data.themeRef}</span>}
@@ -189,7 +189,7 @@ export default function GhosttyPaletteCard() {
               type="button"
               onClick={() => setShowFont((v) => !v)}
               aria-pressed={showFont}
-              className={`py-1 ${showFont ? "text-[#6fa3a0]" : "hover:text-[#959aa4]"}`}
+              className={`py-1 ${showFont ? "text-phosphor" : "hover:text-ash"}`}
             >
               font preview
             </button>
@@ -208,27 +208,27 @@ export default function GhosttyPaletteCard() {
                   type="button"
                   onClick={() => handleCopy(data.theme[k] ?? "")}
                   title="copy hex"
-                  className="flex items-center gap-1.5 py-1 text-[#868b93] hover:text-[#959aa4]"
+                  className="flex items-center gap-1.5 py-1 text-ash-dim hover:text-ash"
                 >
                   <span
-                    className="inline-block h-3 w-3 rounded-sm border border-black/40"
+                    className="inline-block h-3 w-3 border border-black/40"
                     style={{ background: data.theme[k] ?? "" }}
                   />
                   {k}: {data.theme[k]}
                 </button>
               ) : null,
             )}
-            {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
+            {copied && <span className="text-phosphor">copied {copied}</span>}
           </div>
 
           {palette.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-              <span className="text-[#868b93]">export:</span>
+              <span className="text-ash-dim">export:</span>
               <button
                 type="button"
                 onClick={() => handleCopy(exportPaletteJson(data))}
                 title="copy palette as JSON"
-                className="py-1 text-[#868b93] underline-offset-4 hover:text-[#959aa4] hover:underline"
+                className="py-1 text-ash-dim underline-offset-4 hover:text-ash hover:underline"
               >
                 JSON
               </button>
@@ -236,7 +236,7 @@ export default function GhosttyPaletteCard() {
                 type="button"
                 onClick={() => handleCopy(exportPaletteList(data))}
                 title="copy palette as ghostty-style list"
-                className="py-1 text-[#868b93] underline-offset-4 hover:text-[#959aa4] hover:underline"
+                className="py-1 text-ash-dim underline-offset-4 hover:text-ash hover:underline"
               >
                 hex list
               </button>
@@ -248,7 +248,7 @@ export default function GhosttyPaletteCard() {
               ANSI palette sample — every color through the real palette
             </div>
             <pre
-              className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono text-sm leading-relaxed"
+              className="overflow-x-auto border border-line p-3 font-mono text-sm leading-relaxed"
               style={{ background: bg, color: fg }}
             >
               {sampleSegments.map((seg, i) => (
@@ -265,7 +265,7 @@ export default function GhosttyPaletteCard() {
                 Font preview — {fontFam} @ {fontSz}px on theme background
               </div>
               <pre
-                className="overflow-x-auto rounded-lg border border-white/10 p-3 leading-relaxed"
+                className="overflow-x-auto border border-line p-3 leading-relaxed"
                 style={{
                   background: bg,
                   color: fg,
@@ -281,7 +281,7 @@ export default function GhosttyPaletteCard() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-white/50">
               ANSI palette — click a swatch to preview as foreground &amp; copy its hex
-            {copied && <span className="text-[#6fa3a0]">copied {copied}</span>}
+            {copied && <span className="text-phosphor">copied {copied}</span>}
             </div>
             {palette.length === 0 ? (
               <p className="font-mono text-xs text-white/55">
@@ -304,16 +304,16 @@ export default function GhosttyPaletteCard() {
                       title={`${ansiLabel(n)} · ${hex}`}
                       className={`border p-1.5 text-left ${
                         isSelected
-                          ? "border-[#6fa3a0]/50 bg-[#6fa3a0]/10"
-                          : "border-[#959aa4]/15 hover:border-[#959aa4]/35"
+                          ? "border-phosphor/50 bg-phosphor/10"
+                          : "border-ash/15 hover:border-ash/35"
                       }`}
                     >
                       <div
-                        className="h-8 w-full rounded-sm border border-black/40"
+                        className="h-8 w-full border border-black/40"
                         style={{ background: hex }}
                       />
                       <div className="mt-1 flex items-baseline justify-between font-mono text-[9px]">
-                        <span className={isSelected ? "text-[#6fa3a0]" : "text-[#868b93]"}>{n}</span>
+                        <span className={isSelected ? "text-phosphor" : "text-ash-dim"}>{n}</span>
                         <span className="text-white/55">{isBright ? "bright" : "reg"}</span>
                       </div>
                     </button>
@@ -326,7 +326,7 @@ export default function GhosttyPaletteCard() {
           {selectedHex && (
             <div className="space-y-2">
               <div className="font-mono text-xs text-white/60">
-                Selected: <span className="text-[#6fa3a0]">{ansiLabel(selected)}</span> ·{" "}
+                Selected: <span className="text-phosphor">{ansiLabel(selected)}</span> ·{" "}
                 <span className="text-white/80">{selectedHex}</span>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -335,7 +335,7 @@ export default function GhosttyPaletteCard() {
                     {selectedKind} (SGR {selected})
                   </div>
                   <pre
-                    className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono text-sm leading-relaxed"
+                    className="overflow-x-auto border border-line p-3 font-mono text-sm leading-relaxed"
                     style={{ background: bg, color: selectedHex }}
                   >
                     {SAMPLE_LINE}
@@ -346,7 +346,7 @@ export default function GhosttyPaletteCard() {
                     {pairKind} pair (SGR {pairIdx} = {pairDelta})
                   </div>
                   <pre
-                    className="overflow-x-auto rounded-lg border border-white/10 p-3 font-mono text-sm leading-relaxed"
+                    className="overflow-x-auto border border-line p-3 font-mono text-sm leading-relaxed"
                     style={{
                       background: bg,
                       color: pairHex ?? selectedHex,
@@ -366,7 +366,7 @@ export default function GhosttyPaletteCard() {
               {keybindGroups.map((grp, gi) => (
                 <div key={gi} className="space-y-1">
                   {grp.label && (
-                    <div className="font-mono text-[10px] uppercase tracking-wider text-[#6fa3a0]/80">
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-phosphor/80">
                       {grp.label}
                     </div>
                   )}
@@ -376,7 +376,7 @@ export default function GhosttyPaletteCard() {
                           key={`${b.key}=${b.action}`}
                           className="flex flex-wrap items-center gap-2 py-1.5"
                         >
-                          <kbd className="border border-[#959aa4]/20 px-1.5 py-0.5 font-mono text-[11px] text-[#959aa4]">
+                          <kbd className="border border-ash/20 px-1.5 py-0.5 font-mono text-[11px] text-ash">
                           {b.key}
                         </kbd>
                         <span className="font-mono text-xs text-white/50">{b.action}</span>

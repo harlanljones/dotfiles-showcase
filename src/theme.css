@@ -1,0 +1,9 @@
+@theme {
+  --color-glass: #04060a;
+  --color-glass-lit: #060912;
+  --color-phosphor: #6fa3a0;
+  --color-ash: #959aa4;
+  --color-ash-dim: #868b93;
+  --color-fail: #b16371;
+  --color-line: rgba(149, 154, 164, 0.16);
+}

@@ -95,7 +95,7 @@ export default function BtopCard() {
                         type="button"
                         onClick={() => setHidden((h) => ({ ...h, [box]: !h[box] }))}
                         aria-pressed={!hidden[box]}
-                        className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${hidden[box] ? "border-white/10 bg-white/5 text-white/55" : "border-[#6fa3a0]/40 bg-[#6fa3a0]/15 text-[#6fa3a0]"}`}
+                        className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${hidden[box] ? "border-white/10 bg-white/5 text-white/55" : "border-phosphor/40 bg-phosphor/15 text-phosphor"}`}
                       >
                         {box} {hidden[box] ? "off" : "on"}
                       </button>
@@ -111,7 +111,7 @@ export default function BtopCard() {
                     {boxes.map((box) => (
                       <div
                         key={box}
-                        className={`flex-1 rounded border px-2 py-3 text-center font-mono text-xs ${hidden[box] ? "border-white/5 text-white/55 opacity-40" : "border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] text-[#6fa3a0]"}`}
+                        className={`flex-1 rounded border px-2 py-3 text-center font-mono text-xs ${hidden[box] ? "border-white/5 text-white/55 opacity-40" : "border-phosphor/35 bg-phosphor/[0.07] text-phosphor"}`}
                       >
                         {box}
                         {hidden[box] && <span className="block text-[10px]">off</span>}
@@ -207,7 +207,7 @@ export default function BtopCard() {
                     step={MS_STEP}
                     value={activeMs}
                     onChange={(e) => setMsOverride(Number(e.target.value))}
-                    className="mt-1 w-full accent-[#6fa3a0]"
+                    className="mt-1 w-full accent-phosphor"
                   />
                 </label>
               </div>

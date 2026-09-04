@@ -166,7 +166,7 @@ export default function HyprlandCard() {
       <div className="space-y-4">
         {error && <p className="font-mono text-xs text-red-400">{error}</p>}
         {!data && !error && (
-          <p className="font-mono text-xs text-[#868b93]">loading monitors…</p>
+          <p className="font-mono text-xs text-ash-dim">loading monitors…</p>
         )}
         {data && !hasMonitors && (
           <p className="font-mono text-xs text-white/55">
@@ -201,8 +201,8 @@ export default function HyprlandCard() {
                       aria-pressed={selected === d.p.output}
                       className={`absolute flex flex-col justify-between overflow-hidden border p-1.5 text-left transition-colors ${
                         selected === d.p.output
-                          ? "border-[#6fa3a0] bg-[#6fa3a0]/[0.18]"
-                          : "border-[#6fa3a0]/35 bg-[#6fa3a0]/[0.07] hover:border-[#6fa3a0]/60"
+                          ? "border-phosphor bg-phosphor/[0.18]"
+                          : "border-phosphor/35 bg-phosphor/[0.07] hover:border-phosphor/60"
                       }`}
                       style={{
                         left: `${(d.drawX / DIAGRAM_W) * 100}%`,
@@ -212,11 +212,11 @@ export default function HyprlandCard() {
                       }}
                     >
                       {d.p.output === PRIMARY_OUTPUT && (
-                        <span className="absolute right-1 top-1 font-mono text-[8px] tracking-wider text-[#6fa3a0]">
+                        <span className="absolute right-1 top-1 font-mono text-[8px] tracking-wider text-phosphor">
                           PRIMARY
                         </span>
                       )}
-                      <span className="font-mono text-[11px] font-semibold text-[#6fa3a0]">
+                      <span className="font-mono text-[11px] font-semibold text-phosphor">
                         {d.p.output}
                       </span>
                       <span className="font-mono text-[10px] leading-tight text-white/55">
@@ -244,7 +244,7 @@ export default function HyprlandCard() {
                   type="button"
                   onClick={() => setSwapped((v) => !v)}
                   aria-pressed={swapped}
-                  className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+                  className={`py-1 font-mono text-xs tracking-wide ${swapped ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
                 >
                   Swap L/R{swapped ? " (on)" : ""}
                 </button>
@@ -252,7 +252,7 @@ export default function HyprlandCard() {
                   type="button"
                   onClick={() => setShowPhysical((v) => !v)}
                   aria-pressed={showPhysical}
-                  className={`py-1 font-mono text-xs tracking-wide ${showPhysical ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+                  className={`py-1 font-mono text-xs tracking-wide ${showPhysical ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
                 >
                   Physical footprint{showPhysical ? " (on)" : ""}
                 </button>
@@ -264,7 +264,7 @@ export default function HyprlandCard() {
                       setDisabled((s) => ({ ...s, [p.output]: !s[p.output] }))
                     }
                     aria-pressed={!disabled[p.output]}
-                    className={`py-1 font-mono text-xs tracking-wide ${disabled[p.output] ? "text-[#868b93]" : "text-[#6fa3a0]"}`}
+                    className={`py-1 font-mono text-xs tracking-wide ${disabled[p.output] ? "text-ash-dim" : "text-phosphor"}`}
                   >
                     {p.output} {disabled[p.output] ? "off" : "on"}
                   </button>
@@ -289,7 +289,7 @@ export default function HyprlandCard() {
                           [p.output]: Number(e.target.value),
                         }))
                       }
-                      className="mt-1 w-full accent-[#6fa3a0]"
+                      className="mt-1 w-full accent-phosphor"
                     />
                   </label>
                 ))}

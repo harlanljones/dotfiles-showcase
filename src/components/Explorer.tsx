@@ -52,7 +52,7 @@ function ChunkWait() {
   return (
     <div className="flex items-center gap-2 py-6" role="status" aria-label="Loading card">
       <span className="block-cursor" aria-hidden="true" />
-      <span className="font-mono text-xs text-[#868b93]">loading…</span>
+      <span className="font-mono text-xs text-ash-dim">loading…</span>
     </div>
   );
 }
@@ -145,6 +145,7 @@ export default function Explorer() {
       <main className="field">
         <div className="explorer-content">
           <div
+            key={activeCategory}
             className="category-grid"
             role="region"
             aria-label={currentCategory?.label ?? "Cards"}

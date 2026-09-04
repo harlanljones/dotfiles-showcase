@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>HJ-705 — Veil &amp; Wake Mockups (Treatments A / B)</title>
+<style>
+  /* ---- direction tokens (HJ-700 standing direction) ---- */
+  :root {
+    color-scheme: dark;
+    --glass: #04060a;            /* near-black veil field */
+    --glass-lit: #060912;
+    --phosphor: #6fa3a0;         /* uniform single accent */
+    --ash: #959aa4;
+    --ash-dim: #868b93;          /* muted-text floor (axe-strict) */
+    --fail: #b16371;
+    --line: rgba(149, 154, 164, 0.16);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --mono: "JetBrainsMono Nerd Font", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --display: system-ui, -apple-system, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--glass);
+    color: var(--ash);
+    font-family: var(--mono);
+  }
+  body { padding: 2.5rem 1.25rem 4rem; }
+  .page { max-width: 72rem; margin: 0 auto; }
+
+  .doc-head { border: 1px solid var(--line); padding: 1.5rem 1.5rem 1.25rem; background: var(--glass-lit); }
+  .doc-head h1 { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--phosphor); letter-spacing: 0.04em; }
+  .doc-head p { margin: 0.35rem 0; font-size: 0.8rem; line-height: 1.7; color: var(--ash-dim); }
+  .doc-head code { color: var(--ash); font-size: 0.75rem; }
+  .tokens { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin-top: 0.75rem; font-size: 0.72rem; color: var(--ash-dim); }
+  .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; vertical-align: -0.12rem; margin-right: 0.35rem; border: 1px solid var(--line); }
+
+  .treatment { margin-top: 2.5rem; border: 1px solid var(--line); }
+  .treatment > header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--line); background: var(--glass-lit); }
+  .treatment > header h2 { margin: 0 0 0.35rem; font-size: 0.95rem; color: var(--phosphor); letter-spacing: 0.04em; }
+  .treatment > header p { margin: 0.25rem 0; font-size: 0.78rem; line-height: 1.7; color: var(--ash-dim); }
+  .treatment-b > header h2 { font-family: var(--display); font-weight: 650; }
+
+  .stage-label {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ash-dim);
+    border-bottom: 1px solid var(--line);
+  }
+  .stage-label b { color: var(--phosphor); font-weight: 700; }
+
+  /* ---- veil viewport mock: mirrors src/App.tsx + src/index.css (.veil) ---- */
+  .viewport {
+    position: relative;
+    min-height: 26rem;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(60% 45% at 50% 52%, rgba(111, 163, 160, 0.055), transparent 70%),
+      var(--glass);
+    overflow: hidden;
+  }
+  /* faint CRT scanlines, CSS-only (no external assets) */
+  .viewport::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0 2px,
+      rgba(149, 154, 164, 0.025) 2px 3px
+    );
+  }
+  .veil-mock {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    gap: 1.1rem;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 2rem;
+  }
+  .veil-mock:focus-visible { outline: 1px solid var(--phosphor); outline-offset: 6px; }
+  /* faithful .block-cursor replica: 0.7rem x 1.15rem, phosphor, glow, 1.05s blink */
+  .block-cursor {
+    width: 0.7rem;
+    height: 1.15rem;
+    background: var(--phosphor);
+    box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
+    animation: cursor-blink 1.05s linear infinite;
+  }
+  @keyframes cursor-blink {
+    0%, 48% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .block-cursor { animation: none; }
+  }
+
+  /* Treatment A: mono-only veil text */
+  .veil-text-a {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ash-dim);
+    margin: 0;
+    text-align: center;
+  }
+  .veil-sub-a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--ash-dim);
+    opacity: 0.75;
+    margin: 0;
+    text-align: center;
+  }
+  /* Treatment B: display-face veil text + mono subtext */
+  .veil-text-b {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.6rem;
+    letter-spacing: 0.01em;
+    color: var(--ash);
+    margin: 0;
+    text-align: center;
+  }
+  .veil-sub-b {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ash-dim);
+    margin: 0;
+    text-align: center;
+  }
+  .wake-hint {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--ash-dim);
+    opacity: 0.6;
+    margin: 0;
+    text-align: center;
+  }
+
+  /* ---- wake-transition framing strip: veiled -> fading -> awake ---- */
+  .wake-strip {
+    display: grid;
+    grid-template-columns: 1fr;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 720px) {
+    .wake-strip { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .frame {
+    position: relative;
+    min-height: 13rem;
+    display: grid;
+    place-items: center;
+    background: var(--glass);
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 720px) {
+    .frame { border-top: 0; border-left: 1px solid var(--line); }
+    .frame:first-child { border-left: 0; }
+  }
+  .frame figcaption {
+    position: absolute;
+    left: 0.9rem; bottom: 0.7rem;
+    font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ash-dim);
+  }
+  .frame .t {
+    font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--phosphor);
+    position: absolute; top: 0.7rem; left: 0.9rem;
+  }
+  .cursor-mini {
+    width: 0.7rem; height: 1.15rem;
+    background: var(--phosphor);
+    box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
+  }
+  .frame-fading { background: linear-gradient(to right, var(--glass) 20%, var(--glass-lit) 80%); }
+  .frame-fading .cursor-mini { opacity: 0.45; }
+  .frame-fading .ghost-grid {
+    position: absolute; inset: 1.4rem 1.2rem 2.2rem;
+    border: 1px dashed rgba(111, 163, 160, 0.35);
+    display: grid; place-items: center;
+    font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(111, 163, 160, 0.6);
+  }
+  .frame-awake .awake-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 72%;
+  }
+  .frame-awake .cell {
+    border: 1px solid var(--line);
+    background: var(--glass-lit);
+    min-height: 3.4rem;
+    display: grid; place-items: center;
+    font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--phosphor);
+  }
+  .frame-awake .cell span { color: var(--ash-dim); }
+
+  .notes { padding: 1rem 1.5rem 1.35rem; border-top: 1px solid var(--line); }
+  .notes h3 { margin: 0 0 0.5rem; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--phosphor); }
+  .treatment-b .notes h3 { font-family: var(--display); }
+  .notes ul { margin: 0; padding-left: 1.1rem; font-size: 0.76rem; line-height: 1.75; color: var(--ash-dim); }
+  .notes li::marker { color: var(--phosphor); }
+
+  .doc-foot { margin-top: 2.5rem; border: 1px solid var(--line); padding: 1.25rem 1.5rem; background: var(--glass-lit); }
+  .doc-foot h2 { margin: 0 0 0.5rem; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--phosphor); }
+  .doc-foot p, .doc-foot li { font-size: 0.76rem; line-height: 1.75; color: var(--ash-dim); }
+  .doc-foot ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-head">
+    <h1>HJ-705 — Veil &amp; Wake screen mockups</h1>
+    <p>Static, self-contained prototype (no build step, no external requests, no image-gen — $0 free medium per owner directive).
+       Reference: <code>src/App.tsx</code> (<code>.veil</code> full-screen wake button + <code>.block-cursor</code>) and
+       <code>src/index.css</code> veil/cursor rules. The app veil is a full-viewport <code>&lt;button class="veil"&gt;</code>
+       containing a single <code>.block-cursor</code> span; any key (except Tab) also wakes.</p>
+    <p>Direction: terminal-native (Ghostty/Omarchy world); phosphor <code>#6fa3a0</code> on near-black
+       <code>#04060a</code> (<code>--glass</code>); uniform single accent; dark-only; muted text at or above
+       <code>#868b93</code> per repo precedent (axe-strict).</p>
+    <div class="tokens" aria-label="Direction tokens">
+      <span><i class="swatch" style="background:#04060a"></i>--glass #04060a</span>
+      <span><i class="swatch" style="background:#6fa3a0"></i>--phosphor #6fa3a0</span>
+      <span><i class="swatch" style="background:#959aa4"></i>--ash #959aa4</span>
+      <span><i class="swatch" style="background:#868b93"></i>--ash-dim #868b93 (muted floor)</span>
+    </div>
+  </header>
+
+  <!-- ============ TREATMENT A : mono-only ============ -->
+  <section class="treatment treatment-a" aria-labelledby="treat-a">
+    <header>
+      <h2 id="treat-a">Treatment A — mono-only</h2>
+      <p>Veil text, subtext, and wake hint all in the JetBrainsMono Nerd Font stack
+         (local fallback <code>ui-monospace/monospace</code> — no webfont hotlink).
+         Terminal-purist read; closest to the current app voice.</p>
+    </header>
+
+    <div class="stage-label"><b>1 · Pre-wake atmosphere</b> — full-screen veil, centered block-cursor button, ambient field</div>
+    <div class="viewport" role="img" aria-label="Treatment A mockup: dark veil with centered blinking block cursor, mono veil text, and mono wake hint">
+      <button class="veil-mock" type="button" aria-label="Wake display (mockup — inert)">
+        <span class="block-cursor" aria-hidden="true"></span>
+        <span>
+          <p class="veil-text-a">dotfiles showcase</p>
+          <p class="veil-sub-a" style="margin-top:0.6rem">terminal-native · local-first</p>
+          <p class="wake-hint" style="margin-top:1.4rem">press any key — or click — to wake</p>
+        </span>
+      </button>
+    </div>
+
+    <div class="stage-label"><b>2 · Wake transition framing</b> — veiled → fading (220ms ease-out) → awake grid</div>
+    <div class="wake-strip">
+      <figure class="frame" style="margin:0">
+        <span class="t">t0 · veiled</span>
+        <span class="cursor-mini" aria-hidden="true"></span>
+        <figcaption>opacity 1 · cursor blinking</figcaption>
+      </figure>
+      <figure class="frame frame-fading" style="margin:0">
+        <span class="t">t1 · fading</span>
+        <span class="ghost-grid" aria-hidden="true">explorer emerging…</span>
+        <span class="cursor-mini" aria-hidden="true"></span>
+        <figcaption>veil data-gone · opacity → 0</figcaption>
+      </figure>
+      <figure class="frame frame-awake" style="margin:0">
+        <span class="t">t2 · awake</span>
+        <div class="awake-grid" aria-hidden="true">
+          <div class="cell">shell</div>
+          <div class="cell">terminal</div>
+          <div class="cell">editor</div>
+          <div class="cell"><span>agents</span></div>
+        </div>
+        <figcaption>explorer grid · single accent</figcaption>
+      </figure>
+    </div>
+
+    <div class="notes">
+      <h3>Grill notes (for human review)</h3>
+      <ul>
+        <li>Pre-wake atmosphere: near-black field + faint phosphor radial glow + CSS scanlines; no imagery, no external assets.</li>
+        <li>Cursor is the button: entire veil is clickable, mirroring <code>.veil</code> (<code>position:fixed; inset:0; place-items:center</code>).</li>
+        <li>Muted microcopy stays at <code>#868b93</code> — the repo's contrast floor on dark.</li>
+        <li>Blink is CSS-only at the canonical <code>1.05s</code> cadence; frozen under <code>prefers-reduced-motion</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ TREATMENT B : display face + mono subtext ============ -->
+  <section class="treatment treatment-b" aria-labelledby="treat-b">
+    <header>
+      <h2 id="treat-b">Treatment B — display-face veil text + mono subtext</h2>
+      <p>Veil headline in the system display stack (<code>system-ui / -apple-system / “Segoe UI”</code> — local only);
+         supporting lines stay mono. Warmer, more editorial read; tests the HJ-701 typography question on the veil.</p>
+    </header>
+
+    <div class="stage-label"><b>1 · Pre-wake atmosphere</b> — full-screen veil, centered block-cursor button, ambient field</div>
+    <div class="viewport" role="img" aria-label="Treatment B mockup: dark veil with centered blinking block cursor, display-face headline, and mono wake hint">
+      <button class="veil-mock" type="button" aria-label="Wake display (mockup — inert)">
+        <span class="block-cursor" aria-hidden="true"></span>
+        <span>
+          <p class="veil-text-b">Dotfiles Showcase</p>
+          <p class="veil-sub-b" style="margin-top:0.7rem">terminal-native · local-first</p>
+          <p class="wake-hint" style="margin-top:1.4rem">press any key — or click — to wake</p>
+        </span>
+      </button>
+    </div>
+
+    <div class="stage-label"><b>2 · Wake transition framing</b> — veiled → fading (220ms ease-out) → awake grid</div>
+    <div class="wake-strip">
+      <figure class="frame" style="margin:0">
+        <span class="t">t0 · veiled</span>
+        <span class="cursor-mini" aria-hidden="true"></span>
+        <figcaption>opacity 1 · cursor blinking</figcaption>
+      </figure>
+      <figure class="frame frame-fading" style="margin:0">
+        <span class="t">t1 · fading</span>
+        <span class="ghost-grid" aria-hidden="true">explorer emerging…</span>
+        <span class="cursor-mini" aria-hidden="true"></span>
+        <figcaption>veil data-gone · opacity → 0</figcaption>
+      </figure>
+      <figure class="frame frame-awake" style="margin:0">
+        <span class="t">t2 · awake</span>
+        <div class="awake-grid" aria-hidden="true">
+          <div class="cell">shell</div>
+          <div class="cell">terminal</div>
+          <div class="cell">editor</div>
+          <div class="cell"><span>agents</span></div>
+        </div>
+        <figcaption>explorer grid · single accent</figcaption>
+      </figure>
+    </div>
+
+    <div class="notes">
+      <h3>Grill notes (for human review)</h3>
+      <ul>
+        <li>Display headline at <code>#959aa4</code> (ash, one step above the muted floor) so the large face carries presence without spending the accent.</li>
+        <li>Accent stays uniform: only the cursor, frame ticks, and grid labels use phosphor — categories inherit the single-accent rule.</li>
+        <li>Open question for HJ-701: whether the display face earns its place, or the veil stays mono-only (Treatment A).</li>
+        <li>Same interaction contract as A: whole veil is the wake button; keypress (non-Tab) wakes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <h2>How to view · fidelity notes</h2>
+    <ul>
+      <li>Open this file directly in a browser (<code>file://</code> — no server, no build, no network).</li>
+      <li>Cursor blink mirrors <code>src/index.css</code> (<code>cursor-blink 1.05s linear infinite</code>, 48%/50% cadence) with a <code>prefers-reduced-motion</code> freeze, matching A11Y-01.</li>
+      <li>Fonts are local stacks only — JetBrainsMono Nerd Font if installed, else <code>ui-monospace/monospace</code>; display face is the OS system stack. No webfont requests.</li>
+      <li>Grilling / HITL refinement is out of scope for this ticket — the human grills at review (HJ-709 direction lock).</li>
+    </ul>
+  </footer>
+
+</div>
+</body>
+</html>

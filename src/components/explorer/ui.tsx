@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 export type SourceKind = "live" | "fallback" | "simulated" | "static" | "interactive";
 
 const SOURCE_STYLES: Record<SourceKind, string> = {
-  live: "text-[#6fa3a0]",
-  fallback: "text-[#b16371]",
-  simulated: "text-[#959aa4]",
-  static: "text-[#868b93]",
-  interactive: "text-[#6fa3a0]",
+  live: "text-phosphor",
+  fallback: "text-fail",
+  simulated: "text-ash",
+  static: "text-ash-dim",
+  interactive: "text-phosphor",
 };
 
 const SOURCE_LABEL: Record<SourceKind, string> = {
@@ -43,7 +43,7 @@ export function ToggleGroup({
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`px-0 py-1 font-mono text-xs tracking-wide ${value === o.value ? "text-[#6fa3a0]" : "text-[#868b93] hover:text-[#959aa4]"}`}
+          className={`px-0 py-1 font-mono text-xs tracking-wide ${value === o.value ? "text-phosphor" : "text-ash-dim hover:text-ash"}`}
         >
           {o.label}
         </button>
@@ -53,9 +53,9 @@ export function ToggleGroup({
 }
 
 const NOTICE_TONES: Record<"warning" | "info" | "error", string> = {
-  warning: "border-[#b16371]/35 bg-[#b16371]/10 text-[#d38290]",
-  info: "border-[#6fa3a0]/30 bg-[#6fa3a0]/10 text-[#6fa3a0]",
-  error: "border-[#b16371]/40 bg-[#b16371]/12 text-[#d38290]",
+  warning: "border-fail/35 bg-fail/10 text-[#d38290]",
+  info: "border-phosphor/30 bg-phosphor/10 text-phosphor",
+  error: "border-fail/40 bg-fail/12 text-[#d38290]",
 };
 
 export function Notice({
@@ -90,7 +90,7 @@ export function CardShell({
       <details className="inspect">
         <summary>inspect</summary>
         <div className="inspect-body">
-          <p className="m-0 text-sm tracking-wide text-[#959aa4]">{title}</p>
+          <p className="m-0 text-sm tracking-wide text-ash">{title}</p>
           {badges}
           {blurb && <p>{blurb}</p>}
           {notes}
@@ -111,7 +111,7 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
     );
   }
   return (
-    <pre className="code-surface overflow-x-auto p-3 font-mono text-xs leading-relaxed text-[#959aa4]">
+    <pre className="code-surface overflow-x-auto p-3 font-mono text-xs leading-relaxed text-ash">
       {children}
     </pre>
   );
@@ -119,6 +119,6 @@ export function Term({ children, html }: { children?: ReactNode; html?: string }
 
 export function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-xs tracking-wide text-[#868b93]">{children}</span>
+    <span className="font-mono text-xs tracking-wide text-ash-dim">{children}</span>
   );
 }

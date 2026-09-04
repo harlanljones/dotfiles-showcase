@@ -26,17 +26,17 @@ export default function GitSafetyCard() {
       blurb="Every coding agent on this machine can stage and diff, but never commit or push without a human."
     >
       <div className="space-y-8">
-        <p className="max-w-xl text-sm leading-7 text-[#868b93]">
+        <p className="max-w-xl text-sm leading-7 text-ash-dim">
           Four agents. Commit and push blocked. History stays human.
         </p>
         <div className="grid grid-cols-1 gap-x-10 gap-y-8 sm:grid-cols-2">
           {AGENTS.map((agent) => (
             <div key={agent.name}>
-              <div className="mb-3 font-mono text-sm tracking-wide text-[#6fa3a0]">{agent.name}</div>
+              <div className="mb-3 font-mono text-sm tracking-wide text-phosphor">{agent.name}</div>
               <ul className="space-y-1.5">
                 {agent.rules.map((rule) => (
-                  <li key={rule} className="font-mono text-[12px] leading-5 text-[#959aa4]">
-                    <span className={rule.startsWith("deny") ? "text-[#b16371]" : "text-[#868b93]"}>
+                  <li key={rule} className="font-mono text-[12px] leading-5 text-ash">
+                    <span className={rule.startsWith("deny") ? "text-fail" : "text-ash-dim"}>
                       {rule.startsWith("deny") ? "×" : "·"}
                     </span>{" "}
                     {rule}

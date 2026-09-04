@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./theme.css";
 
 @font-face {
   font-family: "JetBrainsMono Nerd Font";
@@ -215,6 +216,11 @@ html[data-failed="1"] .display {
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* A11Y-01: honor prefers-reduced-motion — no blinking cursors, no transitions. */
 @media (prefers-reduced-motion: reduce) {
   .block-cursor,
@@ -224,6 +230,10 @@ html[data-failed="1"] .display {
   .display,
   .veil {
     transition: none;
+  }
+  .category-grid,
+  .showcase-card-body {
+    animation: none;
   }
 }
 
@@ -281,6 +291,7 @@ html[data-failed="1"] .display {
   grid-template-columns: 1fr;
   gap: 1.25rem;
   width: 100%;
+  animation: fade-in 160ms var(--ease-out);
 }
 @media (min-width: 768px) {
   .category-grid {
@@ -360,6 +371,7 @@ html[data-failed="1"] .display {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line);
+  animation: fade-in 160ms var(--ease-out);
 }
 
 .content-panel {
