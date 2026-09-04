@@ -280,8 +280,7 @@ html[data-failed="1"] .display {
   .veil {
     transition: none;
   }
-  .category-grid,
-  .showcase-card-body {
+  .demo-hero {
     animation: none;
   }
 }
@@ -335,91 +334,40 @@ html[data-failed="1"] .display {
   padding-left: 0.75rem;
 }
 
-.category-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  width: 100%;
-  animation: fade-in 160ms var(--ease-out);
+/*
+ * Hero and rail (HJ-718): a category view is exactly one full-bleed showcase
+ * demo. Sibling demos in the category render above it as small tracked
+ * words, echoing the .room-names treatment; the open demo is marked with
+ * aria-current.
+ */
+.demo-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.35rem;
+  margin-bottom: 1.5rem;
 }
-@media (min-width: 768px) {
-  .category-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
+.demo-rail-word {
+  color: var(--ash-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  opacity: 0.38;
+  padding: 0.35rem 0;
+  transition: opacity 160ms ease, color 160ms ease;
+}
+.demo-rail-word[aria-current="true"] {
+  color: var(--phosphor);
+  opacity: 0.82;
+}
+@media (hover: hover) and (pointer: fine) {
+  .demo-rail-word:hover {
+    opacity: 0.92;
+    color: var(--ash);
   }
 }
 
-.showcase-card {
-  border: 1px solid var(--line);
-  background: var(--glass-lit);
-  padding: 1.25rem;
-  transition: border-color 160ms ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.showcase-card:hover {
-  border-color: rgba(111, 163, 160, 0.35);
-}
-
-.showcase-card.card-focused {
-  border-color: var(--phosphor);
-}
-
-.showcase-card-expanded {
-  grid-column: 1 / -1;
-  border-color: rgba(111, 163, 160, 0.45);
-}
-
-.showcase-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.showcase-card-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.showcase-card-title {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #e8f2f1;
-}
-
-.showcase-card-blurb {
-  margin: 0.5rem 0 0;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--ash-dim);
-}
-
-.showcase-expand-btn {
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  color: var(--phosphor);
-  opacity: 0.75;
-  white-space: nowrap;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid rgba(111, 163, 160, 0.25);
-  transition: opacity 160ms ease, border-color 160ms ease;
-}
-
-.showcase-expand-btn:hover {
-  opacity: 1;
-  border-color: var(--phosphor);
-}
-
-.showcase-card-body {
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
+.demo-hero {
+  width: 100%;
   animation: fade-in 160ms var(--ease-out);
 }
 

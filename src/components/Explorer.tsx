@@ -1,5 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { getManifestEntry, type CardId } from "../manifest";
+import { Suspense, lazy, useEffect } from "react";
+import type { CardId } from "../manifest";
 import { useRouter } from "../lib/router";
 import {
   CATEGORIES,
@@ -8,19 +8,17 @@ import {
   type CategoryId,
 } from "../lib/catalogue";
 import { emit } from "../lib/telemetry";
-import { SourceBadge } from "./explorer/ui";
 import StarshipCard from "./explorer/StarshipCard";
-import "./Explorer.grid.css";
 
 /**
  * PERF-03 chunk map: the wake path (StarshipCard) stays in the initial bundle;
  * other card components split into on-demand chunks via React.lazy.
  */
-const EAGER: Partial<Record<CardId, React.ComponentType<{ onOpenPlayground?: () => void }>>> = {
+const EAGER: Partial<Record<CardId, React.ComponentType>> = {
   starship: StarshipCard,
 };
 
-const LOADERS: Record<string, () => Promise<{ default: React.ComponentType<{ onOpenPlayground?: () => void }> }>> = {
+const LOADERS: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   "git-safety": () => import("./explorer/GitSafetyCard"),
   lazygit: () => import("./explorer/LazygitCard"),
   fuzzy: () => import("./explorer/FuzzyToolsCard"),
@@ -40,7 +38,7 @@ const LOADERS: Record<string, () => Promise<{ default: React.ComponentType<{ onO
   "git-core": () => import("./explorer/GitCoreCard"),
 };
 
-const CARDS = {} as Record<CardId, React.ComponentType<{ onOpenPlayground?: () => void }>>;
+const CARDS = {} as Record<CardId, React.ComponentType>;
 for (const entry of CATALOGUE) {
   if (entry.lazy) {
     CARDS[entry.id] = lazy(LOADERS[entry.id]);
@@ -71,30 +69,14 @@ export default function Explorer() {
   const { route, navigate } = useRouter();
   const activeCategory = route.category;
 
-  // Track expanded cards. Deep-linked targetCard is expanded on arrival.
-  const [expandedCards, setExpandedCards] = useState<Set<CardId>>(
-    () => new Set<CardId>(route.targetCard ? [route.targetCard] : []),
-  );
-
-  const targetRef = useRef<HTMLElement>(null);
-
-  // If landing on root "/", normalize URL to canonical path without adding a history entry
+  // Landing on root "/" resolves to Shell & Navigation with Starship open —
+  // the desk's signature, and already the eager (chunk-free) demo — rather
+  // than a bare category. Normalizes the URL without adding a history entry.
   useEffect(() => {
     if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "")) {
-      navigate({ category: "system" }, true);
+      navigate({ category: "shell", targetCard: "starship" }, true);
     }
   }, [navigate]);
-
-  // Handle URL hash deep-linking arrival & scrolling
-  useEffect(() => {
-    if (!route.targetCard) return;
-    const target = route.targetCard;
-    setExpandedCards((current) => new Set(current).add(target));
-    const timer = window.setTimeout(() => {
-      targetRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    }, 80);
-    return () => window.clearTimeout(timer);
-  }, [route.category, route.targetCard]);
 
   const openCategory = (id: CategoryId) => {
     if (id !== activeCategory) {
@@ -103,24 +85,21 @@ export default function Explorer() {
     navigate({ category: id, targetCard: undefined });
   };
 
-  const toggleCard = (id: CardId) => {
-    setExpandedCards((current) => {
-      const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-        if (route.targetCard === id) {
-          navigate({ targetCard: undefined }, true);
-        }
-      } else {
-        next.add(id);
-        navigate({ targetCard: id });
-      }
-      return next;
-    });
-  };
-
   const categoryCards = cardsForCategory(activeCategory);
   const currentCategory = CATEGORIES.find((c) => c.id === activeCategory);
+
+  // The open demo is whatever the URL names, or the category's first demo
+  // when none is named (e.g. after switching categories via the tabs).
+  const activeCardId: CardId | undefined =
+    route.targetCard && categoryCards.some((entry) => entry.id === route.targetCard)
+      ? route.targetCard
+      : categoryCards[0]?.id;
+
+  const selectCard = (id: CardId) => {
+    if (id !== activeCardId) {
+      navigate({ targetCard: id });
+    }
+  };
 
   return (
     <>
@@ -145,60 +124,22 @@ export default function Explorer() {
 
       <main className="field">
         <div className="explorer-content">
-          <div
-            key={activeCategory}
-            className="category-grid"
-            role="region"
-            aria-label={currentCategory?.label ?? "Cards"}
-          >
-            {categoryCards.map((entry) => {
-              const manifest = getManifestEntry(entry.id);
-              const isExpanded = expandedCards.has(entry.id);
-              const isTargeted = route.targetCard === entry.id;
+          <nav className="demo-rail" aria-label={`${currentCategory?.label ?? "Category"} demos`}>
+            {categoryCards.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className="demo-rail-word"
+                aria-current={entry.id === activeCardId ? "true" : undefined}
+                onClick={() => selectCard(entry.id)}
+              >
+                {entry.word}
+              </button>
+            ))}
+          </nav>
 
-              return (
-                <article
-                  key={entry.id}
-                  id={entry.id}
-                  data-card={entry.id}
-                  ref={isTargeted ? targetRef : undefined}
-                  className={`showcase-card ${isExpanded ? "showcase-card-expanded" : "showcase-card-collapsed"}${isTargeted ? " card-focused" : ""}`}
-                >
-                  <div
-                    className="showcase-card-header"
-                    onClick={() => toggleCard(entry.id)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="showcase-card-meta">
-                      <h2 className="showcase-card-title">{manifest?.title ?? entry.word}</h2>
-                      {manifest?.kind && (
-                        <SourceBadge source={manifest.kind} />
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className="showcase-expand-btn"
-                      aria-expanded={isExpanded}
-                      aria-controls={`card-detail-${entry.id}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCard(entry.id);
-                      }}
-                    >
-                      {isExpanded ? "collapse ▴" : "expand ▾"}
-                    </button>
-                  </div>
-                  {manifest?.blurb && (
-                    <p className="showcase-card-blurb">{manifest.blurb}</p>
-                  )}
-                  {isExpanded && (
-                    <div id={`card-detail-${entry.id}`} className="showcase-card-body">
-                      <CardWithSuspense id={entry.id} />
-                    </div>
-                  )}
-                </article>
-              );
-            })}
+          <div key={activeCardId ?? activeCategory} className="demo-hero" role="region" aria-label={currentCategory?.label ?? "Demo"}>
+            {activeCardId && <CardWithSuspense id={activeCardId} />}
           </div>
         </div>
       </main>
