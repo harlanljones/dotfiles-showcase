@@ -35,7 +35,7 @@
  * `main()` wires the real fetch and process exit code.
  */
 import { CATEGORY_PATHS, parseRoute } from "../src/lib/router";
-import { CATALOGUE, type CategoryId } from "../src/lib/catalogue";
+import { CATALOGUE, CATEGORIES, type CategoryId } from "../src/lib/catalogue";
 import type { CardId } from "../src/manifest";
 
 // ---------------------------------------------------------------------------
@@ -100,7 +100,10 @@ export interface RoutingFailure {
  * demo deep link resolves to its specific card. Returns failure details;
  * empty means every routing assertion held.
  */
-export function verifyRouting(routes: CategoryRouteCheck[] = CATEGORY_ROUTES): RoutingFailure[] {
+export function verifyRouting(
+  routes: CategoryRouteCheck[] = CATEGORY_ROUTES,
+  declaredCategories: ReadonlyArray<{ id: CategoryId; route: string }> = CATEGORIES,
+): RoutingFailure[] {
   const failures: RoutingFailure[] = [];
 
   if (routes.length !== EXPECTED_CATEGORY_COUNT) {
@@ -111,6 +114,14 @@ export function verifyRouting(routes: CategoryRouteCheck[] = CATEGORY_ROUTES): R
   }
 
   for (const { path, category } of routes) {
+    const isDeclaredRoute = declaredCategories.some((entry) => entry.id === category && entry.route === path);
+    if (!isDeclaredRoute) {
+      failures.push({
+        path,
+        detail: `route is not declared by the shipped catalogue for category "${category}"`,
+      });
+      continue;
+    }
     const resolved = parseRoute(path, "");
     if (resolved.category !== category) {
       failures.push({

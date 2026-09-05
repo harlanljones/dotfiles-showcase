@@ -90,6 +90,11 @@ describe("verifyRouting", () => {
     expect(failures.some((f) => f.path === "/agents")).toBe(true);
   });
 
+  test("catches a route removed from the catalogue even when fallback returns the same category", () => {
+    const failures = verifyRouting(CATEGORY_ROUTES, CATEGORY_ROUTES.filter((route) => route.category !== "system").map((route) => ({ id: route.category, route: route.path })));
+    expect(failures.some((f) => f.path === "/system" && f.detail.includes("not declared"))).toBe(true);
+  });
+
   test("catches a shrunk catalogue (the vacuous-pass failure mode this ticket exists to close)", () => {
     const gutted: CategoryRouteCheck[] = [{ path: "/system", category: "system" }];
     const failures = verifyRouting(gutted);

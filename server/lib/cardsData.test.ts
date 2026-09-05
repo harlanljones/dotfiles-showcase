@@ -17,6 +17,7 @@ import {
   parseAgentSkillsSnapshot,
   parseGitConfig,
   summarizeGitSigning,
+  redactGitConfig,
   splitGitconfigFallback,
   gitValue,
 } from "./cardsData";
@@ -36,6 +37,15 @@ ignore = "me"
       ["npm:playwright", "latest"],
       ["python", "3.12.13"],
     ]);
+  });
+});
+
+describe("redactGitConfig", () => {
+  it("redacts signing-key values without changing unrelated config", () => {
+    const raw = "[user]\n\tname = Test User\n\tsigningKey = ssh-ed25519 AAAA\n[core]\n\teditor = nvim\n";
+    expect(redactGitConfig(raw)).toContain("signingKey = <redacted>");
+    expect(redactGitConfig(raw)).not.toContain("ssh-ed25519 AAAA");
+    expect(redactGitConfig(raw)).toContain("editor = nvim");
   });
 });
 
