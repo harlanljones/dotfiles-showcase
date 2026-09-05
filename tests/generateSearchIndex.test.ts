@@ -184,6 +184,20 @@ describe("buildIndex", () => {
     expect(entries).toEqual([]);
   });
 
+  test("deduplicates sources that share one fallback snapshot", () => {
+    const manifest = [{
+      ...FIXTURE_MANIFEST[0],
+      sources: [
+        ...(FIXTURE_MANIFEST[0].sources ?? []),
+        { livePath: "~/.bashrc", fallbackFile: "starship.toml" as const },
+      ],
+    }];
+    expect(buildIndex(manifest, (file) => FIXTURE_FILES[file] ?? null)).toEqual([
+      { demoId: "starship", configPath: "~/.config/starship.toml", fallbackFile: "starship.toml", key: "add_newline", value: "true" },
+      { demoId: "starship", configPath: "~/.config/starship.toml", fallbackFile: "starship.toml", key: "character.error_symbol", value: "x" },
+    ]);
+  });
+
 });
 
 describe("buildIndexModule", () => {
