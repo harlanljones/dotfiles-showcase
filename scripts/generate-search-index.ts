@@ -194,7 +194,13 @@ export function buildIndex(manifest: ManifestEntry[], readFallback: (file: strin
   const entries: SearchIndexEntry[] = [];
   for (const demo of manifest) {
     if (!demo.sources) continue;
+    const seenFallbacks = new Set<string>();
     for (const source of demo.sources) {
+      // Several live paths intentionally share one synthetic fallback
+      // snapshot (notably the four shell-env sources). Index the logical
+      // snapshot once and retain the first manifest path as provenance.
+      if (seenFallbacks.has(source.fallbackFile)) continue;
+      seenFallbacks.add(source.fallbackFile);
       const content = readFallback(source.fallbackFile);
       if (content === null) continue;
       for (const setting of extractSettings(source.fallbackFile, content)) {

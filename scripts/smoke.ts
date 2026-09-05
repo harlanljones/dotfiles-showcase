@@ -188,7 +188,7 @@ export async function checkAllReachable(
   base: string,
   routes: CategoryRouteCheck[] = CATEGORY_ROUTES,
 ): Promise<HttpFailure[]> {
-  const paths = [...routes.map((r) => r.path), DEMO_DEEPLINK.path];
+  const paths = ["/", ...routes.map((r) => r.path), DEMO_DEEPLINK.path];
   const results = await Promise.all(paths.map((p) => checkReachable(fetchImpl, base, p)));
   return results.filter((r): r is HttpFailure => r !== null);
 }
@@ -222,5 +222,9 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main();
+  await main().catch((error: unknown) => {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`::error::post-deploy smoke failed: ${detail}`);
+    process.exit(1);
+  });
 }

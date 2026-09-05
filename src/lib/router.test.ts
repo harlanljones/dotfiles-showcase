@@ -3,9 +3,9 @@ import { CATALOGUE, cardPath } from "./catalogue";
 import { parseRoute, getRoutePath } from "./router";
 
 describe("parseRoute: category routes", () => {
-  it("defaults / and empty string to system", () => {
-    expect(parseRoute("/", "")).toMatchObject({ category: "system" });
-    expect(parseRoute("", "")).toMatchObject({ category: "system" });
+  it("resolves / and empty string to the eager Starship wake path", () => {
+    expect(parseRoute("/", "")).toMatchObject({ category: "shell", targetCard: "starship" });
+    expect(parseRoute("", "")).toMatchObject({ category: "shell", targetCard: "starship" });
   });
 
   it("maps /system, /shell, /editor, /agents to their respective category views", () => {
@@ -58,6 +58,11 @@ describe("parseRoute: URL hash deep-linking (/<category>#<cardId>)", () => {
   it("rejects unknown card ids as targetCard", () => {
     expect(parseRoute("/shell", "#nonexistent").targetCard).toBeUndefined();
     expect(parseRoute("/system", "#fakecard").targetCard).toBeUndefined();
+  });
+
+  it("rejects a valid card from a different category", () => {
+    expect(parseRoute("/shell", "#hyprland").targetCard).toBeUndefined();
+    expect(parseRoute("/system", "#starship").targetCard).toBeUndefined();
   });
 });
 

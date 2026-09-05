@@ -56,10 +56,16 @@ export function parseRoute(pathname = "/", hash = ""): RouteState {
 
   const requestedCard = cleanHash && isCard(cleanHash) ? (cleanHash as CardId) : undefined;
 
+  // Root is the eager wake path. Resolve it directly so the first render does
+  // not mount a lazy system card before Explorer normalizes the URL.
+  if (cleanPath === "/" && !cleanHash) {
+    return { category: "shell", targetCard: "starship", room: "shell" };
+  }
+
   // 1. Direct category path match (/system, /shell, /editor, /agents)
   for (const cat of CATEGORIES) {
     if (cleanPath === cat.route) {
-      const targetCard = requestedCard && getCategoryForCard(requestedCard) === cat.id ? requestedCard : requestedCard;
+      const targetCard = requestedCard && getCategoryForCard(requestedCard) === cat.id ? requestedCard : undefined;
       return {
         category: cat.id,
         targetCard,
@@ -87,7 +93,9 @@ export function parseRoute(pathname = "/", hash = ""): RouteState {
   // 3. Legacy room path aliases (/prompt, /palette, /desk, /dots, etc.)
   if (LEGACY_ALIASES[cleanPath]) {
     const alias = LEGACY_ALIASES[cleanPath];
-    const targetCard = requestedCard ?? alias.targetCard;
+    const targetCard = requestedCard && getCategoryForCard(requestedCard) === alias.category
+      ? requestedCard
+      : alias.targetCard;
     return {
       category: alias.category,
       targetCard,
