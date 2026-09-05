@@ -75,6 +75,7 @@ export const SEARCH_INDEX: SearchIndexEntry[] = [
   {"demoId":"ghostty","configPath":"~/.config/ghostty/config","fallbackFile":"ghostty-config","key":"async-backend","value":"epoll"},
   {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"background","value":"#f0e6d3"},
   {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"foreground","value":"#33291b"},
+  {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"cursor-color","value":"#665f54"},
   {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"selection-background","value":"#ccc4b3"},
   {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"selection-foreground","value":"#665f54"},
   {"demoId":"ghostty","configPath":"~/.local/state/omarchy/current/theme/ghostty.conf","fallbackFile":"ghostty-theme.conf","key":"palette","value":"0=#f0e6d3"},
