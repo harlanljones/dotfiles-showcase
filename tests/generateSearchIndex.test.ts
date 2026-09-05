@@ -189,7 +189,7 @@ describe("buildIndex", () => {
       ...FIXTURE_MANIFEST[0],
       sources: [
         ...(FIXTURE_MANIFEST[0].sources ?? []),
-        { livePath: "~/.bashrc", fallbackFile: "starship.toml" },
+        { livePath: "~/.bashrc", fallbackFile: "starship.toml" as const },
       ],
     }];
     expect(buildIndex(manifest, (file) => FIXTURE_FILES[file] ?? null)).toEqual([
