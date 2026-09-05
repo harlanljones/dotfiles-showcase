@@ -35,7 +35,7 @@
  * `main()` wires the real fetch and process exit code.
  */
 import { CATEGORY_PATHS, parseRoute } from "../src/lib/router";
-import { CATALOGUE, type CategoryId } from "../src/lib/catalogue";
+import { CATALOGUE, CATEGORIES, type CategoryId } from "../src/lib/catalogue";
 import type { CardId } from "../src/manifest";
 
 // ---------------------------------------------------------------------------
