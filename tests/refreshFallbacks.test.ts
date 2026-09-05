@@ -159,6 +159,21 @@ describe("findHostLeaks", () => {
   test("allows benign generic tokens like distro names", () => {
     expect(findHostLeaks("state/omarchy/current/theme", "omarchy")).toEqual([]);
   });
+  test("does not flag a short hostname embedded in an unrelated word", () => {
+    // A host named `vm` appears inside `nvml_measure_pcie_speeds` in
+    // fallback/btop.conf; a bare substring test failed the whole run on it.
+    expect(findHostLeaks("nvml_measure_pcie_speeds = true", "vm")).toEqual([]);
+    expect(findHostLeaks("shm_size", "hm")).toEqual([]);
+  });
+  test("still flags a short hostname at an identifier boundary", () => {
+    expect(findHostLeaks("/home/vm/.config", "vm")).toEqual(["vm"]);
+    expect(findHostLeaks('host = "vm"', "vm")).toEqual(["vm"]);
+    expect(findHostLeaks("at vm prompt", "vm")).toEqual(["vm"]);
+  });
+  test("treats regex metacharacters in a hostname literally", () => {
+    expect(findHostLeaks("host a.b here", "a.b")).toEqual(["a.b"]);
+    expect(findHostLeaks("host axb here", "a.b")).toEqual([]);
+  });
 });
 
 describe("findSecretMatches", () => {

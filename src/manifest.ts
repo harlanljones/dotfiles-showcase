@@ -151,7 +151,7 @@ export const MANIFEST: ManifestEntry[] = [
     blurb: "Homebrew Bundle manifest and explicit pacman packages.",
     kind: "live",
     sources: [
-      { livePath: "~/Brewfile", fallbackFile: "Brewfile" },
+      { livePath: "~/.Brewfile", fallbackFile: "Brewfile" },
       { livePath: "derived:pacman -Qe", fallbackFile: "pacman.txt" },
     ],
   },
