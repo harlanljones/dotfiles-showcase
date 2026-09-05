@@ -462,6 +462,37 @@ function readEnvD(dir: string): EnvDFile[] | null {
   return files;
 }
 
+/**
+ * Read the shared shell modules (`~/.config/shell/*.sh`), concatenated in load
+ * order. Returns null when the directory is absent or holds no modules.
+ *
+ * Since the shell split, `~/.bashrc` and `~/.zshrc` are loaders: they source
+ * this directory and declare nothing themselves. Parsing the rc file alone
+ * would yield an empty profile that still reported itself as "live" — the one
+ * degradation the fallback cannot catch, because nothing is missing. So the
+ * modules are read too, and the card parses each rc plus its modules as one
+ * effective profile.
+ */
+function readShellModules(dir: string): string | null {
+  if (isWorkerd()) return null;
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const parts: string[] = [];
+  for (const name of names.sort()) {
+    if (!name.endsWith(".sh")) continue;
+    try {
+      parts.push(readFileSync(join(dir, name), "utf8"));
+    } catch {
+      // Unreadable module — skip it, keep the rest.
+    }
+  }
+  return parts.length > 0 ? parts.join("\n") : null;
+}
+
 function shellEnvCard(): ShellEnvPayload {
   const zshCfg = readConfig(shellEnvLivePath(".zshrc"), "shell-env.json");
   const bashCfg = readConfig(shellEnvLivePath(".bashrc"), "shell-env.json");
@@ -474,19 +505,30 @@ function shellEnvCard(): ShellEnvPayload {
   const home = userHome();
   const warnings: string[] = [];
 
-  const zsh = zshCfg.source === "live" ? rcProfile(zshCfg.content, home) : snapshot.zsh;
-  const bash = bashCfg.source === "live" ? rcProfile(bashCfg.content, home) : snapshot.bash;
+  // The modules are shared, so each shell's effective config is its own rc
+  // plus the same module set. Either being live is enough to render live.
+  const modules = readShellModules(shellEnvLivePath("shell"));
+  const effective = (cfg: ConfigResult): string =>
+    [cfg.source === "live" ? cfg.content : "", modules ?? ""].join("\n");
+
+  const zshSource: "live" | "fallback" =
+    zshCfg.source === "live" || modules !== null ? "live" : "fallback";
+  const bashSource: "live" | "fallback" =
+    bashCfg.source === "live" || modules !== null ? "live" : "fallback";
+
+  const zsh = zshSource === "live" ? rcProfile(effective(zshCfg), home) : snapshot.zsh;
+  const bash = bashSource === "live" ? rcProfile(effective(bashCfg), home) : snapshot.bash;
   const envLive = readEnvD(shellEnvLivePath("environment.d"));
   const env = envLive ?? snapshot.env;
   const envSource = envLive ? "live" : "fallback";
 
-  if (zshCfg.source === "fallback" && bashCfg.source === "fallback" && envSource === "fallback") {
+  if (zshSource === "fallback" && bashSource === "fallback" && envSource === "fallback") {
     warnings.push("No live shell configs found; showing the bundled sanitized snapshot.");
   }
 
   return {
-    zshSource: zshCfg.source,
-    bashSource: bashCfg.source,
+    zshSource,
+    bashSource,
     envSource,
     zsh,
     bash,

@@ -204,6 +204,7 @@ export const MANIFEST: ManifestEntry[] = [
     sources: [
       { livePath: "~/.zshrc", fallbackFile: "shell-env.json" },
       { livePath: "~/.bashrc", fallbackFile: "shell-env.json" },
+      { livePath: "~/.config/shell", fallbackFile: "shell-env.json" },
       { livePath: "~/.config/environment.d", fallbackFile: "shell-env.json" },
     ],
   },
