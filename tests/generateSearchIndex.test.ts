@@ -58,6 +58,13 @@ describe("extractIniLike", () => {
     const content = "[init]\n\tdefaultBranch=master\n";
     expect(extractIniLike(content)).toEqual([{ key: "init.defaultBranch", value: "master" }]);
   });
+
+  test("preserves hex colours while stripping whitespace-prefixed comments", () => {
+    expect(extractIniLike("background = #f0e6d3\nforeground = #abc  # comment\n")).toEqual([
+      { key: "background", value: "#f0e6d3" },
+      { key: "foreground", value: "#abc" },
+    ]);
+  });
 });
 
 describe("extractYamlish", () => {
@@ -176,6 +183,7 @@ describe("buildIndex", () => {
     const entries = buildIndex(FIXTURE_MANIFEST, () => null);
     expect(entries).toEqual([]);
   });
+
 });
 
 describe("buildIndexModule", () => {

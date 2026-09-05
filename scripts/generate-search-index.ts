@@ -96,7 +96,9 @@ export function extractIniLike(content: string): Setting[] {
       section = sectionMatch[1].trim();
       continue;
     }
-    line = line.replace(/\s+#.*$/, ""); // strip trailing inline comment
+    // A hex colour is a value, not an inline comment.  Treat `#` as a
+    // comment marker only when it is followed by whitespace/end-of-line.
+    line = line.replace(/\s+#(?=\s|$).*$/, "");
     const kv = line.match(/^([A-Za-z0-9_."\-]+)\s*=\s*(.+)$/);
     if (!kv) continue;
     const key = section ? `${section}.${kv[1]}` : kv[1];

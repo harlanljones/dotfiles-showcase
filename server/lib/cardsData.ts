@@ -9,6 +9,7 @@ import {
   STARTUP_ZSH,
   parseEnvDFile,
   parseShellEnvSnapshot,
+  redactSensitive,
   rcProfile,
   type EnvDFile,
   type ShellEnvPayload,
@@ -454,7 +455,7 @@ function readEnvD(dir: string): EnvDFile[] | null {
     if (!name.endsWith(".conf")) continue;
     try {
       const content = readFileSync(join(dir, name), "utf8");
-      files.push({ file: name, vars: parseEnvDFile(content) });
+      files.push({ file: name, vars: redactSensitive(parseEnvDFile(content)) });
     } catch {
       // Unreadable file — skip it, keep the rest.
     }
@@ -975,7 +976,7 @@ export function gitValue(
   key: string,
 ): string | null {
   for (const [k, values] of gitSectionEntries(sections, section)) {
-    if (k === key && values.length > 0) return values[0].split("#")[0].trim() || null;
+    if (k.toLowerCase() === key.toLowerCase() && values.length > 0) return values[0].split("#")[0].trim() || null;
   }
   return null;
 }
@@ -991,11 +992,16 @@ export interface GitSigningSummary {
 export function summarizeGitSigning(sections: GitConfigSection[]): GitSigningSummary {
   return {
     commitGpgsign: gitValue(sections, "commit", "gpgsign"),
-    tagGpgsign: gitValue(sections, "tag", "gpgsign") ?? gitValue(sections, "tag", "gpgSign"),
+    tagGpgsign: gitValue(sections, "tag", "gpgsign"),
     gpgFormat: gitValue(sections, "gpg", "format"),
     gpgProgram: gitValue(sections, "gpg", "program"),
     signingKeySet: gitValue(sections, "user", "signingkey") !== null,
   };
+}
+
+/** Replace signing-key values while preserving the rest of the git config. */
+export function redactGitConfig(content: string): string {
+  return content.replace(/^(\s*signingkey\s*=\s*).+$/gim, "$1<redacted>");
 }
 
 /** Marker dividing the fallback gitconfig snapshot from its ignore snapshot. */
@@ -1118,7 +1124,7 @@ function gitCoreCard(): GitCorePayload {
     credentialHelpers,
     safeDirs,
     ignores,
-    rawConfig: configText,
+    rawConfig: redactGitConfig(configText),
   };
 }
 
