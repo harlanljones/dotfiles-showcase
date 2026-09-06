@@ -93,6 +93,7 @@ export default function HerdrCard() {
 
   return (
     <CardShell
+      id="herdr"
       title="Herdr Agent Orchestration"
       blurb="Multi-agent terminal workspace manager — keys, attention queue, and installed plugins."
       badges={

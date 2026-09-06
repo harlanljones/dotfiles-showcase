@@ -13,6 +13,7 @@ export default function StarshipCard() {
 
   return (
     <CardShell
+      id="starship"
       title="Starship Prompt"
       blurb="Rendered by the real starship binary against an isolated git repo. Failure recolors cyan to red in zsh, every foreground color in bash."
       badges={<SourceBadge source={sourceKind(status)} />}
