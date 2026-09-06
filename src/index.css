@@ -35,7 +35,11 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  overflow: hidden;
+  /*
+   * HJ-722: no document-level scroll suppression. Deep showcase demos must
+   * be fully reachable — either through the pager (fine pointer) or native
+   * document scrolling (coarse pointer, or once the field has yielded).
+   */
   background:
     radial-gradient(60% 45% at 50% 52%, rgba(111, 163, 160, 0.055), transparent 70%),
     var(--glass);
@@ -183,6 +187,11 @@ html[data-failed="1"] .display {
 .explorer-content {
   width: 100%;
   min-width: 0;
+}
+.explorer-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .veil {
@@ -348,7 +357,53 @@ html[data-failed="1"] .display {
 
 .demo-hero {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   animation: fade-in 160ms var(--ease-out);
+}
+.demo-hero-track {
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .demo-hero-track {
+    transition: transform 220ms var(--ease-out);
+  }
+}
+
+/*
+ * The pager's status line (HJ-722): how the field teaches itself, in the
+ * idiom of `less`. Text, not layout, carries demo/position/percent/hints.
+ */
+.status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.1rem;
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--ash-dim);
+  opacity: 0.7;
+  transition: opacity 160ms ease, color 160ms ease;
+}
+.status-line-demo {
+  color: var(--phosphor);
+}
+.status-line-hints {
+  margin-left: auto;
+}
+.status-line-flash {
+  opacity: 1;
+  color: var(--ash);
+}
+.status-line-flash .status-line-hints {
+  color: var(--phosphor);
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-line {
+    transition: none;
+  }
 }
 
 /*
