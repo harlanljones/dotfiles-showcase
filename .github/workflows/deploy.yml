@@ -75,15 +75,15 @@ jobs:
       - name: Build
         run: bun run build
 
-      # DEPLOY-10 / PERF-03: bundle budget (hard-fail). Pinned at PERF-03 exit:
-      # initial (entry) JS measured 68,112 bytes gzip after the per-card split;
-      # limit = measured + 5% (rounded up to 71,500). To re-pin after an
+      # DEPLOY-10 / PERF-03: bundle budget (hard-fail). Re-pinned after Wave 1 merges:
+      # initial (entry) JS measured 71,889 bytes gzip after the Wave 1 features;
+      # limit = measured + 5% (rounded up to 75,500). To re-pin after an
       # intentional change: measure `gzip -c dist/<entry> | wc -c`, update LIMIT.
       - name: Bundle budget
         run: |
           entry=$(grep -o 'assets/index-[^"]*\.js' dist/index.html | head -1)
           bytes=$(gzip -c "dist/$entry" | wc -c)
-          LIMIT=71500
+          LIMIT=75500
           echo "initial JS (gzip): $bytes bytes — limit $LIMIT"
           [ "$bytes" -le "$LIMIT" ] || {
             echo "::error::bundle budget exceeded: $bytes > $LIMIT bytes gzip. If intentional, re-pin LIMIT after measuring \`gzip -c dist/<entry> | wc -c\`."
