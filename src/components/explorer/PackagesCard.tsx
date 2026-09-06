@@ -130,6 +130,7 @@ export default function PackagesCard() {
 
   return (
     <CardShell
+      id="packages"
       title="Packages"
       blurb="macOS machines restore from the Homebrew Bundle (formulae + casks); this Arch box tracks its explicit pacman set. Search, slice, and compare the two manifests below."
       badges={

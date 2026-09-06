@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { CardId } from "../manifest";
 import { useRouter } from "../lib/router";
 import {
@@ -20,7 +20,8 @@ import {
   type PagerState,
   type PointerCoarseness,
 } from "../lib/pager";
-import { pagerModeOverride, setPagerModeOverride } from "../lib/session";
+import { markDemoSeen, pagerModeOverride, seenDemos, setPagerModeOverride } from "../lib/session";
+import { prefersReducedMotion } from "../lib/reducedMotion";
 import StarshipCard from "./explorer/StarshipCard";
 import StatusLine from "./StatusLine";
 
@@ -94,6 +95,41 @@ function detectPointerCoarseness(): PointerCoarseness {
 }
 
 const HINT_FLASH_MS = 1800;
+
+/**
+ * HJ-721: the veil hands off to the performance. The showcase demo the
+ * visitor lands on renders itself in rather than appearing finished — the
+ * same block-cursor from the veil sweeps across the demo, drawing it in.
+ *
+ * The veil and the performance are separate mechanisms (session.ts, HJ-717
+ * design note): a demo performs once per session, the first time it's
+ * shown, whether or not the visitor ever saw the veil this session. Once
+ * `seenDemos()` has it, or under a reduced-motion preference, it renders
+ * complete and immediately — no ambient motion, no transition.
+ *
+ * `key={id}` on the parent `.demo-hero` remounts this on every demo switch,
+ * so `useState`'s initializer re-evaluates "should this perform" fresh per
+ * demo without extra effects.
+ */
+function DemoPerformance({ id, children }: { id: CardId; children: ReactNode }) {
+  const [performing, setPerforming] = useState(() => !prefersReducedMotion() && !seenDemos().has(id));
+
+  useEffect(() => {
+    if (!performing) markDemoSeen(id);
+  }, [performing, id]);
+
+  return (
+    <div className={`demo-performance${performing ? " is-performing" : ""}`}>
+      <div
+        className="demo-performance-content"
+        onAnimationEnd={performing ? () => setPerforming(false) : undefined}
+      >
+        {children}
+      </div>
+      {performing && <span className="demo-performance-cursor" aria-hidden="true" />}
+    </div>
+  );
+}
 
 export default function Explorer() {
   const { route, navigate } = useRouter();
@@ -334,7 +370,11 @@ export default function Explorer() {
               ref={heroTrackRef}
               style={paged ? { transform: `translateY(-${page * viewportHeightPx}px)` } : undefined}
             >
-              {activeCardId && <CardWithSuspense id={activeCardId} />}
+              {activeCardId && (
+                <DemoPerformance id={activeCardId}>
+                  <CardWithSuspense id={activeCardId} />
+                </DemoPerformance>
+              )}
             </div>
           </div>
 

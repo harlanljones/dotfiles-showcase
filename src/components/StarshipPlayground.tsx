@@ -9,6 +9,7 @@ import {
   type GitState,
 } from "../lib/urlParams";
 import { emit } from "../lib/telemetry";
+import { SourceBadge } from "./explorer/ui";
 
 export type ApiStatus = "idle" | "live" | "degraded" | "error";
 
@@ -242,6 +243,12 @@ export default function StarshipPlayground({
         style={{ background: theme.background, color: theme.foreground }}
       >
         <div className="terminal-meta">
+          {/* Provenance mark (HJ-721): rendered whenever a result exists, not
+              tucked into the collapsed inspect panel, so it stays visible
+              through the wake performance's reveal, not just after it. */}
+          {!loading && !error && latencyMs != null && (
+            <SourceBadge source={degraded ? "fallback" : "live"} />
+          )}
           <span>
             <span className="terminal-dot" />
             {loading ? "rendering" : latencyMs != null ? `${latencyMs} ms` : "ready"}

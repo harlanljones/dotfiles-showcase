@@ -132,6 +132,7 @@ export default function NeovimCard() {
 
   return (
     <CardShell
+      id="neovim"
       title="Neovim / LazyVim"
       blurb="LazyVim distribution with curated extras; plugin revisions are pinned in lazy-lock.json for reproducible edits."
       badges={

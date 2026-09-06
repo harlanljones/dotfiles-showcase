@@ -151,7 +151,7 @@ export const MANIFEST: ManifestEntry[] = [
     blurb: "Homebrew Bundle manifest and explicit pacman packages.",
     kind: "live",
     sources: [
-      { livePath: "~/Brewfile", fallbackFile: "Brewfile" },
+      { livePath: "~/.Brewfile", fallbackFile: "Brewfile" },
       { livePath: "derived:pacman -Qe", fallbackFile: "pacman.txt" },
     ],
   },
@@ -204,6 +204,7 @@ export const MANIFEST: ManifestEntry[] = [
     sources: [
       { livePath: "~/.zshrc", fallbackFile: "shell-env.json" },
       { livePath: "~/.bashrc", fallbackFile: "shell-env.json" },
+      { livePath: "~/.config/shell", fallbackFile: "shell-env.json" },
       { livePath: "~/.config/environment.d", fallbackFile: "shell-env.json" },
     ],
   },

@@ -96,7 +96,9 @@ export function extractIniLike(content: string): Setting[] {
       section = sectionMatch[1].trim();
       continue;
     }
-    line = line.replace(/\s+#.*$/, ""); // strip trailing inline comment
+    // A hex colour is a value, not an inline comment.  Treat `#` as a
+    // comment marker only when it is followed by whitespace/end-of-line.
+    line = line.replace(/\s+#(?=\s|$).*$/, "");
     const kv = line.match(/^([A-Za-z0-9_."\-]+)\s*=\s*(.+)$/);
     if (!kv) continue;
     const key = section ? `${section}.${kv[1]}` : kv[1];
@@ -192,7 +194,13 @@ export function buildIndex(manifest: ManifestEntry[], readFallback: (file: strin
   const entries: SearchIndexEntry[] = [];
   for (const demo of manifest) {
     if (!demo.sources) continue;
+    const seenFallbacks = new Set<string>();
     for (const source of demo.sources) {
+      // Several live paths intentionally share one synthetic fallback
+      // snapshot (notably the four shell-env sources). Index the logical
+      // snapshot once and retain the first manifest path as provenance.
+      if (seenFallbacks.has(source.fallbackFile)) continue;
+      seenFallbacks.add(source.fallbackFile);
       const content = readFallback(source.fallbackFile);
       if (content === null) continue;
       for (const setting of extractSettings(source.fallbackFile, content)) {

@@ -25,18 +25,21 @@ beforeEach(() => {
   globalThis.getComputedStyle = windowRef.getComputedStyle.bind(windowRef);
   globalThis.sessionStorage = windowRef.sessionStorage;
   windowRef.sessionStorage.clear();
-  // Default to a fine pointer (mouse/trackpad); pager tests override this.
+
+  // Default matchMedia: fine pointer, no reduced motion.
   windowRef.matchMedia = (query: string) => ({
-    matches: query.includes("coarse") ? false : true,
+    matches: false,
     media: query,
     addEventListener() {},
     removeEventListener() {},
     addListener() {},
     removeListener() {},
   });
+
   // StarshipCard/StarshipPlayground fire /api/starship on mount; keep it
   // pending so renders stay deterministic without a network mock per test.
   (globalThis as Record<string, unknown>).fetch = () => new Promise(() => {});
+  sessionStorage.clear();
 
   container = windowRef.document.createElement("div");
   windowRef.document.body.appendChild(container);
@@ -58,7 +61,7 @@ describe("Explorer: 4 category views, hero + rail", () => {
       root.render(<Explorer />);
     });
 
-    const tabs = Array.from<any>(container.querySelectorAll(".category-tab")).map((el) => el.textContent?.trim());
+    const tabs = Array.from<any>(container.querySelectorAll("button.category-tab")).map((b) => b.textContent?.trim());
     expect(tabs).toEqual([
       "System & Display",
       "Shell & Navigation",
@@ -67,77 +70,41 @@ describe("Explorer: 4 category views, hero + rail", () => {
     ]);
   });
 
-  it("renders exactly one full-bleed demo for System & Display, with no card frame or max-width container", async () => {
-    windowRef.happyDOM.setURL("http://localhost/system");
+  it("header includes persistent source link in chrome-words", async () => {
     const root = createRoot(container);
     await act(async () => {
       root.render(<Explorer />);
     });
 
-    const hero = container.querySelector(".demo-hero");
-    expect(hero).not.toBeNull();
-    // Exactly one demo body renders in the hero region.
-    expect(hero?.children.length).toBe(1);
-
-    // No collapsed showcase card, grid, or expand control anywhere.
-    expect(container.querySelector(".category-grid")).toBeNull();
-    expect(container.querySelectorAll("article.showcase-card").length).toBe(0);
-    expect(container.querySelector(".showcase-expand-btn")).toBeNull();
-    expect(container.querySelector("[aria-expanded]")).toBeNull();
+    const sourceLink = container.querySelector(".chrome-words a");
+    expect(sourceLink).not.toBeNull();
+    expect(sourceLink?.getAttribute("href")).toBe("https://github.com/harlanljones/dotfiles");
+    expect(sourceLink?.textContent).toContain("source");
   });
 
-  it("renders System sibling demos as a rail of tracked words, with the open demo marked", async () => {
+  it("clicking category tab switches view and selects first demo in category", async () => {
     windowRef.happyDOM.setURL("http://localhost/system");
     const root = createRoot(container);
     await act(async () => {
       root.render(<Explorer />);
     });
 
-    const words = Array.from<any>(container.querySelectorAll(".demo-rail-word")).map((el) => el.textContent?.trim());
-    expect(words).toEqual(["hyprland", "ghostty", "terminal", "btop", "packages", "dots"]);
+    // Initially in system
+    expect(container.querySelector('.category-tab[aria-current="page"]')?.textContent).toContain("System & Display");
+    expect(container.querySelector('.demo-rail-word[aria-current="true"]')?.textContent?.trim()).toBe("hyprland");
 
-    const current = container.querySelector('.demo-rail-word[aria-current="true"]');
-    expect(current?.textContent?.trim()).toBe("hyprland");
-  });
-
-  it("switching to Shell tab opens the first Shell demo (Starship) with its own rail", async () => {
-    windowRef.happyDOM.setURL("http://localhost/system");
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(<Explorer />);
-    });
-
-    const shellTab = Array.from<any>(container.querySelectorAll("button.category-tab")).find(
-      (b) => b.textContent?.includes("Shell & Navigation"),
-    );
-    expect(shellTab).not.toBeUndefined();
-
-    await act(async () => {
-      shellTab.click();
-    });
-
-    const words = Array.from<any>(container.querySelectorAll(".demo-rail-word")).map((el) => el.textContent?.trim());
-    expect(words).toEqual(["starship", "recolor", "fuzzy", "ripgrep", "shell env"]);
-    expect(container.querySelector('.demo-rail-word[aria-current="true"]')?.textContent?.trim()).toBe("starship");
-  });
-
-  it("switching to Editor tab renders a short two-word rail: neovim, mise", async () => {
-    windowRef.happyDOM.setURL("http://localhost/system");
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(<Explorer />);
-    });
-
+    // Click "Editor & Runtimes"
     const editorTab = Array.from<any>(container.querySelectorAll("button.category-tab")).find(
       (b) => b.textContent?.includes("Editor & Runtimes"),
     );
+    expect(editorTab).toBeDefined();
 
     await act(async () => {
       editorTab.click();
     });
 
-    const words = Array.from<any>(container.querySelectorAll(".demo-rail-word")).map((el) => el.textContent?.trim());
-    expect(words).toEqual(["neovim", "mise"]);
+    expect(container.querySelector('.category-tab[aria-current="page"]')?.textContent).toContain("Editor & Runtimes");
+    expect(container.querySelector('.demo-rail-word[aria-current="true"]')?.textContent?.trim()).toBe("neovim");
   });
 
   it("clicking a rail word swaps the hero to that showcase demo", async () => {
@@ -228,6 +195,112 @@ describe("Explorer route round-trips (regression: no grid/expand pattern)", () =
 
     const words = Array.from<any>(container.querySelectorAll(".demo-rail-word")).map((el) => el.textContent?.trim());
     expect(words).toEqual(["git safety", "lazygit", "herdr", "agent skills", "git core"]);
+  });
+});
+
+describe("HJ-721: the veil hands off to the performance", () => {
+  it("the open demo performs (draws in) the first time it's shown this session", async () => {
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const hero = container.querySelector(".demo-hero");
+    expect(hero.querySelector(".demo-performance.is-performing")).not.toBeNull();
+    expect(hero.querySelector(".demo-performance-cursor")).not.toBeNull();
+  });
+
+  it("marks the demo seen once the performance finishes, so it renders complete next time", async () => {
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const content = container.querySelector(".demo-performance-content");
+    await act(async () => {
+      content.dispatchEvent(new windowRef.Event("animationend", { bubbles: true }));
+    });
+
+    expect(container.querySelector(".demo-performance.is-performing")).toBeNull();
+    expect(container.querySelector(".demo-performance-cursor")).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem("seen-demos") ?? "[]")).toContain("starship");
+  });
+
+  it("a demo already seen this session renders complete and immediately, no performance", async () => {
+    const { markDemoSeen } = await import("../lib/session");
+    markDemoSeen("starship");
+
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const hero = container.querySelector(".demo-hero");
+    expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
+    expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+  });
+
+  it("a returning visitor who skips the veil still gets the performance (session key is per-demo, not per-veil)", async () => {
+    const { setAwake, seenDemos } = await import("../lib/session");
+    setAwake();
+    expect(seenDemos().has("starship")).toBe(false);
+
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    expect(container.querySelector(".demo-performance.is-performing")).not.toBeNull();
+  });
+
+  describe("under a reduced-motion preference", () => {
+    beforeEach(() => {
+      windowRef.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    });
+
+    it("every showcase demo renders complete and immediately, with nothing in motion", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const hero = container.querySelector(".demo-hero");
+      expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
+      expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+    });
+
+    it("navigation still works (navigation is not motion)", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const ripgrepWord = Array.from<any>(container.querySelectorAll(".demo-rail-word")).find(
+        (el) => el.textContent?.trim() === "ripgrep",
+      );
+      await act(async () => {
+        ripgrepWord.click();
+      });
+
+      expect(container.querySelector('.demo-rail-word[aria-current="true"]')?.textContent?.trim()).toBe("ripgrep");
+    });
+
+    it("passes a strict axe audit (all rules incl. color-contrast) along the reduced-motion path", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const results = await axe.run(container, { resultTypes: ["violations"] });
+      expect(results.violations.map((v) => v.id)).toEqual([]);
+    });
   });
 });
 

@@ -166,6 +166,7 @@ export default function RecolorCard() {
 
   return (
     <CardShell
+      id="recolor"
       title="Failure Recolor"
       blurb="On non-zero exit the shell rewrites the prompt's colors before drawing. Flip shell and input to see what each wrapper really matches."
       badges={

@@ -32,6 +32,7 @@ export default function DotsCliCard() {
 
   return (
     <CardShell
+      id="dots"
       title="Dots CLI"
       blurb="The served Bash wrapper is parsed, never executed. Choose a verb to inspect its exact handler and a sanitized, client-side workflow trace."
       badges={data ? (

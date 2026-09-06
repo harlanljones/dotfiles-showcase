@@ -57,6 +57,7 @@ export default function GitCoreCard() {
 
   return (
     <CardShell
+      id="git-core"
       title="Git Core & Security"
       blurb="The global git config: who signs what, the aliases and safety policies every repo inherits, and the global ignore list."
       badges={

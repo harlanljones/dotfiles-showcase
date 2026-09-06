@@ -65,6 +65,7 @@ export default function AgentSkillsCard() {
 
   return (
     <CardShell
+      id="agent-skills"
       title="Agent Skills Hub"
       blurb="One shared catalogue (~/.agents/skills) reconciled by chezmoi into every harness discovery root. Search, filter by source pack, and see which harnesses carry each skill."
       badges={

@@ -5,3 +5,11 @@ dist
 worker-configuration.d.ts
 .dev.vars
 .wrangler
+# Agent/tool scratch state — not repository material.
+# .impeccable/ held review screenshots byte-identical to docs/review/ (the
+# curated copy, embedded in its README) plus a .bak and answered-question JSON;
+# .playwright-mcp/ collects page dumps from browser-driven runs.
+.impeccable
+.playwright-mcp
+*.bak
+PR_DESCRIPTION.md

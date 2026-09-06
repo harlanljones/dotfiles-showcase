@@ -17,6 +17,7 @@ import {
   parseAgentSkillsSnapshot,
   parseGitConfig,
   summarizeGitSigning,
+  redactGitConfig,
   splitGitconfigFallback,
   gitValue,
 } from "./cardsData";
@@ -36,6 +37,15 @@ ignore = "me"
       ["npm:playwright", "latest"],
       ["python", "3.12.13"],
     ]);
+  });
+});
+
+describe("redactGitConfig", () => {
+  it("redacts signing-key values without changing unrelated config", () => {
+    const raw = "[user]\n\tname = Test User\n\tsigningKey = ssh-ed25519 AAAA\n[core]\n\teditor = nvim\n";
+    expect(redactGitConfig(raw)).toContain("signingKey = <redacted>");
+    expect(redactGitConfig(raw)).not.toContain("ssh-ed25519 AAAA");
+    expect(redactGitConfig(raw)).toContain("editor = nvim");
   });
 });
 
@@ -357,6 +367,7 @@ import {
   normalizeHome,
   parseEnvDFile,
   parsePathEntries,
+  parsePathPrepends,
   parseRcExports,
   parseShellEnvSnapshot,
   rcProfile,
@@ -492,6 +503,42 @@ describe("rcProfile", () => {
     // First-seen order: the $PATH token from the first line keeps its slot.
     expect(profile.path).toEqual(["~/.local/bin", "$PATH", "~/.cache/.bun/bin"]);
     expect(profile.exports.map((e) => e.key)).toEqual(["PATH", "PATH"]);
+  });
+
+  it("derives PATH precedence from _path_prepend calls, last call leftmost", () => {
+    // How ~/.config/shell/00-env.sh actually builds PATH since the shell split:
+    // each call prepends, so the last one executed ends up first.
+    const profile = rcProfile(
+      '_path_prepend "$HOME/.local/bin"\n_path_prepend "$HOME/.cache/.bun/bin"\nexport PATH\n',
+      "/home/u",
+    );
+    expect(profile.path).toEqual(["~/.cache/.bun/bin", "~/.local/bin"]);
+  });
+
+  it("does not report an empty profile for a loader-style rc plus its modules", () => {
+    // The regression this guards: after the split the rc file declares nothing,
+    // so parsing it alone yields an empty profile that still reads as "live" --
+    // a silent degradation the fallback cannot catch, because nothing is missing.
+    const loaderOnly = 'for _m in "$HOME"/.config/shell/*.sh; do . "$_m"; done\n';
+    expect(rcProfile(loaderOnly, "/home/u").exports).toEqual([]);
+
+    const withModules = loaderOnly + 'export EDITOR=nvim\n_path_prepend "$HOME/.local/bin"\n';
+    const profile = rcProfile(withModules, "/home/u");
+    expect(profile.exports).toContainEqual({ key: "EDITOR", value: "nvim" });
+    expect(profile.path).toEqual(["~/.local/bin"]);
+  });
+});
+
+describe("parsePathPrepends", () => {
+  it("collects quoted _path_prepend arguments in file order, ignoring comments", () => {
+    expect(
+      parsePathPrepends('# _path_prepend "/nope"\n_path_prepend "$HOME/.local/bin"\n_path_prepend "$FLYCTL_INSTALL/bin"\n'),
+    ).toEqual(["$HOME/.local/bin", "$FLYCTL_INSTALL/bin"]);
+  });
+
+  it("ignores the helper's own definition and unquoted calls", () => {
+    expect(parsePathPrepends("_path_prepend() {\n  case \":$PATH:\" in\n  esac\n}\n")).toEqual([]);
+    expect(parsePathPrepends("_path_prepend $SOMEVAR\n")).toEqual([]);
   });
 });
 

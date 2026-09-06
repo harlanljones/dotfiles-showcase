@@ -58,10 +58,14 @@ describe("checkAllReachable", () => {
     const failures = await checkAllReachable(fetchImpl, "https://example.workers.dev");
     expect(failures).toEqual([]);
     expect(seen).toEqual(
-      expect.arrayContaining(["https://example.workers.dev/system", "https://example.workers.dev/shell", "https://example.workers.dev/editor", "https://example.workers.dev/agents"]),
+      expect.arrayContaining(["https://example.workers.dev/", "https://example.workers.dev/system", "https://example.workers.dev/shell", "https://example.workers.dev/editor", "https://example.workers.dev/agents"]),
     );
     // demo deep link's server-visible path (hash never reaches the server)
     expect(seen).toContain(`https://example.workers.dev${DEMO_DEEPLINK.path}`);
+  });
+
+  test("propagates rejected fetches for the CLI catch handler", async () => {
+    await expect(checkAllReachable(async () => { throw new Error("network down"); }, "https://example.workers.dev")).rejects.toThrow("network down");
   });
 });
 
@@ -88,6 +92,11 @@ describe("verifyRouting", () => {
     ];
     const failures = verifyRouting(broken);
     expect(failures.some((f) => f.path === "/agents")).toBe(true);
+  });
+
+  test("catches a route removed from the catalogue even when fallback returns the same category", () => {
+    const failures = verifyRouting(CATEGORY_ROUTES, CATEGORY_ROUTES.filter((route) => route.category !== "system").map((route) => ({ id: route.category, route: route.path })));
+    expect(failures.some((f) => f.path === "/system" && f.detail.includes("not declared"))).toBe(true);
   });
 
   test("catches a shrunk catalogue (the vacuous-pass failure mode this ticket exists to close)", () => {
