@@ -219,3 +219,45 @@ describe("Explorer route round-trips (regression: no grid/expand pattern)", () =
     expect(words).toEqual(["git safety", "lazygit", "herdr", "agent skills", "git core"]);
   });
 });
+
+describe("Explorer: the / palette (HJ-725)", () => {
+  it("renders a persistent visible search control in the chrome", async () => {
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+    const trigger = container.querySelector(".palette-trigger");
+    expect(trigger).not.toBeNull();
+    expect(trigger!.tagName).toBe("BUTTON"); // reachable by click/tap, not just keyboard
+  });
+
+  it("opens the palette when the visible search control is activated", async () => {
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    const trigger = container.querySelector(".palette-trigger");
+    await act(async () => {
+      trigger.click();
+    });
+    // The palette is a lazy chunk (PERF-03); let its Suspense boundary resolve.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+
+  it("opens on '/' from anywhere in the chrome", async () => {
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+    await act(async () => {
+      windowRef.dispatchEvent(new windowRef.KeyboardEvent("keydown", { key: "/", bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+});
