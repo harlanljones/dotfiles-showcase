@@ -6,4 +6,13 @@
   --color-ash-dim: #868b93;
   --color-fail: #b16371;
   --color-line: rgba(149, 154, 164, 0.16);
+
+  /*
+   * Type scale (HJ-723): one size — display — sits above the surrounding
+   * ~0.7-1rem chrome. It is reserved for the showcase demo's own content
+   * (the Starship prompt render, a selected palette swatch's hex, a monitor
+   * bar's label) and never for a title, kicker, or category name.
+   */
+  --text-display: clamp(1.75rem, 1.1rem + 3vw, 2.75rem);
+  --text-display--line-height: 1.15;
 }

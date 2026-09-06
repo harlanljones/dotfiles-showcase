@@ -289,7 +289,7 @@ export default function StarshipPlayground({
             is exposed as visually-hidden text instead. */}
         <span className="sr-only">Rendered Starship prompt</span>
         <pre
-          className={`font-mono-nerd min-h-8 text-[1.05rem] leading-relaxed sm:text-lg ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
+          className={`font-mono-nerd text-display min-h-8 ${narrowPreview ? "overflow-x-auto whitespace-pre" : "whitespace-pre-wrap break-words"}`}
           style={{ color: theme.foreground }}
           dangerouslySetInnerHTML={{ __html: view === "before" ? rawHtml : html }}
         />
