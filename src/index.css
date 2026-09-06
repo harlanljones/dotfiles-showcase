@@ -227,33 +227,6 @@ html[data-failed="1"] .display {
   box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
   animation: cursor-blink 1.05s linear infinite;
 }
-.veil-copy {
-  display: grid;
-  justify-items: center;
-}
-.veil-title,
-.veil-subtitle,
-.veil-hint {
-  text-align: center;
-  color: var(--ash-dim);
-}
-.veil-title {
-  font-size: 0.82rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-.veil-subtitle {
-  margin-top: 0.6rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-.veil-hint {
-  margin-top: 1.4rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
-}
 @keyframes cursor-blink {
   0%,
   48% {
@@ -282,6 +255,13 @@ html[data-failed="1"] .display {
   }
   .demo-hero {
     animation: none;
+  }
+  .demo-performance.is-performing > .demo-performance-content {
+    clip-path: none;
+    animation: none;
+  }
+  .demo-performance-cursor {
+    display: none;
   }
 }
 
@@ -369,6 +349,44 @@ html[data-failed="1"] .display {
 .demo-hero {
   width: 100%;
   animation: fade-in 160ms var(--ease-out);
+}
+
+/*
+ * HJ-721: the veil hands off to the performance — the open showcase demo
+ * draws itself in rather than appearing finished, using the same
+ * block-cursor as the veil to carry the gesture across. Purely a visual
+ * reveal (clip-path) over content that already exists in the DOM, so
+ * nothing is delayed for assistive tech. Skipped entirely (no class, no
+ * cursor node) once a demo has been marked seen this session, or under a
+ * reduced-motion preference — see lib/session.ts and lib/reducedMotion.ts.
+ */
+.demo-performance {
+  position: relative;
+}
+.demo-performance.is-performing > .demo-performance-content {
+  clip-path: inset(0 100% 0 0);
+  animation: demo-reveal 720ms var(--ease-out) forwards;
+}
+@keyframes demo-reveal {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.demo-performance-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.7rem;
+  background: var(--phosphor);
+  box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);
+  animation: demo-cursor-sweep 720ms var(--ease-out) forwards;
+  pointer-events: none;
+}
+@keyframes demo-cursor-sweep {
+  to {
+    left: 100%;
+  }
 }
 
 .content-panel {

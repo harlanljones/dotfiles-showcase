@@ -2,9 +2,9 @@
  * Session-scoped persistence (grill HJ-717).
  *
  * Single module owning every value the app remembers for the life of a
- * browser tab: the veil "awake" flag today, and — designed in but not yet
- * wired up — the set of showcase demos a visitor has watched perform
- * (HJ-721) and the pager's mode override (HJ-722).
+ * browser tab: the veil "awake" flag, the set of showcase demos a visitor
+ * has watched perform (wired up in Explorer.tsx, HJ-721), and — designed in
+ * but not yet wired up — the pager's mode override (HJ-722).
  *
  * Local-first contract: reads and writes never throw. Private-mode or
  * blocked storage degrades to "nothing remembered" — reads return their
