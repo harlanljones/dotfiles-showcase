@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CardId } from "../manifest";
 import { useRouter } from "../lib/router";
 import {
@@ -8,7 +8,21 @@ import {
   type CategoryId,
 } from "../lib/catalogue";
 import { emit } from "../lib/telemetry";
+import {
+  clampPage,
+  computePageCount,
+  initialPagerState,
+  onScrollIntent,
+  pageDown,
+  pageUp,
+  percentThrough,
+  siblingIndex,
+  type PagerState,
+  type PointerCoarseness,
+} from "../lib/pager";
+import { pagerModeOverride, setPagerModeOverride } from "../lib/session";
 import StarshipCard from "./explorer/StarshipCard";
+import StatusLine from "./StatusLine";
 
 /**
  * PERF-03 chunk map: the wake path (StarshipCard) stays in the initial bundle;
@@ -65,6 +79,22 @@ function CardWithSuspense({ id }: { id: CardId }) {
   );
 }
 
+/**
+ * Mode selection branches on pointer coarseness, not viewport width, so
+ * touch laptops and large tablets are classified by how they're actually
+ * driven rather than how wide their screen happens to be (HJ-722).
+ */
+function detectPointerCoarseness(): PointerCoarseness {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "fine";
+  try {
+    return window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine";
+  } catch {
+    return "fine";
+  }
+}
+
+const HINT_FLASH_MS = 1800;
+
 export default function Explorer() {
   const { route, navigate } = useRouter();
   const activeCategory = route.category;
@@ -95,11 +125,160 @@ export default function Explorer() {
       ? route.targetCard
       : categoryCards[0]?.id;
 
-  const selectCard = (id: CardId) => {
-    if (id !== activeCardId) {
-      navigate({ targetCard: id });
+  const selectCard = useCallback(
+    (id: CardId) => {
+      if (id !== activeCardId) {
+        navigate({ targetCard: id });
+      }
+    },
+    [activeCardId, navigate],
+  );
+
+  // --- Pager (HJ-722) ---------------------------------------------------
+  //
+  // Mode is decided once, from pointer coarseness and any session override
+  // — never from viewport width. Page position/count come from measuring
+  // the hero viewport and its content; the escalation itself (first scroll
+  // flashes the hints, the next hands over to native scrolling) is the
+  // pure state machine in ../lib/pager, fed these DOM-derived numbers.
+  const [pointer] = useState<PointerCoarseness>(detectPointerCoarseness);
+  const [pagerState, setPagerState] = useState<PagerState>(() => initialPagerState(pointer, pagerModeOverride()));
+  const [hintFlash, setHintFlash] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [fieldHeightPx, setFieldHeightPx] = useState<number | null>(null);
+  const [viewportHeightPx, setViewportHeightPx] = useState(0);
+
+  const fieldRef = useRef<HTMLElement | null>(null);
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const heroTrackRef = useRef<HTMLDivElement | null>(null);
+  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const paged = pagerState.yield === "paged";
+
+  // A demo swap (rail click, category switch, deep link) always opens on
+  // its first page.
+  useEffect(() => {
+    setPage(0);
+  }, [activeCardId]);
+
+  // Clip the field to exactly the space below the header while paged, so
+  // the hero viewport below it has a definite height to clip/translate
+  // within. Reverts to natural (growable, scrollable) sizing once yielded.
+  useLayoutEffect(() => {
+    if (!paged) {
+      setFieldHeightPx(null);
+      return;
     }
-  };
+    const field = fieldRef.current;
+    if (!field) return;
+    const measure = () => {
+      const top = field.getBoundingClientRect().top;
+      setFieldHeightPx(Math.max(0, window.innerHeight - top));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [paged]);
+
+  // Measure the hero viewport/content to compute how many pages this demo
+  // needs. Content height, viewport height, and pointer coarseness are the
+  // only inputs the pure pager module ever sees.
+  useLayoutEffect(() => {
+    if (!paged) return;
+    const viewport = heroRef.current;
+    const track = heroTrackRef.current;
+    if (!viewport || !track) return;
+
+    const measure = () => {
+      const vh = viewport.clientHeight;
+      const ch = track.scrollHeight;
+      setViewportHeightPx(vh);
+      setPageCount(computePageCount(ch, vh));
+    };
+    measure();
+
+    const RO = window.ResizeObserver;
+    let observer: ResizeObserver | undefined;
+    if (RO) {
+      observer = new RO(measure);
+      observer.observe(viewport);
+      observer.observe(track);
+    }
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [paged, activeCardId, fieldHeightPx]);
+
+  // Content shrinking (or a demo swap) can leave `page` past the new end.
+  useEffect(() => {
+    setPage((p) => clampPage(p, pageCount));
+  }, [pageCount]);
+
+  const flashHint = useCallback(() => {
+    setHintFlash(true);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    hintTimeoutRef.current = setTimeout(() => setHintFlash(false), HINT_FLASH_MS);
+  }, []);
+
+  useEffect(() => () => {
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+  }, []);
+
+  // A visitor who scrolls is never silently ignored: the first attempt
+  // flashes the hints and stays paged; a second attempt hands over to
+  // native scrolling for the rest of the session (remembered via
+  // session.ts, HJ-717). Coarse pointers never reach "paged" in the first
+  // place, so this listener never even attaches for them.
+  useEffect(() => {
+    if (!paged) return;
+    const viewport = heroRef.current;
+    if (!viewport) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const result = onScrollIntent(pagerState);
+      setPagerState(result.state);
+      if (result.showHint) flashHint();
+      if (result.yielded) setPagerModeOverride("native");
+    };
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", handleWheel);
+  }, [paged, pagerState, flashHint]);
+
+  // j/k/space page the hero; h/l walk the sibling rail. Never touches
+  // history or the URL beyond the existing rail navigation (`navigate`),
+  // which already replaces rather than pushes for same-category moves.
+  useEffect(() => {
+    if (!paged) return;
+
+    const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "j" || e.key === " ") {
+        e.preventDefault();
+        setPage((p) => pageDown(p, pageCount));
+      } else if (e.key === "k") {
+        e.preventDefault();
+        setPage((p) => pageUp(p, pageCount));
+      } else if (e.key === "l" || e.key === "h") {
+        e.preventDefault();
+        const idx = categoryCards.findIndex((entry) => entry.id === activeCardId);
+        if (idx === -1) return;
+        const nextIdx = siblingIndex(idx, categoryCards.length, e.key === "l" ? 1 : -1);
+        const next = categoryCards[nextIdx];
+        if (next) selectCard(next.id);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [paged, pageCount, categoryCards, activeCardId, selectCard]);
+
+  const activeEntry = categoryCards.find((entry) => entry.id === activeCardId);
 
   return (
     <>
@@ -122,7 +301,11 @@ export default function Explorer() {
         </div>
       </header>
 
-      <main className="field">
+      <main
+        className="field"
+        ref={fieldRef}
+        style={fieldHeightPx !== null ? { height: fieldHeightPx, overflow: "hidden" } : undefined}
+      >
         <div className="explorer-content">
           <nav className="demo-rail" aria-label={`${currentCategory?.label ?? "Category"} demos`}>
             {categoryCards.map((entry) => (
@@ -138,9 +321,32 @@ export default function Explorer() {
             ))}
           </nav>
 
-          <div key={activeCardId ?? activeCategory} className="demo-hero" role="region" aria-label={currentCategory?.label ?? "Demo"}>
-            {activeCardId && <CardWithSuspense id={activeCardId} />}
+          <div
+            key={activeCardId ?? activeCategory}
+            className="demo-hero"
+            role="region"
+            aria-label={currentCategory?.label ?? "Demo"}
+            ref={heroRef}
+            style={paged ? { overflow: "hidden" } : undefined}
+          >
+            <div
+              className="demo-hero-track"
+              ref={heroTrackRef}
+              style={paged ? { transform: `translateY(-${page * viewportHeightPx}px)` } : undefined}
+            >
+              {activeCardId && <CardWithSuspense id={activeCardId} />}
+            </div>
           </div>
+
+          {pointer === "fine" && paged && activeEntry && (
+            <StatusLine
+              demoWord={activeEntry.word}
+              page={page}
+              pageCount={pageCount}
+              percent={percentThrough(page, pageCount)}
+              flash={hintFlash}
+            />
+          )}
         </div>
       </main>
     </>
