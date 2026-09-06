@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import type { CardId } from "../manifest";
 import { useRouter } from "../lib/router";
 import {
@@ -8,6 +8,8 @@ import {
   type CategoryId,
 } from "../lib/catalogue";
 import { emit } from "../lib/telemetry";
+import { markDemoSeen, seenDemos } from "../lib/session";
+import { prefersReducedMotion } from "../lib/reducedMotion";
 import StarshipCard from "./explorer/StarshipCard";
 
 /**
@@ -62,6 +64,41 @@ function CardWithSuspense({ id }: { id: CardId }) {
     <Suspense fallback={<ChunkWait />}>
       <Card />
     </Suspense>
+  );
+}
+
+/**
+ * HJ-721: the veil hands off to the performance. The showcase demo the
+ * visitor lands on renders itself in rather than appearing finished — the
+ * same block-cursor from the veil sweeps across the demo, drawing it in.
+ *
+ * The veil and the performance are separate mechanisms (session.ts, HJ-717
+ * design note): a demo performs once per session, the first time it's
+ * shown, whether or not the visitor ever saw the veil this session. Once
+ * `seenDemos()` has it, or under a reduced-motion preference, it renders
+ * complete and immediately — no ambient motion, no transition.
+ *
+ * `key={id}` on the parent `.demo-hero` remounts this on every demo switch,
+ * so `useState`'s initializer re-evaluates "should this perform" fresh per
+ * demo without extra effects.
+ */
+function DemoPerformance({ id, children }: { id: CardId; children: ReactNode }) {
+  const [performing, setPerforming] = useState(() => !prefersReducedMotion() && !seenDemos().has(id));
+
+  useEffect(() => {
+    if (!performing) markDemoSeen(id);
+  }, [performing, id]);
+
+  return (
+    <div className={`demo-performance${performing ? " is-performing" : ""}`}>
+      <div
+        className="demo-performance-content"
+        onAnimationEnd={performing ? () => setPerforming(false) : undefined}
+      >
+        {children}
+      </div>
+      {performing && <span className="demo-performance-cursor" aria-hidden="true" />}
+    </div>
   );
 }
 
@@ -139,7 +176,11 @@ export default function Explorer() {
           </nav>
 
           <div key={activeCardId ?? activeCategory} className="demo-hero" role="region" aria-label={currentCategory?.label ?? "Demo"}>
-            {activeCardId && <CardWithSuspense id={activeCardId} />}
+            {activeCardId && (
+              <DemoPerformance id={activeCardId}>
+                <CardWithSuspense id={activeCardId} />
+              </DemoPerformance>
+            )}
           </div>
         </div>
       </main>

@@ -10,7 +10,7 @@ let container: any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let windowRef: any;
 
-const GLOBAL_KEYS = ["window", "document", "navigator", "HTMLElement", "getComputedStyle", "fetch"] as const;
+const GLOBAL_KEYS = ["window", "document", "navigator", "HTMLElement", "getComputedStyle", "fetch", "sessionStorage"] as const;
 let savedGlobals: Array<[string, unknown]> = [];
 
 beforeEach(() => {
@@ -23,9 +23,11 @@ beforeEach(() => {
   globalThis.navigator = windowRef.navigator;
   globalThis.HTMLElement = windowRef.HTMLElement;
   globalThis.getComputedStyle = windowRef.getComputedStyle.bind(windowRef);
+  globalThis.sessionStorage = windowRef.sessionStorage;
   // StarshipCard/StarshipPlayground fire /api/starship on mount; keep it
   // pending so renders stay deterministic without a network mock per test.
   (globalThis as Record<string, unknown>).fetch = () => new Promise(() => {});
+  sessionStorage.clear();
 
   container = windowRef.document.createElement("div");
   windowRef.document.body.appendChild(container);
@@ -217,5 +219,111 @@ describe("Explorer route round-trips (regression: no grid/expand pattern)", () =
 
     const words = Array.from<any>(container.querySelectorAll(".demo-rail-word")).map((el) => el.textContent?.trim());
     expect(words).toEqual(["git safety", "lazygit", "herdr", "agent skills", "git core"]);
+  });
+});
+
+describe("HJ-721: the veil hands off to the performance", () => {
+  it("the open demo performs (draws in) the first time it's shown this session", async () => {
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const hero = container.querySelector(".demo-hero");
+    expect(hero.querySelector(".demo-performance.is-performing")).not.toBeNull();
+    expect(hero.querySelector(".demo-performance-cursor")).not.toBeNull();
+  });
+
+  it("marks the demo seen once the performance finishes, so it renders complete next time", async () => {
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const content = container.querySelector(".demo-performance-content");
+    await act(async () => {
+      content.dispatchEvent(new windowRef.Event("animationend", { bubbles: true }));
+    });
+
+    expect(container.querySelector(".demo-performance.is-performing")).toBeNull();
+    expect(container.querySelector(".demo-performance-cursor")).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem("seen-demos") ?? "[]")).toContain("starship");
+  });
+
+  it("a demo already seen this session renders complete and immediately, no performance", async () => {
+    const { markDemoSeen } = await import("../lib/session");
+    markDemoSeen("starship");
+
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const hero = container.querySelector(".demo-hero");
+    expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
+    expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+  });
+
+  it("a returning visitor who skips the veil still gets the performance (session key is per-demo, not per-veil)", async () => {
+    const { setAwake, seenDemos } = await import("../lib/session");
+    setAwake();
+    expect(seenDemos().has("starship")).toBe(false);
+
+    windowRef.happyDOM.setURL("http://localhost/shell");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    expect(container.querySelector(".demo-performance.is-performing")).not.toBeNull();
+  });
+
+  describe("under a reduced-motion preference", () => {
+    beforeEach(() => {
+      windowRef.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    });
+
+    it("every showcase demo renders complete and immediately, with nothing in motion", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const hero = container.querySelector(".demo-hero");
+      expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
+      expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+    });
+
+    it("navigation still works (navigation is not motion)", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const ripgrepWord = Array.from<any>(container.querySelectorAll(".demo-rail-word")).find(
+        (el) => el.textContent?.trim() === "ripgrep",
+      );
+      await act(async () => {
+        ripgrepWord.click();
+      });
+
+      expect(container.querySelector('.demo-rail-word[aria-current="true"]')?.textContent?.trim()).toBe("ripgrep");
+    });
+
+    it("passes a strict axe audit (all rules incl. color-contrast) along the reduced-motion path", async () => {
+      windowRef.happyDOM.setURL("http://localhost/shell");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<Explorer />);
+      });
+
+      const results = await axe.run(container, { resultTypes: ["violations"] });
+      expect(results.violations.map((v) => v.id)).toEqual([]);
+    });
   });
 });
