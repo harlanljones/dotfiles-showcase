@@ -129,10 +129,22 @@ export function scrubLiterals(content: string, identity: ScrubIdentity): { conte
 /**
  * Final guard: the live machine's hostname must not survive into output
  * unless it is a known-generic token. Returns offending occurrences.
+ *
+ * Matched on identifier boundaries rather than as a bare substring. A short
+ * hostname is otherwise near-certain to appear inside an unrelated word and
+ * fail the run on content that leaks nothing: a host named `vm` hits
+ * `nvml_measure_pcie_speeds` in `fallback/btop.conf`, which is how this was
+ * found. A genuine leak is still caught, because a hostname that actually
+ * appears in config content is delimited by a path separator, quote, or
+ * whitespace (`/home/vm/…`, `host = "vm"`) — none of which are identifier
+ * characters. `scrubLiterals` already applies the same reasoning to the
+ * username via its length floor; boundaries are the more precise form of it.
  */
 export function findHostLeaks(content: string, host: string): string[] {
   if (!host || BENIGN_HOST_TOKENS.has(host)) return [];
-  return content.includes(host) ? [host] : [];
+  const escaped = host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const bounded = new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`);
+  return bounded.test(content) ? [host] : [];
 }
 
 // ---------------------------------------------------------------------------

@@ -73,6 +73,7 @@ export default function GhosttyTerminalCard() {
 
   return (
     <CardShell
+      id="ghostty-terminal"
       title="Ghostty Terminal"
       blurb="Terminal behavior from ~/.config/ghostty/config — the Wayland backend fix, the CSI-u key protocol, window padding, font, and keybinds. The palette lives in the Omarchy Palette card."
       badges={data ? <SourceBadge source={data.source} /> : undefined}

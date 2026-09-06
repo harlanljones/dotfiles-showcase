@@ -22,6 +22,7 @@ const AGENTS = [
 export default function GitSafetyCard() {
   return (
     <CardShell
+      id="git-safety"
       title="Git Safety Guardrails"
       blurb="Every coding agent on this machine can stage and diff, but never commit or push without a human."
     >

@@ -73,7 +73,13 @@ export const STARTUP_ZSH: StartupStage[] = [
     file: "~/.zshrc",
     when: "interactive shells",
     managed: true,
-    note: "chezmoi dot_zshrc: starship init + failure recolor, mise activate, guarded zoxide/fzf/atuin/direnv hooks, zj/zp jumps, tool exports (RIPGREP_CONFIG_PATH, FZF_*).",
+    note: "chezmoi dot_zshrc: a loader. Sources every ~/.config/shell/*.sh in numeric order and declares nothing itself.",
+  },
+  {
+    file: "~/.config/shell/*.sh",
+    when: "interactive shells",
+    managed: true,
+    note: "Shared bash/zsh modules: PATH and editor (00), tool exports (10), guarded zoxide/fzf/atuin/direnv hooks (20), zj/zp jumps (30), aliases (40), agent wrappers (50), app launchers (55), starship init + failure recolor (60), cloud CLIs (70). 99-local.sh is untracked and sourced last.",
   },
   { file: "/etc/zlogin", when: "login shells", managed: false, note: "System login epilogue." },
   { file: "~/.zlogin", when: "login shells", managed: false, note: "Per-user login epilogue. Not managed by these dotfiles." },
@@ -85,13 +91,19 @@ export const STARTUP_BASH: StartupStage[] = [
     file: "~/.bash_profile",
     when: "login shells",
     managed: true,
-    note: "chezmoi dot_bash_profile: sources ~/.bashrc, then prepends ~/.local/bin and loads cargo env.",
+    note: "chezmoi dot_bash_profile: sources ~/.bashrc, then loads cargo env if present. PATH is built once, in 00-env.sh.",
   },
   {
     file: "~/.bashrc",
     when: "interactive shells",
     managed: true,
-    note: "chezmoi dot_bashrc: omarchy defaults, starship_precmd recolor, PATH, freetoken launcher, gcloud, guarded zoxide/fzf/atuin/direnv hooks.",
+    note: "chezmoi dot_bashrc: omarchy defaults, then a loader for ~/.config/shell/*.sh -- the same modules zsh loads.",
+  },
+  {
+    file: "~/.config/shell/*.sh",
+    when: "interactive shells",
+    managed: true,
+    note: "Shared bash/zsh modules; see the zsh sequence. Branch on SHELL_KIND where the two shells genuinely differ (notably 60-prompt.sh, whose recolor semantics differ by design).",
   },
   { file: "~/.config/environment.d/*.conf", when: "user session", managed: true, note: "systemd --user session environment (EDITOR, PAGER, MACHINE_NAME). Read before any shell starts." },
 ];
@@ -125,6 +137,25 @@ export function parseRcExports(content: string): ShellExport[] {
     const m = t.match(/^export\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
     if (!m) continue;
     out.push({ key: m[1], value: unquote(m[2] ?? "") });
+  }
+  return out;
+}
+
+/**
+ * `_path_prepend "<dir>"` calls, in file order.
+ *
+ * The shell modules build PATH through that helper rather than by repeating
+ * `export PATH="…:$PATH"`, because the pre-split rc files accumulated four
+ * copies of ~/.local/bin that way. Parsing only `export PATH=` would therefore
+ * report an empty PATH precedence for a config that in fact sets one.
+ */
+export function parsePathPrepends(content: string): string[] {
+  const out: string[] = [];
+  for (const line of content.split("\n")) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const m = t.match(/^_path_prepend\s+"([^"]+)"/);
+    if (m) out.push(m[1]);
   }
   return out;
 }
@@ -180,14 +211,22 @@ export function rcProfile(content: string, home: string): ShellProfile {
   );
   const seen = new Set<string>();
   const path: string[] = [];
+  const push = (entry: string): void => {
+    if (!seen.has(entry)) {
+      seen.add(entry);
+      path.push(entry);
+    }
+  };
+
+  // `_path_prepend` calls come first, reversed: each one prepends, so the last
+  // call executed ends up leftmost in the resulting PATH.
+  for (const entry of parsePathPrepends(content).reverse()) {
+    push(normalizeHome(entry, home));
+  }
+
   for (const e of exports) {
     if (e.key !== "PATH") continue;
-    for (const entry of parsePathEntries(e.value)) {
-      if (!seen.has(entry)) {
-        seen.add(entry);
-        path.push(entry);
-      }
-    }
+    for (const entry of parsePathEntries(e.value)) push(entry);
   }
   return { exports, path };
 }

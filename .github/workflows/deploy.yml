@@ -6,7 +6,39 @@ on:
   pull_request:
 
 jobs:
+  # A secret must not reach the public mirror, so this gates the deploy rather
+  # than running beside it. It is a separate job so a leak fails fast and
+  # obviously, instead of surfacing as one red step inside a long deploy log.
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 is load-bearing. The default shallow checkout gives the
+      # scanner a single commit, so it would pass on a repo whose history is
+      # full of secrets -- a green check that proves nothing.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.21.2
+        run: |
+          curl -fsSL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      # --redact matters as much as the scan: without it a detection prints the
+      # secret into a public CI log, so finding a leak would itself leak it.
+      # This repo currently has zero findings and no .gitleaksignore; if one is
+      # ever added, every entry must record what was rotated and when.
+      - name: Scan full history
+        run: gitleaks detect --source . --no-banner --redact --exit-code 1
+
   deploy:
+    needs: secrets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

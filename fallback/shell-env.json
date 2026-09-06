@@ -1,10 +1,10 @@
 {
-  "_note": "Synthetic sanitized snapshot for the Shell Profiles & Environment card. Hand-authored from the shape of the chezmoi-managed shell configs (dot_zshrc, dot_bashrc, dot_config/environment.d/) with all host-identifying literals replaced (~, <host>) and no credentials. Strategy: SYNTHETIC (see fallback/README.md). Live sources: ~/.zshrc, ~/.bashrc, ~/.config/environment.d/.",
+  "_note": "Synthetic sanitized snapshot for the Shell Profiles & Environment card. Hand-authored from the shape of the chezmoi-managed shell configs with all host-identifying literals replaced (~, <host>) and no credentials. Strategy: SYNTHETIC (see fallback/README.md). Live sources: ~/.zshrc, ~/.bashrc, ~/.config/shell/*.sh, ~/.config/environment.d/. Since the shell split the rc files are loaders; the exports below live in the shared ~/.config/shell modules, which both shells source, so the two profiles are largely identical by construction.",
   "zsh": {
     "exports": [
+      { "key": "PATH", "value": "~/.cache/.bun/bin:~/.local/bin:$PATH" },
       { "key": "EDITOR", "value": "nvim" },
       { "key": "VISUAL", "value": "nvim" },
-      { "key": "PATH", "value": "~/.local/bin:$PATH" },
       { "key": "RIPGREP_CONFIG_PATH", "value": "~/.config/ripgrep/rc" },
       { "key": "FZF_DEFAULT_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
       { "key": "FZF_CTRL_T_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
@@ -13,16 +13,25 @@
       { "key": "PAGER", "value": "less" },
       { "key": "MANPAGER", "value": "sh -c 'col -bx | bat -l man -p'" }
     ],
-    "path": ["~/.local/bin", "$PATH"]
+    "path": ["~/.cache/.bun/bin", "~/.local/bin", "$PATH"]
   },
   "bash": {
     "exports": [
       { "key": "OMARCHY_PATH", "value": "/usr/share/omarchy" },
-      { "key": "PATH", "value": "~/.local/bin:$PATH" },
-      { "key": "PATH", "value": "~/.cache/.bun/bin:$PATH" },
-      { "key": "WEBKIT_DISABLE_DMABUF_RENDERER", "value": "1" }
+      { "key": "PATH", "value": "~/.cache/.bun/bin:~/.local/bin:$PATH" },
+      { "key": "EDITOR", "value": "nvim" },
+      { "key": "VISUAL", "value": "nvim" },
+      { "key": "RIPGREP_CONFIG_PATH", "value": "~/.config/ripgrep/rc" },
+      { "key": "FZF_DEFAULT_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
+      { "key": "FZF_CTRL_T_COMMAND", "value": "fd --type f --hidden --follow --exclude .git" },
+      { "key": "FZF_ALT_C_COMMAND", "value": "fd --type d --hidden --follow --exclude .git" },
+      { "key": "FZF_DEFAULT_OPTS", "value": "--height=40% --layout=reverse --border --info=inline" },
+      { "key": "PAGER", "value": "less" },
+      { "key": "MANPAGER", "value": "sh -c 'col -bx | bat -l man -p'" },
+      { "key": "WEBKIT_DISABLE_DMABUF_RENDERER", "value": "1" },
+      { "key": "FLYCTL_INSTALL", "value": "~/.fly" }
     ],
-    "path": ["~/.local/bin", "~/.cache/.bun/bin", "$PATH"]
+    "path": ["~/.cache/.bun/bin", "~/.local/bin", "$PATH"]
   },
   "env": [
     {

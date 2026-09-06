@@ -58,6 +58,13 @@ describe("extractIniLike", () => {
     const content = "[init]\n\tdefaultBranch=master\n";
     expect(extractIniLike(content)).toEqual([{ key: "init.defaultBranch", value: "master" }]);
   });
+
+  test("preserves hex colours while stripping whitespace-prefixed comments", () => {
+    expect(extractIniLike("background = #f0e6d3\nforeground = #abc  # comment\n")).toEqual([
+      { key: "background", value: "#f0e6d3" },
+      { key: "foreground", value: "#abc" },
+    ]);
+  });
 });
 
 describe("extractYamlish", () => {
@@ -176,6 +183,21 @@ describe("buildIndex", () => {
     const entries = buildIndex(FIXTURE_MANIFEST, () => null);
     expect(entries).toEqual([]);
   });
+
+  test("deduplicates sources that share one fallback snapshot", () => {
+    const manifest = [{
+      ...FIXTURE_MANIFEST[0],
+      sources: [
+        ...(FIXTURE_MANIFEST[0].sources ?? []),
+        { livePath: "~/.bashrc", fallbackFile: "starship.toml" as const },
+      ],
+    }];
+    expect(buildIndex(manifest, (file) => FIXTURE_FILES[file] ?? null)).toEqual([
+      { demoId: "starship", configPath: "~/.config/starship.toml", fallbackFile: "starship.toml", key: "add_newline", value: "true" },
+      { demoId: "starship", configPath: "~/.config/starship.toml", fallbackFile: "starship.toml", key: "character.error_symbol", value: "x" },
+    ]);
+  });
+
 });
 
 describe("buildIndexModule", () => {

@@ -9,6 +9,7 @@ import {
   STARTUP_ZSH,
   parseEnvDFile,
   parseShellEnvSnapshot,
+  redactSensitive,
   rcProfile,
   type EnvDFile,
   type ShellEnvPayload,
@@ -454,12 +455,43 @@ function readEnvD(dir: string): EnvDFile[] | null {
     if (!name.endsWith(".conf")) continue;
     try {
       const content = readFileSync(join(dir, name), "utf8");
-      files.push({ file: name, vars: parseEnvDFile(content) });
+      files.push({ file: name, vars: redactSensitive(parseEnvDFile(content)) });
     } catch {
       // Unreadable file — skip it, keep the rest.
     }
   }
   return files;
+}
+
+/**
+ * Read the shared shell modules (`~/.config/shell/*.sh`), concatenated in load
+ * order. Returns null when the directory is absent or holds no modules.
+ *
+ * Since the shell split, `~/.bashrc` and `~/.zshrc` are loaders: they source
+ * this directory and declare nothing themselves. Parsing the rc file alone
+ * would yield an empty profile that still reported itself as "live" — the one
+ * degradation the fallback cannot catch, because nothing is missing. So the
+ * modules are read too, and the card parses each rc plus its modules as one
+ * effective profile.
+ */
+function readShellModules(dir: string): string | null {
+  if (isWorkerd()) return null;
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const parts: string[] = [];
+  for (const name of names.sort()) {
+    if (!name.endsWith(".sh")) continue;
+    try {
+      parts.push(readFileSync(join(dir, name), "utf8"));
+    } catch {
+      // Unreadable module — skip it, keep the rest.
+    }
+  }
+  return parts.length > 0 ? parts.join("\n") : null;
 }
 
 function shellEnvCard(): ShellEnvPayload {
@@ -474,19 +506,30 @@ function shellEnvCard(): ShellEnvPayload {
   const home = userHome();
   const warnings: string[] = [];
 
-  const zsh = zshCfg.source === "live" ? rcProfile(zshCfg.content, home) : snapshot.zsh;
-  const bash = bashCfg.source === "live" ? rcProfile(bashCfg.content, home) : snapshot.bash;
+  // The modules are shared, so each shell's effective config is its own rc
+  // plus the same module set. Either being live is enough to render live.
+  const modules = readShellModules(shellEnvLivePath("shell"));
+  const effective = (cfg: ConfigResult): string =>
+    [cfg.source === "live" ? cfg.content : "", modules ?? ""].join("\n");
+
+  const zshSource: "live" | "fallback" =
+    zshCfg.source === "live" || modules !== null ? "live" : "fallback";
+  const bashSource: "live" | "fallback" =
+    bashCfg.source === "live" || modules !== null ? "live" : "fallback";
+
+  const zsh = zshSource === "live" ? rcProfile(effective(zshCfg), home) : snapshot.zsh;
+  const bash = bashSource === "live" ? rcProfile(effective(bashCfg), home) : snapshot.bash;
   const envLive = readEnvD(shellEnvLivePath("environment.d"));
   const env = envLive ?? snapshot.env;
   const envSource = envLive ? "live" : "fallback";
 
-  if (zshCfg.source === "fallback" && bashCfg.source === "fallback" && envSource === "fallback") {
+  if (zshSource === "fallback" && bashSource === "fallback" && envSource === "fallback") {
     warnings.push("No live shell configs found; showing the bundled sanitized snapshot.");
   }
 
   return {
-    zshSource: zshCfg.source,
-    bashSource: bashCfg.source,
+    zshSource,
+    bashSource,
     envSource,
     zsh,
     bash,
@@ -933,7 +976,7 @@ export function gitValue(
   key: string,
 ): string | null {
   for (const [k, values] of gitSectionEntries(sections, section)) {
-    if (k === key && values.length > 0) return values[0].split("#")[0].trim() || null;
+    if (k.toLowerCase() === key.toLowerCase() && values.length > 0) return values[0].split("#")[0].trim() || null;
   }
   return null;
 }
@@ -949,11 +992,16 @@ export interface GitSigningSummary {
 export function summarizeGitSigning(sections: GitConfigSection[]): GitSigningSummary {
   return {
     commitGpgsign: gitValue(sections, "commit", "gpgsign"),
-    tagGpgsign: gitValue(sections, "tag", "gpgsign") ?? gitValue(sections, "tag", "gpgSign"),
+    tagGpgsign: gitValue(sections, "tag", "gpgsign"),
     gpgFormat: gitValue(sections, "gpg", "format"),
     gpgProgram: gitValue(sections, "gpg", "program"),
     signingKeySet: gitValue(sections, "user", "signingkey") !== null,
   };
+}
+
+/** Replace signing-key values while preserving the rest of the git config. */
+export function redactGitConfig(content: string): string {
+  return content.replace(/^(\s*signingkey\s*=\s*).+$/gim, "$1<redacted>");
 }
 
 /** Marker dividing the fallback gitconfig snapshot from its ignore snapshot. */
@@ -1076,7 +1124,7 @@ function gitCoreCard(): GitCorePayload {
     credentialHelpers,
     safeDirs,
     ignores,
-    rawConfig: configText,
+    rawConfig: redactGitConfig(configText),
   };
 }
 

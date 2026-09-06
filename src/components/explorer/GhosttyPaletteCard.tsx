@@ -156,6 +156,7 @@ export default function GhosttyPaletteCard() {
 
   return (
     <CardShell
+      id="ghostty"
       title="Omarchy Palette"
       blurb="The terminal pulls its palette at runtime from omarchy's current-theme state file — swap themes without touching the config. Click a swatch to preview it as terminal foreground on the theme background. Terminal behavior (backend, padding, keybinds) lives in the Ghostty Terminal card."
       badges={
@@ -326,9 +327,13 @@ export default function GhosttyPaletteCard() {
           {selectedHex && (
             <div className="space-y-2">
               <div className="font-mono text-xs text-white/60">
-                Selected: <span className="text-phosphor">{ansiLabel(selected)}</span> ·{" "}
-                <span className="text-white/80">{selectedHex}</span>
+                Selected: <span className="text-phosphor">{ansiLabel(selected)}</span>
               </div>
+              {/* HJ-723: the swatch's own hex value is the demo content that
+                  carries the display size — not the "Selected:" chrome above it.
+                  Color stays fixed (not the swatch's own hex) so contrast holds
+                  for every entry in the palette, including near-black swatches. */}
+              <p className="text-display font-mono m-0 text-ash">{selectedHex}</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="font-mono text-[11px] text-white/50">

@@ -76,6 +76,7 @@ export default function MiseCard() {
 
   return (
     <CardShell
+      id="mise"
       title="mise Toolchains"
       blurb="One declarative config manages every runtime, pinned or latest — activated on cd via mise's shell hook. The pin here is simulated client-side; it does not change your config."
       badges={data ? <SourceBadge source={data.source} /> : undefined}

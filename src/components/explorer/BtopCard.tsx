@@ -69,6 +69,7 @@ export default function BtopCard() {
 
   return (
     <CardShell
+      id="btop"
       title="System Monitor"
       blurb="btop's layout boxes, theme, and monitoring knobs from ~/.config/btop/btop.conf — toggle boxes and presets to preview arrangements. Read-only: nothing here changes your config."
       badges={data ? <SourceBadge source={data.source} /> : undefined}
@@ -104,6 +105,8 @@ export default function BtopCard() {
                       <Pill>preview (client-side)</Pill>
                     )}
                   </div>
+                  {/* HJ-723: the box name is the monitor-bar content that carries
+                      the display size; the "off" state stays small chrome. */}
                   <div
                     className="flex flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/40 p-2"
                     aria-label={`visible boxes: ${visibleBoxes.join(", ") || "none"}`}
@@ -111,7 +114,7 @@ export default function BtopCard() {
                     {boxes.map((box) => (
                       <div
                         key={box}
-                        className={`flex-1 rounded border px-2 py-3 text-center font-mono text-xs ${hidden[box] ? "border-white/5 text-white/55 opacity-40" : "border-phosphor/35 bg-phosphor/[0.07] text-phosphor"}`}
+                        className={`text-display flex-1 rounded border px-3 py-4 text-center font-mono ${hidden[box] ? "border-white/5 text-white/55 opacity-40" : "border-phosphor/35 bg-phosphor/[0.07] text-phosphor"}`}
                       >
                         {box}
                         {hidden[box] && <span className="block text-[10px]">off</span>}
