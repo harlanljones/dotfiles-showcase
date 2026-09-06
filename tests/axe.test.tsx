@@ -1,9 +1,10 @@
 import { describe, expect, it, mock } from "bun:test";
 import { Window } from "happy-dom";
 import { createRoot } from "react-dom/client";
-import { createElement } from "react";
+import { act, createElement } from "react";
 import axe from "axe-core";
 import { FETCHERS } from "../src/components/explorer/fixtures";
+import CommandPalette from "../src/components/explorer/CommandPalette";
 
 /**
  * A11Y-01 (HJ-580): strict axe audit — ALL rules enabled, including
@@ -188,4 +189,67 @@ describe("axe strict audit (all rules incl. color-contrast)", () => {
       await audit(name, "static");
     }, 15000);
   }
+});
+
+/** Same reactProps hack as CommandPalette.test.tsx — see that file's header. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function typeIntoPaletteInput(input: any, value: string): void {
+  const key = Object.keys(input).find((k) => k.startsWith("__reactProps$"));
+  input.value = value;
+  (key ? input[key]?.onChange : undefined)?.({ target: input, currentTarget: input });
+}
+
+describe("axe strict audit: the / palette (HJ-725)", () => {
+  const noop = () => {};
+
+  it("open, empty query", async () => {
+    try {
+      const { window, container } = await renderForAxe(
+        createElement(CommandPalette, { open: true, onClose: noop, onNavigate: noop }),
+      );
+      const violations = await axeViolations(container);
+      expect(formatViolations(violations)).toBe("");
+      window.happyDOM.abort();
+    } finally {
+      restoreDom();
+    }
+  });
+
+  it("open, with matching results (demo + configuration hits)", async () => {
+    try {
+      const { window, container } = await renderForAxe(
+        createElement(CommandPalette, { open: true, onClose: noop, onNavigate: noop }),
+      );
+      const input = container.querySelector('[role="combobox"]');
+      await act(async () => {
+        typeIntoPaletteInput(input, "starship");
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
+      const violations = await axeViolations(container);
+      expect(formatViolations(violations)).toBe("");
+      window.happyDOM.abort();
+    } finally {
+      restoreDom();
+    }
+  });
+
+  it("open, no matches (status text, not an empty listbox)", async () => {
+    try {
+      const { window, container } = await renderForAxe(
+        createElement(CommandPalette, { open: true, onClose: noop, onNavigate: noop }),
+      );
+      const input = container.querySelector('[role="combobox"]');
+      await act(async () => {
+        typeIntoPaletteInput(input, "zzz-no-such-setting-zzz");
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(container.querySelector('[role="listbox"]')).toBeNull();
+      const violations = await axeViolations(container);
+      expect(formatViolations(violations)).toBe("");
+      window.happyDOM.abort();
+    } finally {
+      restoreDom();
+    }
+  });
 });

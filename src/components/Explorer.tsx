@@ -24,6 +24,15 @@ import { markDemoSeen, pagerModeOverride, seenDemos, setPagerModeOverride } from
 import { prefersReducedMotion } from "../lib/reducedMotion";
 import StarshipCard from "./explorer/StarshipCard";
 import StatusLine from "./StatusLine";
+import type { PaletteDestination } from "./explorer/CommandPalette";
+
+/**
+ * PERF-03: the palette carries the full generated SEARCH_INDEX (HJ-719), so
+ * it splits into its own on-demand chunk rather than bloating the initial
+ * bundle every visitor pays for — only fetched the first time "/" is
+ * pressed or the search control is clicked.
+ */
+const CommandPalette = lazy(() => import("./explorer/CommandPalette"));
 
 /**
  * PERF-03 chunk map: the wake path (StarshipCard) stays in the initial bundle;
@@ -80,6 +89,13 @@ function CardWithSuspense({ id }: { id: CardId }) {
   );
 }
 
+/** True when a "/" keystroke should be swallowed by the field it landed in, rather than opening the palette. */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+}
+
 /**
  * Mode selection branches on pointer coarseness, not viewport width, so
  * touch laptops and large tablets are classified by how they're actually
@@ -134,6 +150,7 @@ function DemoPerformance({ id, children }: { id: CardId; children: ReactNode }) 
 export default function Explorer() {
   const { route, navigate } = useRouter();
   const activeCategory = route.category;
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   // Landing on root "/" resolves to Shell & Navigation with Starship open —
   // the desk's signature, and already the eager (chunk-free) demo — rather
@@ -143,6 +160,28 @@ export default function Explorer() {
       navigate({ category: "shell", targetCard: "starship" }, true);
     }
   }, [navigate]);
+
+  // The palette (HJ-725) opens on "/" from anywhere in the chrome, unless
+  // the keystroke belongs to a field already focused (e.g. a card's own
+  // search input) or the palette is already open.
+  useEffect(() => {
+    if (paletteOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+      setPaletteOpen(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [paletteOpen]);
+
+  const navigateFromPalette = ({ category, targetCard }: PaletteDestination) => {
+    if (category !== activeCategory) {
+      emit("room_switch", { from: activeCategory, to: category });
+    }
+    navigate({ category, targetCard });
+  };
 
   const openCategory = (id: CategoryId) => {
     if (id !== activeCategory) {
@@ -333,9 +372,26 @@ export default function Explorer() {
           ))}
         </nav>
         <div className="chrome-words">
+          <button
+            type="button"
+            className="palette-trigger"
+            onClick={() => setPaletteOpen(true)}
+          >
+            <span aria-hidden="true">/</span> search
+          </button>
           <a href="https://github.com/harlanljones/dotfiles">source</a>
         </div>
       </header>
+
+      {paletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            onNavigate={navigateFromPalette}
+          />
+        </Suspense>
+      )}
 
       <main
         className="field"
