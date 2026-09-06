@@ -505,6 +505,7 @@ function AtuinPane({ items }: { items: HistEntry[] }) {
 export default function FuzzyToolsCard() {
   return (
     <CardShell
+      id="fuzzy"
       title="fzf · zoxide · atuin"
       blurb="Wired into zsh with one guarded eval line each. These are client-side simulations of the real tools' ranking behavior: fzf subsequence scoring with contiguous and word-boundary bonuses, zoxide frequency × recency, and atuin fuzzy full-text history."
       badges={<SourceBadge source="simulated" />}

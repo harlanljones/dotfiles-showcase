@@ -38,6 +38,7 @@ export default function RipgrepCard() {
 
   return (
     <CardShell
+      id="ripgrep"
       title="ripgrep Defaults"
       blurb="Every rg invocation inherits these flags via RIPGREP_CONFIG_PATH, so searches are smart-case, fast, and repo-aware by default."
       badges={data ? <SourceBadge source={data.source} /> : undefined}

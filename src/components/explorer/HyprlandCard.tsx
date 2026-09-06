@@ -159,6 +159,7 @@ export default function HyprlandCard() {
 
   return (
     <CardShell
+      id="hyprland"
       title="Hyprland Monitors"
       blurb="Declared in omarchy's lua config; the diagram places each output to scale from its mode and position — toggle, swap, and rescale to see how the desktop rearranges."
       badges={data ? <SourceBadge source={data.source} /> : undefined}

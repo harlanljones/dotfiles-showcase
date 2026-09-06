@@ -57,6 +57,7 @@ export default function ShellEnvCard() {
 
   return (
     <CardShell
+      id="shell-env"
       title="Shell Profiles & Environment"
       blurb="How each login shell boots, which directories win PATH precedence, and which session exports both shells agree on. Live rc files are parsed read-only; anything missing degrades to the sanitized snapshot."
       badges={

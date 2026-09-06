@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getManifestEntry, type CardId } from "../../manifest";
 
 export type SourceKind = "live" | "fallback" | "simulated" | "static" | "interactive";
 
@@ -72,13 +73,40 @@ export function Notice({
   );
 }
 
+/**
+ * Manifest provenance, rendered inline and permanently (HJ-720): the source
+ * path(s) a card reads, plus the count of sources when there is more than
+ * one to distinguish. The live/fallback/simulated variant itself is carried
+ * by the card's own `badges` (SourceBadge), since only the card knows which
+ * variant is actually being served.
+ */
+function ManifestProvenance({ id }: { id: CardId }) {
+  const entry = getManifestEntry(id);
+  const sources = entry?.sources;
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <p className="orientation-provenance">
+      {sources.map((source, index) => (
+        <span key={source.livePath}>
+          {index > 0 && " · "}
+          <code>{source.livePath}</code> (fallback: <code>{source.fallbackFile}</code>)
+        </span>
+      ))}
+      {sources.length > 1 && ` · ${sources.length} sources`}
+    </p>
+  );
+}
+
 export function CardShell({
+  id,
   title,
   blurb,
   badges,
   notes,
   children,
 }: {
+  id: CardId;
   title: string;
   blurb?: string;
   badges?: ReactNode;
@@ -87,15 +115,15 @@ export function CardShell({
 }) {
   return (
     <section className="content-panel">
-      <details className="inspect">
-        <summary>inspect</summary>
-        <div className="inspect-body">
-          <p className="m-0 text-sm tracking-wide text-ash">{title}</p>
-          {badges}
-          {blurb && <p>{blurb}</p>}
-          {notes}
-        </div>
-      </details>
+      <div className="orientation">
+        <p className="orientation-line">
+          <span className="orientation-title">{title}</span>
+          {blurb && <span className="orientation-blurb"> — {blurb}</span>}
+        </p>
+        {badges && <div className="orientation-badges">{badges}</div>}
+        <ManifestProvenance id={id} />
+        {notes}
+      </div>
       {children}
     </section>
   );

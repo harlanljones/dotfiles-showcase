@@ -180,6 +180,7 @@ export default function LazygitCard() {
 
   return (
     <CardShell
+      id="lazygit"
       title="lazygit + Ollama Commits"
       blurb="Inside lazygit, Ctrl+G pipes the staged diff through a local Ollama model and opens the generated message for review."
       badges={

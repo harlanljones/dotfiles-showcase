@@ -377,40 +377,45 @@ html[data-failed="1"] .display {
 .content-panel > .room-head {
   margin-bottom: 1.75rem;
 }
-.inspect {
+.orientation {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: flex-start;
   margin: 0 0 1.5rem;
   max-width: 42rem;
 }
-.inspect summary {
-  list-style: none;
-  cursor: pointer;
-  width: fit-content;
-  font-size: 0.68rem;
-  letter-spacing: 0.18em;
+.orientation-line {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
   color: var(--ash);
-  opacity: 0.62;
-  padding: 0.2rem 0;
 }
-.inspect summary::-webkit-details-marker {
-  display: none;
-}
-.inspect[open] summary {
-  opacity: 0.8;
+.orientation-title {
   color: var(--ash);
-  margin-bottom: 0.65rem;
+  letter-spacing: 0.02em;
 }
-.inspect .inspect-body {
+.orientation-blurb {
+  color: var(--ash-dim);
+}
+.orientation-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
-  align-items: flex-start;
+  align-items: center;
 }
-.inspect p {
+.orientation-provenance {
   margin: 0;
   max-width: 42rem;
-  font-size: 0.8rem;
-  line-height: 1.6;
+  font-size: 0.72rem;
+  line-height: 1.5;
   color: var(--ash-dim);
+  opacity: 0.85;
+}
+.orientation-provenance code {
+  font-size: inherit;
 }
 
 .prompt-stage {

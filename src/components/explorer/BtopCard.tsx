@@ -69,6 +69,7 @@ export default function BtopCard() {
 
   return (
     <CardShell
+      id="btop"
       title="System Monitor"
       blurb="btop's layout boxes, theme, and monitoring knobs from ~/.config/btop/btop.conf — toggle boxes and presets to preview arrangements. Read-only: nothing here changes your config."
       badges={data ? <SourceBadge source={data.source} /> : undefined}
