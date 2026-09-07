@@ -179,10 +179,10 @@ export default function BtopCard() {
                 </div>
               </div>
               {graphVariants.length > 0 && (
-                <p className="font-mono text-[11px] text-white/55">
-                  per-box symbols:{" "}
+                <p className="flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-white/55">
+                  <span>per-box symbols:</span>
                   {graphVariants.map((g) => (
-                    <span key={g.box} className="mr-2">
+                    <span key={g.box}>
                       <span className="text-white/75">{g.box}</span>={g.graph}
                     </span>
                   ))}

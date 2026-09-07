@@ -34,6 +34,8 @@
 html,
 body {
   margin: 0;
+  max-width: 100%;
+  overflow-x: clip;
   min-height: 100%;
   /*
    * HJ-722: no document-level scroll suppression. Deep showcase demos must
@@ -175,6 +177,8 @@ html[data-failed="1"] .display {
   flex: 1;
   display: flex;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   padding: 1.5rem 1.5rem 2.5rem;
 }
 @media (min-width: 640px) {
@@ -359,10 +363,55 @@ html[data-failed="1"] .display {
   width: 100%;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   animation: fade-in 160ms var(--ease-out);
 }
 .demo-hero-track {
+  min-width: 0;
   will-change: transform;
+}
+
+/*
+ * HJ-726: terminal/configuration text is a physical artifact, not prose.
+ * It retains its character grid and each artifact owns its sideways travel;
+ * it must never widen the document, wrap, or quietly shrink to fit a phone.
+ *
+ * Declared in `base` on purpose: unlayered rules outrank every Tailwind layer,
+ * so an unlayered `pre` would silently beat a utility a component asked for
+ * (`whitespace-pre-wrap` on the Starship preview at wide terminal widths).
+ * This is the default for an artifact, not an override of a deliberate one.
+ */
+@layer base {
+  pre {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-wrap: normal;
+    white-space: pre;
+    word-break: normal;
+  }
+}
+
+/*
+ * The orientation line is chrome, not an artifact: it quotes live config
+ * paths, which offer no break opportunity and would otherwise push the
+ * panel wider than the phone.
+ */
+.orientation {
+  overflow-wrap: anywhere;
+}
+
+/* A mobile rail remains the desktop word grammar, just in its own strip. */
+@media (max-width: 639px) {
+  .demo-rail {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0.35rem;
+  }
+  .demo-rail-word {
+    flex: 0 0 auto;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .demo-hero-track {

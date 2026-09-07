@@ -337,6 +337,10 @@ describe("Explorer: the pager (HJ-722)", () => {
     });
 
     expect(container.querySelector(".status-line")).toBeNull();
+    // Native scrolling stays untouched: neither the field nor hero receives
+    // the pager's clipping styles on a coarse/touch pointer.
+    expect(container.querySelector(".field")?.getAttribute("style")).toBeNull();
+    expect(container.querySelector(".demo-hero")?.getAttribute("style")).toBeNull();
   });
 
   it("the first scroll (wheel) attempt flashes the hint and stays paged", async () => {

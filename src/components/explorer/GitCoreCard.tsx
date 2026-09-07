@@ -223,7 +223,7 @@ export default function GitCoreCard() {
             </div>
 
             {data.policies.length > 0 && (
-              <div className="overflow-hidden rounded-lg border border-white/10">
+              <div className="overflow-x-auto rounded-lg border border-white/10">
                 <table className="w-full font-mono text-xs">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.04] text-left text-white/50">

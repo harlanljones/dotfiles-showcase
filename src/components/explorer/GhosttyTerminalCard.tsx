@@ -234,7 +234,7 @@ export default function GhosttyTerminalCard() {
             {data.themeRef && (
               <p className="font-mono text-[11px] text-white/50">
                 palette loads dynamically from{" "}
-                <span className="text-white/75">{data.themeRef}</span> — see the
+                <span className="text-white/75 [overflow-wrap:anywhere]">{data.themeRef}</span> — see the
                 Omarchy Palette card.
               </p>
             )}

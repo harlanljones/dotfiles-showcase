@@ -153,7 +153,7 @@ export default function PackagesCard() {
       {data && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex overflow-hidden rounded-lg border border-white/15">
+            <div className="flex overflow-x-auto rounded-lg border border-white/15">
               {VIEWS.map((v) => {
                 const active = view === v.key;
                 return (
