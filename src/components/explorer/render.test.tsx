@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
 import { renderToString } from "react-dom/server";
+import { CATALOGUE } from "../../lib/catalogue";
 import { FETCHERS, type Payload } from "./fixtures";
 
 /**
@@ -55,6 +56,13 @@ const FETCHER_COMPONENTS: Record<string, React.ComponentType<{ onOpenPlayground?
   "git-core": GitCoreCard,
 };
 
+const NO_FETCH_COMPONENTS = {
+  starship: StarshipCard,
+  "git-safety": GitSafetyCard,
+  recolor: RecolorCard,
+  fuzzy: FuzzyToolsCard,
+} as const;
+
 /** Distinct provenance values declared by a payload's top-level source fields. */
 function expectedBadges(payload: Payload): string[] {
   const out = new Set<string>();
@@ -71,6 +79,11 @@ function render(Card: React.ElementType): string {
 }
 
 describe("explorer card render parity", () => {
+  it("covers every catalogue demo with live/fallback fixtures or an explicit no-fetch render", () => {
+    const covered = new Set([...Object.keys(FETCHER_COMPONENTS), ...Object.keys(NO_FETCH_COMPONENTS)]);
+    expect(CATALOGUE.map(({ id }) => String(id)).sort()).toEqual([...covered].sort());
+  });
+
   for (const { name, live, fallback } of FETCHERS) {
     const component = FETCHER_COMPONENTS[name];
     it(`${name}: renders the live variant with matching badges`, () => {
@@ -98,7 +111,7 @@ describe("explorer card render parity", () => {
   }
 
   it("static and simulated cards render without any fetched data", () => {
-    for (const card of [StarshipCard, GitSafetyCard, RecolorCard, FuzzyToolsCard]) {
+    for (const card of Object.values(NO_FETCH_COMPONENTS)) {
       current = { data: null, error: null };
       const html = render(card);
       expect(html.length).toBeGreaterThan(100);

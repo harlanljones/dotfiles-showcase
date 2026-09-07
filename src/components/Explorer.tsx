@@ -121,7 +121,8 @@ const HINT_FLASH_MS = 1800;
  * design note): a demo performs once per session, the first time it's
  * shown, whether or not the visitor ever saw the veil this session. Once
  * `seenDemos()` has it, or under a reduced-motion preference, it renders
- * complete and immediately — no ambient motion, no transition.
+ * complete and immediately — no reveal transition. The cursor remains as
+ * every demo's ambient floor; CSS freezes it for reduced motion.
  *
  * `key={id}` on the parent `.demo-hero` remounts this on every demo switch,
  * so `useState`'s initializer re-evaluates "should this perform" fresh per
@@ -142,7 +143,7 @@ function DemoPerformance({ id, children }: { id: CardId; children: ReactNode }) 
       >
         {children}
       </div>
-      {performing && <span className="demo-performance-cursor" aria-hidden="true" />}
+      <span className="demo-performance-cursor block-cursor" aria-hidden="true" />
     </div>
   );
 }
