@@ -185,7 +185,7 @@ export default function GhosttyPaletteCard() {
               font: <span className="text-ash">{data.fontFamily ?? "?"}</span>{" "}
               {data.fontSize && <span>@ {data.fontSize}px</span>}
             </span>
-            {data.themeRef && <span>theme ← {data.themeRef}</span>}
+            {data.themeRef && <span className="[overflow-wrap:anywhere]">theme ← {data.themeRef}</span>}
             <button
               type="button"
               onClick={() => setShowFont((v) => !v)}
@@ -335,7 +335,7 @@ export default function GhosttyPaletteCard() {
                   for every entry in the palette, including near-black swatches. */}
               <p className="text-display font-mono m-0 text-ash">{selectedHex}</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-1">
                   <div className="font-mono text-[11px] text-white/50">
                     {selectedKind} (SGR {selected})
                   </div>
@@ -346,7 +346,7 @@ export default function GhosttyPaletteCard() {
                     {SAMPLE_LINE}
                   </pre>
                 </div>
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-1">
                   <div className="font-mono text-[11px] text-white/50">
                     {pairKind} pair (SGR {pairIdx} = {pairDelta})
                   </div>

@@ -164,7 +164,7 @@ export default function ShellEnvCard() {
                   {exports.length} export{exports.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <div className="overflow-hidden rounded-lg border border-white/10">
+              <div className="overflow-x-auto rounded-lg border border-white/10">
                 <table className="w-full font-mono text-xs">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.04] text-left text-white/50">
@@ -223,7 +223,7 @@ export default function ShellEnvCard() {
               <div className="font-mono text-xs text-white/50">
                 cross-shell parity — zsh vs bash vs environment.d
               </div>
-              <div className="overflow-hidden rounded-lg border border-white/10">
+              <div className="overflow-x-auto rounded-lg border border-white/10">
                 <table className="w-full font-mono text-xs">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.04] text-left text-white/50">
