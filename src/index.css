@@ -269,9 +269,6 @@ html[data-failed="1"] .display {
     clip-path: none;
     animation: none;
   }
-  .demo-performance-cursor {
-    display: none;
-  }
 }
 
 .index-overlay {
@@ -412,8 +409,13 @@ html[data-failed="1"] .display {
  * block-cursor as the veil to carry the gesture across. Purely a visual
  * reveal (clip-path) over content that already exists in the DOM, so
  * nothing is delayed for assistive tech. Skipped entirely (no class, no
- * cursor node) once a demo has been marked seen this session, or under a
+ * reveal class) once a demo has been marked seen this session, or under a
  * reduced-motion preference — see lib/session.ts and lib/reducedMotion.ts.
+ *
+ * HJ-724: the same node settles into a block cursor after the reveal. It is
+ * the honest ambient floor for every demo. No output above that floor is
+ * animated here: the catalogue has no captured replay dataset to replay,
+ * and config-derived/static values must never be made to look live.
  */
 .demo-performance {
   position: relative;
@@ -428,10 +430,16 @@ html[data-failed="1"] .display {
   }
 }
 .demo-performance-cursor {
+  display: block;
+  margin-top: 1.25rem;
+}
+.demo-performance.is-performing > .demo-performance-cursor {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
+  height: auto;
+  margin-top: 0;
   width: 0.7rem;
   background: var(--phosphor);
   box-shadow: 0 10px 28px rgba(111, 163, 160, 0.18);

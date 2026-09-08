@@ -198,7 +198,7 @@ describe("Explorer route round-trips (regression: no grid/expand pattern)", () =
   });
 });
 
-describe("HJ-721: the veil hands off to the performance", () => {
+describe("HJ-721/HJ-724: first-open performance and ambient floor", () => {
   it("the open demo performs (draws in) the first time it's shown this session", async () => {
     windowRef.happyDOM.setURL("http://localhost/shell");
     const root = createRoot(container);
@@ -224,7 +224,7 @@ describe("HJ-721: the veil hands off to the performance", () => {
     });
 
     expect(container.querySelector(".demo-performance.is-performing")).toBeNull();
-    expect(container.querySelector(".demo-performance-cursor")).toBeNull();
+    expect(container.querySelector(".demo-performance-cursor.block-cursor")).not.toBeNull();
     expect(JSON.parse(sessionStorage.getItem("seen-demos") ?? "[]")).toContain("starship");
   });
 
@@ -240,7 +240,7 @@ describe("HJ-721: the veil hands off to the performance", () => {
 
     const hero = container.querySelector(".demo-hero");
     expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
-    expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+    expect(hero.querySelector(".demo-performance-cursor.block-cursor")).not.toBeNull();
   });
 
   it("a returning visitor who skips the veil still gets the performance (session key is per-demo, not per-veil)", async () => {
@@ -257,6 +257,45 @@ describe("HJ-721: the veil hands off to the performance", () => {
     expect(container.querySelector(".demo-performance.is-performing")).not.toBeNull();
   });
 
+  it("performs each demo on first open, then revisits it instantly while keeping the ambient cursor", async () => {
+    windowRef.happyDOM.setURL("http://localhost/shell#starship");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<Explorer />);
+    });
+
+    const finishCurrentPerformance = async () => {
+      const content = container.querySelector(".demo-performance-content");
+      await act(async () => {
+        content.dispatchEvent(new windowRef.Event("animationend", { bubbles: true }));
+      });
+    };
+    await finishCurrentPerformance();
+
+    const ripgrepWord = Array.from<any>(container.querySelectorAll(".demo-rail-word")).find(
+      (el) => el.textContent?.trim() === "ripgrep",
+    );
+    await act(async () => {
+      ripgrepWord.click();
+    });
+    expect(container.querySelector(".demo-performance.is-performing")).not.toBeNull();
+    await finishCurrentPerformance();
+
+    const starshipWord = Array.from<any>(container.querySelectorAll(".demo-rail-word")).find(
+      (el) => el.textContent?.trim() === "starship",
+    );
+    await act(async () => {
+      starshipWord.click();
+      ripgrepWord.click();
+    });
+
+    expect(container.querySelector(".demo-performance.is-performing")).toBeNull();
+    expect(container.querySelector(".demo-performance-cursor.block-cursor")).not.toBeNull();
+    expect(JSON.parse(sessionStorage.getItem("seen-demos") ?? "[]")).toEqual(
+      expect.arrayContaining(["starship", "ripgrep"]),
+    );
+  });
+
   describe("under a reduced-motion preference", () => {
     beforeEach(() => {
       windowRef.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
@@ -271,7 +310,7 @@ describe("HJ-721: the veil hands off to the performance", () => {
 
       const hero = container.querySelector(".demo-hero");
       expect(hero.querySelector(".demo-performance.is-performing")).toBeNull();
-      expect(hero.querySelector(".demo-performance-cursor")).toBeNull();
+      expect(hero.querySelector(".demo-performance-cursor.block-cursor")).not.toBeNull();
     });
 
     it("navigation still works (navigation is not motion)", async () => {
