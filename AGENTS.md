@@ -70,13 +70,22 @@ Out of scope (v1 + v2, prohibited):
 
 ## 3. Instruction Precedence
 
+**Amended by ADR-004 (2026-09-24).** This repository's code is merging into the private
+`harlanljones/harlan-web` repository as `apps/dotfiles/` (see ADR-004). The order below
+applies in full only once that import has actually landed and this repository's code lives
+inside harlan-web; until then, this repository is still standalone and item 1 has no
+practical referent yet.
+
 When instructions disagree, resolve in this order (highest first):
 
-1. This file (`AGENTS.md`) and the project's `ROADMAP.md`.
-2. The chezmoi-level constraint that the submodule path MUST be ignored by chezmoi
-   (see §6, prohibited shortcuts) — this is a hard safety boundary.
-3. The user's explicit, current instruction.
-4. General framework/library conventions (React, Hono, Vite, Tailwind, Bun).
+1. `harlan-web`'s root `CLAUDE.md` and `AGENTS.md`, once this repository's code lives at
+   `apps/dotfiles/` inside it.
+2. This file (`AGENTS.md`) and this project's `ROADMAP.md`, scoped to the `apps/dotfiles/`
+   subtree.
+3. The chezmoi-level constraint that the submodule path MUST be ignored by chezmoi
+   (see §6, prohibited shortcuts) — this is a hard safety boundary, unchanged by the merge.
+4. The user's explicit, current instruction.
+5. General framework/library conventions (React, Hono, Vite, Tailwind, Bun).
 
 If a user request would break a higher-precedence rule, do NOT comply silently. Implement
 what is compatible, note the conflict, and stop before the violating step.
